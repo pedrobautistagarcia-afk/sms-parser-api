@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registro Gastos</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto; margin:24px; background:#fff;}
+    h1{margin:0 0 12px;}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0;}
+    input,select,button{padding:8px 10px; font-size:14px;}
+    button{cursor:pointer;}
+    table{border-collapse:collapse; width:100%; margin-top:12px;}
+    th,td{border-bottom:1px solid #eee; text-align:left; padding:10px; font-size:14px;}
+    th{background:#fafafa;}
+    .muted{color:#666; font-size:13px;}
+    .pill{display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px;}
+    .right{margin-left:auto;}
+  </style>
+</head>
+<body>
+  <h1>Registro Gastos</h1>
+  <div class="muted">Vista rápida (Cloudflare). Usa <span class="pill">?api_key=...</span> en la URL.</div>
+
+  <div class="row">
+    <label class="muted">User:</label>
+    <input id="user" value="pedro" />
+
+    <label class="muted">Limit:</label>
+    <input id="limit" type="number" value="50" style="width:90px;" />
+
+    <label class="muted">Category:</label>
+    <select id="cat">
+      <option value="">(todas)</option>
+      <option value="coffee">coffee</option>
+      <option value="food">food</option>
+      <option value="groceries">groceries</option>
+      <option value="transport">transport</option>
+      <option value="shopping">shopping</option>
+      <option value="health">health</option>
+      <option value="subscriptions">subscriptions</option>
+      <option value="other">other</option>
+    </select>
+
+    <button onclick="load()">Cargar</button>
+    <div id="info" class="muted right"></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha (UTC)</th>
+        <th>Merchant</th>
+        <th>Cat</th>
+        <th>Amount</th>
+        <th>Cur</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+<script>
+function getApiKey(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get("api_key");
+}
+
+function fmtDate(iso){
+  if(!iso) return "";
+  return iso.replace("T"," ").replace("+00:00","Z");
+}
+
+async function load(){
+  const apiKey = getApiKey();
+  const info = document.getElementById("info");
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+
+  if(!apiKey){
+    info.textContent = "Falta api_key en la URL: /app?api_key=TUKEY";
+    return;
+  }
+
+  const user = document.getElementById("user").value.trim();
+  const limit = document.getElementById("limit").value.trim() || "50";
+  const cat = document.getElementById("cat").value.trim();
+
+  const url = `/expenses?user_id=${encodeURIComponent(user)}&limit=${encodeURIComponent(limit)}&api_key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  let rows = (data.expenses || []);
+  if(cat){
+    rows = rows.filter(r => (r.category || "") === cat);
+  }
+
+  let totalByCur = {};
+  rows.forEach(r => {
+    const cur = r.currency || "—";
+    const amt = Number(r.amount ?? 0);
+    totalByCur[cur] = (totalByCur[cur] || 0) + (isFinite(amt) ? amt : 0);
+  });
+
+  const totalsText = Object.entries(totalByCur)
+    .map(([c,t]) => `${t.toFixed(3)} ${c}`)
+    .join(" | ");
+
+  info.textContent = `Mostrando ${rows.length} — Total: ${totalsText || "—"}`;
+
+  rows.forEach(e => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${fmtDate(e.created_at)}</td>
+      <td>${e.merchant_clean || ""}</td>
+      <td>${e.category || ""}</td>
+      <td>${(e.amount ?? "")}</td>
+      <td>${e.currency || ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
