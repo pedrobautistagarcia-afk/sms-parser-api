@@ -3,124 +3,101 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Registro Gastos</title>
+  <title>Registro de gastos</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto; margin:24px; background:#fff;}
-    h1{margin:0 0 12px;}
-    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0;}
-    input,select,button{padding:8px 10px; font-size:14px;}
-    button{cursor:pointer;}
-    table{border-collapse:collapse; width:100%; margin-top:12px;}
-    th,td{border-bottom:1px solid #eee; text-align:left; padding:10px; font-size:14px;}
-    th{background:#fafafa;}
-    .muted{color:#666; font-size:13px;}
-    .pill{display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px;}
-    .right{margin-left:auto;}
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
+    h1 { margin: 0 0 12px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    input { padding: 8px 10px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+    th { background: #f6f6f6; text-align: left; }
+    td.num { text-align: right; }
+    .muted { opacity: 0.7; }
+    .error { color: #b00020; }
   </style>
 </head>
 <body>
-  <h1>Registro Gastos</h1>
-  <div class="muted">Vista rápida (Cloudflare). Usa <span class="pill">?api_key=...</span> en la URL.</div>
+  <h1>Registro de gastos</h1>
 
   <div class="row">
-    <label class="muted">User:</label>
-    <input id="user" value="pedro" />
-
-    <label class="muted">Limit:</label>
-    <input id="limit" type="number" value="50" style="width:90px;" />
-
-    <label class="muted">Category:</label>
-    <select id="cat">
-      <option value="">(todas)</option>
-      <option value="coffee">coffee</option>
-      <option value="food">food</option>
-      <option value="groceries">groceries</option>
-      <option value="transport">transport</option>
-      <option value="shopping">shopping</option>
-      <option value="health">health</option>
-      <option value="subscriptions">subscriptions</option>
-      <option value="other">other</option>
-    </select>
-
-    <button onclick="load()">Cargar</button>
-    <div id="info" class="muted right"></div>
+    <label class="muted">Límite:</label>
+    <input id="limit" type="number" value="200" min="1" max="1000" />
+    <button id="reload">Recargar</button>
+    <span id="status" class="muted">—</span>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th>Fecha (UTC)</th>
-        <th>Merchant</th>
-        <th>Cat</th>
-        <th>Amount</th>
-        <th>Cur</th>
+        <th>Fecha</th>
+        <th>Usuario</th>
+        <th>Comercio</th>
+        <th>Categoría</th>
+        <th>Importe</th>
+        <th>Moneda</th>
       </tr>
     </thead>
-    <tbody id="tbody"></tbody>
+    <tbody id="expenses-body"></tbody>
   </table>
 
-<script>
-function getApiKey(){
-  const params = new URLSearchParams(window.location.search);
-  return params.get("api_key");
-}
+  <script>
+    async function loadExpenses() {
+      const statusEl = document.getElementById("status");
+      const tbody = document.getElementById("expenses-body");
+      const limit = document.getElementById("limit").value || 200;
 
-function fmtDate(iso){
-  if(!iso) return "";
-  return iso.replace("T"," ").replace("+00:00","Z");
-}
+      statusEl.textContent = "Cargando…";
+      tbody.innerHTML = "";
 
-async function load(){
-  const apiKey = getApiKey();
-  const info = document.getElementById("info");
-  const tbody = document.getElementById("tbody");
-  tbody.innerHTML = "";
+      try {
+        const url = `/expenses?limit=${encodeURIComponent(limit)}`;
+        const res = await fetch(url, { cache: "no-store" });
 
-  if(!apiKey){
-    info.textContent = "Falta api_key en la URL: /app?api_key=TUKEY";
-    return;
-  }
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
 
-  const user = document.getElementById("user").value.trim();
-  const limit = document.getElementById("limit").value.trim() || "50";
-  const cat = document.getElementById("cat").value.trim();
+        const data = await res.json();
+        const expenses = Array.isArray(data.expenses) ? data.expenses : [];
 
-  const url = `/expenses?limit=${encodeURIComponent(limit)}`;
-  const res = await fetch(url);
-  const data = await res.json();
+        statusEl.textContent = `Registros: ${expenses.length}`;
 
-  let rows = (data.expenses || []);
-  if(cat){
-    rows = rows.filter(r => (r.category || "") === cat);
-  }
+        if (expenses.length === 0) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td colspan="6" class="muted" style="text-align:center;">No hay gastos aún</td>`;
+          tbody.appendChild(tr);
+          return;
+        }
 
-  let totalByCur = {};
-  rows.forEach(r => {
-    const cur = r.currency || "—";
-    const amt = Number(r.amount ?? 0);
-    totalByCur[cur] = (totalByCur[cur] || 0) + (isFinite(amt) ? amt : 0);
-  });
+        for (const e of expenses) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${e.created_at ?? ""}</td>
+            <td>${e.user_id ?? ""}</td>
+            <td>${e.merchant_clean ?? ""}</td>
+            <td>${e.category ?? ""}</td>
+            <td class="num">${e.amount ?? ""}</td>
+            <td>${e.currency ?? ""}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Error cargando gastos (F12 → Console)";
+        statusEl.classList.remove("muted");
+        statusEl.classList.add("error");
 
-  const totalsText = Object.entries(totalByCur)
-    .map(([c,t]) => `${t.toFixed(3)} ${c}`)
-    .join(" | ");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="6" class="error">${String(err)}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
 
-  info.textContent = `Mostrando ${rows.length} — Total: ${totalsText || "—"}`;
-
-  rows.forEach(e => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${fmtDate(e.created_at)}</td>
-      <td>${e.merchant_clean || ""}</td>
-      <td>${e.category || ""}</td>
-      <td>${(e.amount ?? "")}</td>
-      <td>${e.currency || ""}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-load();
-</script>
+    document.getElementById("reload").addEventListener("click", loadExpenses);
+    loadExpenses();
+  </script>
 </body>
 </html>
