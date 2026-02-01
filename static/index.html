@@ -7,30 +7,59 @@
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
     h1 { margin-bottom: 12px; }
+
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-    .box { padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+    .spacer { flex: 1; }
+
     label { font-size: 13px; opacity: 0.8; }
-    input, select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; }
-    button { padding: 7px 12px; border: 1px solid #ddd; border-radius: 10px; background: #fff; cursor: pointer; }
+
+    input, select {
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #bbb; }
+
+    button {
+      padding: 7px 12px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
     button:hover { background: #f6f6f6; }
+
+    .box {
+      padding: 7px 12px;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      background: #fafafa;
+      font-size: 14px;
+    }
+
+    /* Chips (totales clicables) */
+    .chip { cursor: pointer; user-select: none; }
+    .chip.active { border-color: #333; background: #eee; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
     th { background: #f2f2f2; text-align: left; }
     td.num { text-align: right; }
+
     .muted { opacity: 0.7; }
-    .spacer { flex: 1; }
   </style>
 </head>
 <body>
 
 <h1>Registro de gastos</h1>
 
-<!-- Totales -->
+<!-- Totales (chips clicables) -->
 <div class="row">
-  <div id="sum-today" class="box muted">Hoy: —</div>
-  <div id="sum-7" class="box muted">7 días: —</div>
-  <div id="sum-month" class="box muted">Mes: —</div>
-  <div id="sum-year" class="box muted">Año: —</div>
+  <button id="chip-today" type="button" class="box chip muted">Hoy: —</button>
+  <button id="chip-7" type="button" class="box chip muted">7 días: —</button>
+  <button id="chip-month" type="button" class="box chip muted">Mes: —</button>
+  <button id="chip-year" type="button" class="box chip muted">Año: —</button>
 </div>
 
 <!-- Filtros -->
@@ -63,8 +92,8 @@
   <label>Límite</label>
   <input id="limit" type="number" value="200" min="1" max="1000" style="width: 90px;">
 
-  <button id="apply">Aplicar</button>
-  <button id="clear">Limpiar</button>
+  <button id="apply" type="button">Aplicar</button>
+  <button id="clear" type="button">Limpiar</button>
 
   <span class="spacer"></span>
   <span id="status" class="muted">—</span>
@@ -85,6 +114,56 @@
 </table>
 
 <script>
+function pad2(n) { return String(n).padStart(2, "0"); }
+function toDateInput(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+function setRange(fromDate, toDate) {
+  document.getElementById("date_from").value = toDateInput(fromDate);
+  document.getElementById("date_to").value = toDateInput(toDate);
+}
+
+function clearActiveChips() {
+  for (const id of ["chip-today","chip-7","chip-month","chip-year"]) {
+    document.getElementById(id).classList.remove("active");
+  }
+}
+
+function applyPreset(presetId) {
+  const now = new Date();
+
+  let from, to;
+
+  if (presetId === "chip-today") {
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (presetId === "chip-7") {
+    to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    from = new Date(to);
+    from.setDate(from.getDate() - 6); // 7 días incluyendo hoy
+  } else if (presetId === "chip-month") {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (presetId === "chip-year") {
+    from = new Date(now.getFullYear(), 0, 1);
+    to = new Date(now.getFullYear(), 11, 31);
+  }
+
+  const btn = document.getElementById(presetId);
+  const wasActive = btn.classList.contains("active");
+
+  clearActiveChips();
+
+  if (wasActive) {
+    document.getElementById("date_from").value = "";
+    document.getElementById("date_to").value = "";
+  } else {
+    btn.classList.add("active");
+    setRange(from, to);
+  }
+
+  loadExpenses();
+}
+
 function buildParams() {
   const user = document.getElementById("user").value.trim();
   const category = document.getElementById("category").value;
@@ -106,14 +185,20 @@ function buildParams() {
 
 async function loadSummary() {
   try {
-    // Si quieres summary por usuario en el futuro: añadir user_id aquí
     const res = await fetch("/summary", { cache: "no-store" });
     if (!res.ok) return;
     const s = await res.json();
-    document.getElementById("sum-today").textContent = `Hoy: ${s.today_total}`;
-    document.getElementById("sum-7").textContent = `7 días: ${s.last7_total}`;
-    document.getElementById("sum-month").textContent = `Mes: ${s.month_total}`;
-    document.getElementById("sum-year").textContent = `Año: ${s.year_total}`;
+
+    // mantenemos texto y valores
+    document.getElementById("chip-today").textContent = `Hoy: ${s.today_total}`;
+    document.getElementById("chip-7").textContent = `7 días: ${s.last7_total}`;
+    document.getElementById("chip-month").textContent = `Mes: ${s.month_total}`;
+    document.getElementById("chip-year").textContent = `Año: ${s.year_total}`;
+
+    // quitamos muted al cargar
+    for (const id of ["chip-today","chip-7","chip-month","chip-year"]) {
+      document.getElementById(id).classList.remove("muted");
+    }
   } catch (e) {
     console.error(e);
   }
@@ -166,9 +251,12 @@ function clearFilters() {
   document.getElementById("date_from").value = "";
   document.getElementById("date_to").value = "";
   document.getElementById("limit").value = "200";
+  clearActiveChips();
 }
 
+// --- listeners ---
 document.getElementById("apply").addEventListener("click", () => {
+  clearActiveChips(); // si aplicas manual, quitamos preset activo
   loadExpenses();
 });
 
@@ -177,6 +265,17 @@ document.getElementById("clear").addEventListener("click", () => {
   loadExpenses();
 });
 
+document.getElementById("chip-today").addEventListener("click", () => applyPreset("chip-today"));
+document.getElementById("chip-7").addEventListener("click", () => applyPreset("chip-7"));
+document.getElementById("chip-month").addEventListener("click", () => applyPreset("chip-month"));
+document.getElementById("chip-year").addEventListener("click", () => applyPreset("chip-year"));
+
+// Si cambias fechas manualmente, desactivamos chips (para que no “mienta” la UI)
+["user","category","q","date_from","date_to","limit"].forEach(id => {
+  document.getElementById(id).addEventListener("change", clearActiveChips);
+});
+
+// init
 loadSummary();
 loadExpenses();
 </script>
