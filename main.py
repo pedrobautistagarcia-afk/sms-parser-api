@@ -14,9 +14,7 @@ from pydantic import BaseModel, Field
 # ======================================================
 API_KEY = os.getenv("API_KEY", "CHANGE_ME")
 
-# IMPORTANTE:
-# - En Render con Disk montado en /var/data, esta ruta hace que SQLite sea persistente.
-# - Si quieres cambiarla, usa la env var DB_PATH.
+# DB persistente en Render (Disk montado en /var/data)
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
 app = FastAPI(title="Registro Gastos API")
@@ -39,7 +37,6 @@ class IngestRequest(BaseModel):
 # BASE DE DATOS
 # ======================================================
 def init_db():
-    # Crear carpeta si hace falta (p.ej. /var/data)
     db_dir = os.path.dirname(DB_PATH)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
@@ -70,18 +67,21 @@ def init_db():
 init_db()
 
 # ======================================================
-# SEGURIDAD – API KEY (HEADER O QUERY)
-#   - Hacemos pública la web /app y los estáticos /static/*
-#   - Protegemos los endpoints sensibles (/ingest, /parse, /expenses, etc.)
+# SEGURIDAD – API KEY
+#   - Web y dashboard públicos
+#   - Ingest y parse protegidos
 # ======================================================
-PUBLIC_PATHS = {"/", "/app", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico", "/expenses"}
+PUBLIC_PATHS = {
+    "/", "/app", "/health",
+    "/docs", "/openapi.json", "/redoc", "/favicon.ico",
+    "/expenses", "/summary"
+}
 PUBLIC_PREFIXES = ("/static",)
 
 @app.middleware("http")
 async def api_key_guard(request: Request, call_next):
     path = request.url.path
 
-    # Permitir web + assets sin API key
     if path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES):
         return await call_next(request)
 
@@ -98,7 +98,6 @@ async def api_key_guard(request: Request, call_next):
 # ======================================================
 @app.get("/")
 def root():
-    # Para que abrir la URL base te lleve directamente al dashboard
     return RedirectResponse(url="/app")
 
 @app.get("/health")
@@ -107,7 +106,6 @@ def health():
 
 @app.get("/app")
 def app_page():
-    # Página del dashboard
     return FileResponse("static/index.html", media_type="text/html")
 
 # ======================================================
@@ -176,7 +174,7 @@ def categorize(merchant_raw: str | None, sms: str | None = None) -> str:
     return "other"
 
 # ======================================================
-# PARSE (SIN GUARDAR) - PROTEGIDO
+# PARSE (PROTEGIDO)
 # ======================================================
 @app.post("/parse")
 async def parse_only(data: IngestRequest):
@@ -191,7 +189,7 @@ async def parse_only(data: IngestRequest):
     }
 
 # ======================================================
-# INGEST (GUARDAR) - PROTEGIDO
+# INGEST (PROTEGIDO)
 # ======================================================
 @app.post("/ingest")
 async def ingest(data: IngestRequest):
@@ -206,8 +204,7 @@ async def ingest(data: IngestRequest):
     cur = conn.cursor()
 
     cur.execute("SELECT id FROM expenses WHERE hash = ?", (expense_hash,))
-    row = cur.fetchone()
-    if row:
+    if cur.fetchone():
         conn.close()
         return {"status": "duplicate"}
 
@@ -234,11 +231,10 @@ async def ingest(data: IngestRequest):
 
     conn.commit()
     conn.close()
-
     return {"status": "saved"}
 
 # ======================================================
-# LISTADO - PROTEGIDO
+# LISTADO DE GASTOS (PÚBLICO PARA DASHBOARD)
 # ======================================================
 @app.get("/expenses")
 def list_expenses(user_id: str | None = None, limit: int = 200):
@@ -268,6 +264,60 @@ def list_expenses(user_id: str | None = None, limit: int = 200):
             (limit,),
         )
 
-    rows = [dict(row) for row in cur.fetchall()]
+    rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return {"count": len(rows), "expenses": rows}
+
+# ======================================================
+# RESUMEN (HOY / 7 DÍAS / MES / AÑO)
+# ======================================================
+@app.get("/summary")
+def summary(user_id: str | None = None):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    base_where = "WHERE 1=1"
+    params = []
+    if user_id:
+        base_where += " AND user_id = ?"
+        params.append(user_id)
+
+    cur.execute(
+        f"""SELECT COALESCE(SUM(amount),0)
+            FROM expenses {base_where}
+            AND datetime(created_at) >= datetime('now','start of day')""",
+        tuple(params),
+    )
+    today_total = cur.fetchone()[0]
+
+    cur.execute(
+        f"""SELECT COALESCE(SUM(amount),0)
+            FROM expenses {base_where}
+            AND datetime(created_at) >= datetime('now','-7 days')""",
+        tuple(params),
+    )
+    last7_total = cur.fetchone()[0]
+
+    cur.execute(
+        f"""SELECT COALESCE(SUM(amount),0)
+            FROM expenses {base_where}
+            AND strftime('%Y-%m', datetime(created_at)) = strftime('%Y-%m', 'now')""",
+        tuple(params),
+    )
+    month_total = cur.fetchone()[0]
+
+    cur.execute(
+        f"""SELECT COALESCE(SUM(amount),0)
+            FROM expenses {base_where}
+            AND strftime('%Y', datetime(created_at)) = strftime('%Y', 'now')""",
+        tuple(params),
+    )
+    year_total = cur.fetchone()[0]
+
+    conn.close()
+    return {
+        "today_total": today_total,
+        "last7_total": last7_total,
+        "month_total": month_total,
+        "year_total": year_total,
+    }
