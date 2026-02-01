@@ -7,20 +7,25 @@
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
     h1 { margin-bottom: 12px; }
-    .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-    .box { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .box { padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+    label { font-size: 13px; opacity: 0.8; }
+    input, select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; }
+    button { padding: 7px 12px; border: 1px solid #ddd; border-radius: 10px; background: #fff; cursor: pointer; }
+    button:hover { background: #f6f6f6; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
     th { background: #f2f2f2; text-align: left; }
     td.num { text-align: right; }
     .muted { opacity: 0.7; }
-    button { padding: 6px 10px; cursor: pointer; }
+    .spacer { flex: 1; }
   </style>
 </head>
 <body>
 
 <h1>Registro de gastos</h1>
 
+<!-- Totales -->
 <div class="row">
   <div id="sum-today" class="box muted">Hoy: —</div>
   <div id="sum-7" class="box muted">7 días: —</div>
@@ -28,10 +33,40 @@
   <div id="sum-year" class="box muted">Año: —</div>
 </div>
 
+<!-- Filtros -->
 <div class="row">
-  <label>Límite:</label>
-  <input id="limit" type="number" value="200" min="1" max="1000">
-  <button id="reload">Recargar</button>
+  <label>Usuario</label>
+  <input id="user" placeholder="pedro (opcional)" style="min-width: 140px;">
+
+  <label>Categoría</label>
+  <select id="category">
+    <option value="">Todas</option>
+    <option value="coffee">coffee</option>
+    <option value="food">food</option>
+    <option value="groceries">groceries</option>
+    <option value="transport">transport</option>
+    <option value="shopping">shopping</option>
+    <option value="health">health</option>
+    <option value="subscriptions">subscriptions</option>
+    <option value="other">other</option>
+  </select>
+
+  <label>Buscar</label>
+  <input id="q" placeholder="starbucks, wamd, lulu..." style="min-width: 220px;">
+
+  <label>Desde</label>
+  <input id="date_from" type="date">
+
+  <label>Hasta</label>
+  <input id="date_to" type="date">
+
+  <label>Límite</label>
+  <input id="limit" type="number" value="200" min="1" max="1000" style="width: 90px;">
+
+  <button id="apply">Aplicar</button>
+  <button id="clear">Limpiar</button>
+
+  <span class="spacer"></span>
   <span id="status" class="muted">—</span>
 </div>
 
@@ -50,11 +85,31 @@
 </table>
 
 <script>
+function buildParams() {
+  const user = document.getElementById("user").value.trim();
+  const category = document.getElementById("category").value;
+  const q = document.getElementById("q").value.trim();
+  const dateFrom = document.getElementById("date_from").value;
+  const dateTo = document.getElementById("date_to").value;
+  const limit = document.getElementById("limit").value || 200;
+
+  const params = new URLSearchParams();
+  params.set("limit", limit);
+  if (user) params.set("user_id", user);
+  if (category) params.set("category", category);
+  if (q) params.set("q", q);
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+
+  return params;
+}
+
 async function loadSummary() {
   try {
+    // Si quieres summary por usuario en el futuro: añadir user_id aquí
     const res = await fetch("/summary", { cache: "no-store" });
+    if (!res.ok) return;
     const s = await res.json();
-
     document.getElementById("sum-today").textContent = `Hoy: ${s.today_total}`;
     document.getElementById("sum-7").textContent = `7 días: ${s.last7_total}`;
     document.getElementById("sum-month").textContent = `Mes: ${s.month_total}`;
@@ -67,20 +122,22 @@ async function loadSummary() {
 async function loadExpenses() {
   const tbody = document.getElementById("expenses-body");
   const status = document.getElementById("status");
-  const limit = document.getElementById("limit").value || 200;
-
   tbody.innerHTML = "";
   status.textContent = "Cargando…";
 
   try {
-    const res = await fetch(`/expenses?limit=${limit}`, { cache: "no-store" });
+    const params = buildParams();
+    const res = await fetch(`/expenses?${params.toString()}`, { cache: "no-store" });
+    if (!res.ok) {
+      status.textContent = `Error HTTP ${res.status}`;
+      return;
+    }
     const data = await res.json();
     const expenses = data.expenses || [];
-
     status.textContent = `Registros: ${expenses.length}`;
 
     if (expenses.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay gastos</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay resultados</td></tr>`;
       return;
     }
 
@@ -102,8 +159,21 @@ async function loadExpenses() {
   }
 }
 
-document.getElementById("reload").addEventListener("click", () => {
-  loadSummary();
+function clearFilters() {
+  document.getElementById("user").value = "";
+  document.getElementById("category").value = "";
+  document.getElementById("q").value = "";
+  document.getElementById("date_from").value = "";
+  document.getElementById("date_to").value = "";
+  document.getElementById("limit").value = "200";
+}
+
+document.getElementById("apply").addEventListener("click", () => {
+  loadExpenses();
+});
+
+document.getElementById("clear").addEventListener("click", () => {
+  clearFilters();
   loadExpenses();
 });
 
@@ -113,4 +183,3 @@ loadExpenses();
 
 </body>
 </html>
-
