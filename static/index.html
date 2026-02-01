@@ -6,98 +6,111 @@
   <title>Registro de gastos</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
-    h1 { margin: 0 0 12px; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-    input { padding: 8px 10px; }
-    button { padding: 8px 12px; cursor: pointer; }
+    h1 { margin-bottom: 12px; }
+    .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .box { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-    th { background: #f6f6f6; text-align: left; }
+    th { background: #f2f2f2; text-align: left; }
     td.num { text-align: right; }
     .muted { opacity: 0.7; }
-    .error { color: #b00020; }
+    button { padding: 6px 10px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h1>Registro de gastos</h1>
 
-  <div class="row">
-    <label class="muted">Límite:</label>
-    <input id="limit" type="number" value="200" min="1" max="1000" />
-    <button id="reload">Recargar</button>
-    <span id="status" class="muted">—</span>
-  </div>
+<h1>Registro de gastos</h1>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Usuario</th>
-        <th>Comercio</th>
-        <th>Categoría</th>
-        <th>Importe</th>
-        <th>Moneda</th>
-      </tr>
-    </thead>
-    <tbody id="expenses-body"></tbody>
-  </table>
+<div class="row">
+  <div id="sum-today" class="box muted">Hoy: —</div>
+  <div id="sum-7" class="box muted">7 días: —</div>
+  <div id="sum-month" class="box muted">Mes: —</div>
+  <div id="sum-year" class="box muted">Año: —</div>
+</div>
 
-  <script>
-    async function loadExpenses() {
-      const statusEl = document.getElementById("status");
-      const tbody = document.getElementById("expenses-body");
-      const limit = document.getElementById("limit").value || 200;
+<div class="row">
+  <label>Límite:</label>
+  <input id="limit" type="number" value="200" min="1" max="1000">
+  <button id="reload">Recargar</button>
+  <span id="status" class="muted">—</span>
+</div>
 
-      statusEl.textContent = "Cargando…";
-      tbody.innerHTML = "";
+<table>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Usuario</th>
+      <th>Comercio</th>
+      <th>Categoría</th>
+      <th>Importe</th>
+      <th>Moneda</th>
+    </tr>
+  </thead>
+  <tbody id="expenses-body"></tbody>
+</table>
 
-      try {
-        const url = `/expenses?limit=${encodeURIComponent(limit)}`;
-        const res = await fetch(url, { cache: "no-store" });
+<script>
+async function loadSummary() {
+  try {
+    const res = await fetch("/summary", { cache: "no-store" });
+    const s = await res.json();
 
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`HTTP ${res.status}: ${txt}`);
-        }
+    document.getElementById("sum-today").textContent = `Hoy: ${s.today_total}`;
+    document.getElementById("sum-7").textContent = `7 días: ${s.last7_total}`;
+    document.getElementById("sum-month").textContent = `Mes: ${s.month_total}`;
+    document.getElementById("sum-year").textContent = `Año: ${s.year_total}`;
+  } catch (e) {
+    console.error(e);
+  }
+}
 
-        const data = await res.json();
-        const expenses = Array.isArray(data.expenses) ? data.expenses : [];
+async function loadExpenses() {
+  const tbody = document.getElementById("expenses-body");
+  const status = document.getElementById("status");
+  const limit = document.getElementById("limit").value || 200;
 
-        statusEl.textContent = `Registros: ${expenses.length}`;
+  tbody.innerHTML = "";
+  status.textContent = "Cargando…";
 
-        if (expenses.length === 0) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td colspan="6" class="muted" style="text-align:center;">No hay gastos aún</td>`;
-          tbody.appendChild(tr);
-          return;
-        }
+  try {
+    const res = await fetch(`/expenses?limit=${limit}`, { cache: "no-store" });
+    const data = await res.json();
+    const expenses = data.expenses || [];
 
-        for (const e of expenses) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${e.created_at ?? ""}</td>
-            <td>${e.user_id ?? ""}</td>
-            <td>${e.merchant_clean ?? ""}</td>
-            <td>${e.category ?? ""}</td>
-            <td class="num">${e.amount ?? ""}</td>
-            <td>${e.currency ?? ""}</td>
-          `;
-          tbody.appendChild(tr);
-        }
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = "Error cargando gastos (F12 → Console)";
-        statusEl.classList.remove("muted");
-        statusEl.classList.add("error");
+    status.textContent = `Registros: ${expenses.length}`;
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="6" class="error">${String(err)}</td>`;
-        tbody.appendChild(tr);
-      }
+    if (expenses.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay gastos</td></tr>`;
+      return;
     }
 
-    document.getElementById("reload").addEventListener("click", loadExpenses);
-    loadExpenses();
-  </script>
+    for (const e of expenses) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${e.created_at || ""}</td>
+        <td>${e.user_id || ""}</td>
+        <td>${e.merchant_clean || ""}</td>
+        <td>${e.category || ""}</td>
+        <td class="num">${e.amount ?? ""}</td>
+        <td>${e.currency || ""}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch (e) {
+    console.error(e);
+    status.textContent = "Error cargando gastos";
+  }
+}
+
+document.getElementById("reload").addEventListener("click", () => {
+  loadSummary();
+  loadExpenses();
+});
+
+loadSummary();
+loadExpenses();
+</script>
+
 </body>
 </html>
+
