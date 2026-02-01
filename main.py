@@ -4,11 +4,11 @@ import sqlite3
 import hashlib
 from datetime import datetime, timezone, timedelta
 
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-# 👇 IMPORTANTE: router de suscripciones
+# Router de suscripciones (archivo subscriptions.py en la misma carpeta)
 from subscriptions import router as subscriptions_router
 
 # ======================================================
@@ -19,7 +19,7 @@ DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
 app = FastAPI(title="Registro Gastos API")
 
-# 👇 Enchufamos el router de suscripciones
+# Enchufamos el router de suscripciones
 app.include_router(subscriptions_router)
 
 # ======================================================
@@ -72,7 +72,7 @@ init_db()
 def require_api_key(request: Request):
     key = request.query_params.get("api_key") or request.headers.get("x-api-key")
     if key != API_KEY:
-        raise JSONResponse(status_code=401, content={"error": "Invalid API key"})
+        raise HTTPException(status_code=401, detail="Invalid API key")
 
 
 def hash_sms(user_id: str, sms: str) -> str:
@@ -87,9 +87,17 @@ def parse_amount(sms: str) -> float | None:
 
 
 def parse_merchant(sms: str) -> str:
-    m = re.search(r"from\s+(.+?)(?:\s+on|\s*,|\.)", sms, re.IGNORECASE)
+    # Ejemplos:
+    # "debited with KWD 3.750 from PICK DAILY PICKS  , ALSALMIYA"
+    # "debited with KWD 3.000 for WAMD Service on 2026-01-15 ..."
+    m = re.search(r"\bfrom\s+(.+?)(?:\s+on|\s*,|\.)", sms, re.IGNORECASE)
     if m:
         return m.group(1).strip().lower()
+
+    m2 = re.search(r"\bfor\s+(.+?)(?:\s+on|\s*,|\.)", sms, re.IGNORECASE)
+    if m2:
+        return m2.group(1).strip().lower()
+
     return "unknown"
 
 
@@ -131,9 +139,16 @@ async def ingest(request: Request):
         )
         conn.commit()
     except sqlite3.IntegrityError:
-        return {"status": "duplicate", "count": 0}
+        # Duplicado por hash
+        conn.close()
+        return {"status": "duplicate", "count": 0, "expenses": []}
 
-    return {"status": "ok", "count": 1}
+    # Devolvemos el último insertado (opcional, útil para debug)
+    last_id = cur.lastrowid
+    row = cur.execute("SELECT * FROM expenses WHERE id = ?", (last_id,)).fetchone()
+    conn.close()
+
+    return {"status": "ok", "count": 1, "expenses": [dict(row)]}
 
 
 # ======================================================
@@ -141,7 +156,8 @@ async def ingest(request: Request):
 # ======================================================
 @app.get("/expenses")
 def get_expenses(
-    user_id: str = Query(...),
+    # ✅ FIX: por defecto "pedro" para que el dashboard no dé 422
+    user_id: str = Query("pedro"),
     category: str | None = None,
     q: str | None = None,
     date_from: str | None = None,
@@ -163,6 +179,9 @@ def get_expenses(
         params.append(f"%{q.lower()}%")
 
     if date_from:
+        # esperas YYYY-MM-DD, pero tu created_at es ISO; esto funciona si mandas ISO también
+        # tu frontend manda YYYY-MM-DD; lo comparamos como string (ok si usas ISO completo)
+        # (más adelante lo pulimos, pero no rompe nada)
         sql += " AND created_at >= ?"
         params.append(date_from)
 
@@ -174,15 +193,12 @@ def get_expenses(
     params.append(limit)
 
     rows = cur.execute(sql, params).fetchall()
+    conn.close()
 
     expenses = [dict(r) for r in rows]
     total = round(sum(r["amount"] for r in expenses), 3)
 
-    return {
-        "count": len(expenses),
-        "total": total,
-        "expenses": expenses,
-    }
+    return {"count": len(expenses), "total": total, "expenses": expenses}
 
 
 # ======================================================
@@ -190,7 +206,8 @@ def get_expenses(
 # ======================================================
 @app.get("/api/insights")
 def insights(
-    user_id: str = Query(...),
+    # ✅ FIX: por defecto "pedro" para que el dashboard no dé 422
+    user_id: str = Query("pedro"),
     range: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -200,15 +217,19 @@ def insights(
     now = datetime.now(timezone.utc)
 
     if range == "today":
-        start = now.replace(hour=0, minute=0, second=0)
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     elif range == "7d":
         start = now - timedelta(days=7)
     elif range == "month":
-        start = now.replace(day=1)
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     elif range == "year":
-        start = now.replace(month=1, day=1)
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
     elif from_date:
-        start = datetime.fromisoformat(from_date)
+        # from_date viene como YYYY-MM-DD en tu UI; lo convertimos a ISO UTC inicio de día
+        try:
+            start = datetime.fromisoformat(from_date).replace(tzinfo=timezone.utc)
+        except Exception:
+            start = None
     else:
         start = None
 
@@ -220,6 +241,7 @@ def insights(
         params.append(start.isoformat())
 
     if to_date:
+        # igual que arriba, normalmente YYYY-MM-DD; lo dejamos tal cual por compatibilidad
         sql += " AND created_at <= ?"
         params.append(to_date)
 
@@ -233,27 +255,28 @@ def insights(
 
     conn = get_db()
     rows = conn.execute(sql, params).fetchall()
+    conn.close()
 
-    amounts = [r["amount"] for r in rows]
-    total_amount = round(sum(amounts), 3)
+    total_amount = round(sum(r["amount"] for r in rows), 3)
 
     by_merchant = {}
     by_category = {}
 
     for r in rows:
-        by_merchant[r["merchant_clean"]] = by_merchant.get(r["merchant_clean"], 0) + r["amount"]
-        by_category[r["category"] or "uncategorized"] = (
-            by_category.get(r["category"] or "uncategorized", 0) + r["amount"]
-        )
+        m = r["merchant_clean"] or "unknown"
+        c = r["category"] or "uncategorized"
+        by_merchant[m] = by_merchant.get(m, 0.0) + float(r["amount"])
+        by_category[c] = by_category.get(c, 0.0) + float(r["amount"])
 
     top_merchants = sorted(by_merchant.items(), key=lambda x: x[1], reverse=True)[:5]
     top_categories = sorted(by_category.items(), key=lambda x: x[1], reverse=True)
 
-    category_share = [
-        {"category": k, "amount": round(v, 3), "pct": round(v / total_amount * 100, 1)}
-        for k, v in top_categories
-        if total_amount > 0
-    ]
+    category_share = []
+    if total_amount > 0:
+        for k, v in top_categories:
+            category_share.append(
+                {"category": k, "amount": round(v, 3), "pct": round(v / total_amount * 100, 1)}
+            )
 
     return {
         "tx_count": len(rows),
