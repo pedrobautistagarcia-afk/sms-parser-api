@@ -30,22 +30,18 @@
     }
     button:hover { background: #f6f6f6; }
 
-    .box {
-      padding: 7px 12px;
-      border: 1px solid #ddd;
-      border-radius: 14px;
-      background: #fafafa;
-      font-size: 14px;
-    }
-
-    /* Chips (totales clicables) */
-    .chip { cursor: pointer; user-select: none; }
+    .chip { user-select: none; }
     .chip.active { border-color: #333; background: #eee; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
     th { background: #f2f2f2; text-align: left; }
     td.num { text-align: right; }
+
+    tfoot td {
+      font-weight: 700;
+      background: #fafafa;
+    }
 
     .muted { opacity: 0.7; }
   </style>
@@ -54,12 +50,12 @@
 
 <h1>Registro de gastos</h1>
 
-<!-- Totales (chips clicables) -->
+<!-- Chips: solo selección (sin números) -->
 <div class="row">
-  <button id="chip-today" type="button" class="box chip muted">Hoy: —</button>
-  <button id="chip-7" type="button" class="box chip muted">7 días: —</button>
-  <button id="chip-month" type="button" class="box chip muted">Mes: —</button>
-  <button id="chip-year" type="button" class="box chip muted">Año: —</button>
+  <button id="chip-today" type="button" class="chip">Hoy</button>
+  <button id="chip-7" type="button" class="chip">7 días</button>
+  <button id="chip-month" type="button" class="chip">Mes</button>
+  <button id="chip-year" type="button" class="chip">Año</button>
 </div>
 
 <!-- Filtros -->
@@ -110,7 +106,17 @@
       <th>Moneda</th>
     </tr>
   </thead>
+
   <tbody id="expenses-body"></tbody>
+
+  <!-- Fila total -->
+  <tfoot>
+    <tr>
+      <td colspan="4">TOTAL (según filtros)</td>
+      <td id="total-amount" class="num">—</td>
+      <td id="total-currency">—</td>
+    </tr>
+  </tfoot>
 </table>
 
 <script>
@@ -183,25 +189,40 @@ function buildParams() {
   return params;
 }
 
-async function loadSummary() {
-  try {
-    const res = await fetch("/summary", { cache: "no-store" });
-    if (!res.ok) return;
-    const s = await res.json();
+function renderTotals(expenses) {
+  // Total por moneda (para no mezclar)
+  const totals = {}; // {KWD: number, EUR: number...}
+  let count = 0;
 
-    // mantenemos texto y valores
-    document.getElementById("chip-today").textContent = `Hoy: ${s.today_total}`;
-    document.getElementById("chip-7").textContent = `7 días: ${s.last7_total}`;
-    document.getElementById("chip-month").textContent = `Mes: ${s.month_total}`;
-    document.getElementById("chip-year").textContent = `Año: ${s.year_total}`;
-
-    // quitamos muted al cargar
-    for (const id of ["chip-today","chip-7","chip-month","chip-year"]) {
-      document.getElementById(id).classList.remove("muted");
-    }
-  } catch (e) {
-    console.error(e);
+  for (const e of expenses) {
+    const amt = (typeof e.amount === "number") ? e.amount : parseFloat(e.amount);
+    const cur = (e.currency || "").toUpperCase().trim();
+    if (!cur || !Number.isFinite(amt)) continue;
+    totals[cur] = (totals[cur] || 0) + amt;
+    count += 1;
   }
+
+  const totalAmountEl = document.getElementById("total-amount");
+  const totalCurrencyEl = document.getElementById("total-currency");
+
+  const entries = Object.entries(totals);
+  if (entries.length === 0) {
+    totalAmountEl.textContent = "0";
+    totalCurrencyEl.textContent = `(${expenses.length} filas)`;
+    return;
+  }
+
+  // Mostrar como: "123.450 | 20.00" y "KWD | EUR" (mismo orden)
+  // (Si quieres, lo convertimos a formato bonito con 3 decimales para KWD)
+  const amounts = entries.map(([c, v]) => {
+    const decimals = (c === "KWD") ? 3 : 2;
+    return Number(v).toFixed(decimals);
+  }).join(" | ");
+
+  const currencies = entries.map(([c]) => c).join(" | ");
+
+  totalAmountEl.textContent = amounts;
+  totalCurrencyEl.textContent = `${currencies}  (${expenses.length} filas)`;
 }
 
 async function loadExpenses() {
@@ -209,6 +230,10 @@ async function loadExpenses() {
   const status = document.getElementById("status");
   tbody.innerHTML = "";
   status.textContent = "Cargando…";
+
+  // Reset total mientras carga
+  document.getElementById("total-amount").textContent = "—";
+  document.getElementById("total-currency").textContent = "—";
 
   try {
     const params = buildParams();
@@ -219,10 +244,12 @@ async function loadExpenses() {
     }
     const data = await res.json();
     const expenses = data.expenses || [];
+
     status.textContent = `Registros: ${expenses.length}`;
 
     if (expenses.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay resultados</td></tr>`;
+      renderTotals([]);
       return;
     }
 
@@ -238,6 +265,10 @@ async function loadExpenses() {
       `;
       tbody.appendChild(tr);
     }
+
+    // Total del rango (en el footer)
+    renderTotals(expenses);
+
   } catch (e) {
     console.error(e);
     status.textContent = "Error cargando gastos";
@@ -256,7 +287,7 @@ function clearFilters() {
 
 // --- listeners ---
 document.getElementById("apply").addEventListener("click", () => {
-  clearActiveChips(); // si aplicas manual, quitamos preset activo
+  clearActiveChips(); // manual -> quitamos preset activo
   loadExpenses();
 });
 
@@ -270,13 +301,12 @@ document.getElementById("chip-7").addEventListener("click", () => applyPreset("c
 document.getElementById("chip-month").addEventListener("click", () => applyPreset("chip-month"));
 document.getElementById("chip-year").addEventListener("click", () => applyPreset("chip-year"));
 
-// Si cambias fechas manualmente, desactivamos chips (para que no “mienta” la UI)
+// Si cambias filtros manualmente, desactivamos chips (para que no “mienta” la UI)
 ["user","category","q","date_from","date_to","limit"].forEach(id => {
   document.getElementById(id).addEventListener("change", clearActiveChips);
 });
 
 // init
-loadSummary();
 loadExpenses();
 </script>
 
