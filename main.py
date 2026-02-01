@@ -3,8 +3,8 @@ import os
 import re
 import sqlite3
 import hashlib
-from datetime import datetime, timezone
-from fastapi import FastAPI, Request
+from datetime import datetime, timezone, timedelta
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -13,8 +13,6 @@ from pydantic import BaseModel, Field
 # CONFIGURACIÓN
 # ======================================================
 API_KEY = os.getenv("API_KEY", "CHANGE_ME")
-
-# DB persistente en Render (Disk montado en /var/data)
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
 app = FastAPI(title="Registro Gastos API")
@@ -68,13 +66,13 @@ init_db()
 
 # ======================================================
 # SEGURIDAD – API KEY
-#   - Web y dashboard públicos
+#   - Web y endpoints de lectura públicos para el dashboard
 #   - Ingest y parse protegidos
 # ======================================================
 PUBLIC_PATHS = {
     "/", "/app", "/health",
     "/docs", "/openapi.json", "/redoc", "/favicon.ico",
-    "/expenses", "/summary"
+    "/expenses", "/summary", "/api/insights",
 }
 PUBLIC_PREFIXES = ("/static",)
 
@@ -234,29 +232,52 @@ async def ingest(data: IngestRequest):
     return {"status": "saved"}
 
 # ======================================================
-# LISTADO DE GASTOS (PÚBLICO PARA DASHBOARD) + FILTROS
+# FILTROS (misma lógica para tabla + insights)
 # ======================================================
 def _iso_start(date_str: str) -> str:
-    # "YYYY-MM-DD" -> inicio del día UTC
     return f"{date_str}T00:00:00+00:00"
 
 def _iso_end(date_str: str) -> str:
-    # "YYYY-MM-DD" -> final del día UTC
     return f"{date_str}T23:59:59+00:00"
 
-@app.get("/expenses")
-def list_expenses(
-    user_id: str | None = None,
-    limit: int = 200,
-    category: str | None = None,
-    q: str | None = None,
-    date_from: str | None = None,  # formato: YYYY-MM-DD
-    date_to: str | None = None,    # formato: YYYY-MM-DD
-):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+def _utc_range_from_preset(preset: str):
+    now = datetime.utcnow().replace(tzinfo=timezone.utc)
 
+    if preset == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1) - timedelta(seconds=1)
+        return start.isoformat(), end.isoformat()
+
+    if preset == "7d":
+        end = now.replace(hour=23, minute=59, second=59, microsecond=0)
+        start = (end - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return start.isoformat(), end.isoformat()
+
+    if preset == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if start.month == 12:
+            next_month = start.replace(year=start.year + 1, month=1)
+        else:
+            next_month = start.replace(month=start.month + 1)
+        end = next_month - timedelta(seconds=1)
+        return start.isoformat(), end.isoformat()
+
+    if preset == "year":
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        next_year = start.replace(year=start.year + 1)
+        end = next_year - timedelta(seconds=1)
+        return start.isoformat(), end.isoformat()
+
+    return None, None
+
+def _build_where_and_params(
+    user_id: str | None,
+    category: str | None,
+    q: str | None,
+    date_from: str | None,  # YYYY-MM-DD
+    date_to: str | None,    # YYYY-MM-DD
+    range_preset: str | None = None,  # today | 7d | month | year
+):
     where = []
     params = []
 
@@ -272,15 +293,48 @@ def list_expenses(
         where.append("(merchant_clean LIKE ? OR sms LIKE ?)")
         params.extend([f"%{q}%", f"%{q}%"])
 
-    if date_from:
-        where.append("created_at >= ?")
-        params.append(_iso_start(date_from))
-
-    if date_to:
-        where.append("created_at <= ?")
-        params.append(_iso_end(date_to))
+    if range_preset:
+        preset_from, preset_to = _utc_range_from_preset(range_preset)
+        if preset_from and preset_to:
+            where.append("created_at >= ?")
+            params.append(preset_from)
+            where.append("created_at <= ?")
+            params.append(preset_to)
+    else:
+        if date_from:
+            where.append("created_at >= ?")
+            params.append(_iso_start(date_from))
+        if date_to:
+            where.append("created_at <= ?")
+            params.append(_iso_end(date_to))
 
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+    return where_sql, params
+
+# ======================================================
+# LISTADO DE GASTOS (PÚBLICO PARA DASHBOARD)
+# ======================================================
+@app.get("/expenses")
+def list_expenses(
+    user_id: str | None = None,
+    limit: int = 200,
+    category: str | None = None,
+    q: str | None = None,
+    date_from: str | None = None,  # YYYY-MM-DD
+    date_to: str | None = None,    # YYYY-MM-DD
+):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    where_sql, params = _build_where_and_params(
+        user_id=user_id,
+        category=category,
+        q=q,
+        date_from=date_from,
+        date_to=date_to,
+        range_preset=None,
+    )
 
     sql = f"""
         SELECT id, user_id, amount, currency, merchant_clean, category, created_at
@@ -297,7 +351,7 @@ def list_expenses(
     return {"count": len(rows), "expenses": rows}
 
 # ======================================================
-# RESUMEN (HOY / 7 DÍAS / MES / AÑO) - PÚBLICO PARA DASHBOARD
+# SUMMARY (por si lo sigues usando)
 # ======================================================
 @app.get("/summary")
 def summary(user_id: str | None = None):
@@ -348,4 +402,98 @@ def summary(user_id: str | None = None):
         "last7_total": last7_total,
         "month_total": month_total,
         "year_total": year_total,
+    }
+
+# ======================================================
+# INSIGHTS DEL RANGO SELECCIONADO (ENDPOINT NUEVO)
+#   GET /api/insights?user_id=pedro&range=today|7d|month|year&from=YYYY-MM-DD&to=YYYY-MM-DD&category=...&q=...
+#
+# Regla de oro: mismos filtros que /expenses.
+# ======================================================
+@app.get("/api/insights")
+def insights(
+    user_id: str | None = None,
+    range: str | None = None,  # today | 7d | month | year
+    from_: str | None = Query(default=None, alias="from"),  # YYYY-MM-DD
+    to: str | None = None,  # YYYY-MM-DD
+    category: str | None = None,
+    q: str | None = None,
+):
+    range_preset = range if range in ("today", "7d", "month", "year") else None
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    where_sql, params = _build_where_and_params(
+        user_id=user_id,
+        category=category,
+        q=q,
+        date_from=from_,
+        date_to=to,
+        range_preset=range_preset,
+    )
+
+    # total_amount + tx_count
+    cur.execute(
+        f"""
+        SELECT
+          COALESCE(SUM(amount), 0) AS total_amount,
+          COUNT(*) AS tx_count
+        FROM expenses
+        {where_sql}
+        """,
+        tuple(params),
+    )
+    row = cur.fetchone()
+    total_amount = float(row[0] or 0)
+    tx_count = int(row[1] or 0)
+
+    # top_merchants (Top 5 por gasto total)
+    cur.execute(
+        f"""
+        SELECT
+          COALESCE(NULLIF(TRIM(merchant_clean), ''), '(unknown)') AS merchant,
+          COALESCE(SUM(amount), 0) AS total
+        FROM expenses
+        {where_sql}
+        GROUP BY COALESCE(NULLIF(TRIM(merchant_clean), ''), '(unknown)')
+        ORDER BY total DESC
+        LIMIT 5
+        """,
+        tuple(params),
+    )
+    top_merchants = [{"merchant": r[0], "total": float(r[1] or 0)} for r in cur.fetchall()]
+
+    # top_categories + category_share
+    cur.execute(
+        f"""
+        SELECT
+          COALESCE(NULLIF(TRIM(category), ''), 'other') AS category,
+          COALESCE(SUM(amount), 0) AS total
+        FROM expenses
+        {where_sql}
+        GROUP BY COALESCE(NULLIF(TRIM(category), ''), 'other')
+        ORDER BY total DESC
+        """,
+        tuple(params),
+    )
+    cat_rows = [(r[0], float(r[1] or 0)) for r in cur.fetchall()]
+    top_categories = [{"category": c, "total": t} for (c, t) in cat_rows]
+
+    if total_amount > 0:
+        category_share = [
+            {"category": c, "share": (t / total_amount) * 100.0, "total": t}
+            for (c, t) in cat_rows
+        ]
+    else:
+        category_share = [{"category": c, "share": 0.0, "total": t} for (c, t) in cat_rows]
+
+    conn.close()
+
+    return {
+        "total_amount": total_amount,
+        "tx_count": tx_count,
+        "top_merchants": top_merchants,
+        "top_categories": top_categories,
+        "category_share": category_share,
     }
