@@ -85,7 +85,7 @@ async function load(){
   const limit = document.getElementById("limit").value.trim() || "50";
   const cat = document.getElementById("cat").value.trim();
 
-  const url = `/expenses?user_id=${encodeURIComponent(user)}&limit=${encodeURIComponent(limit)}&api_key=${encodeURIComponent(apiKey)}`;
+  const url = `/expenses?limit=${encodeURIComponent(limit)}`;
   const res = await fetch(url);
   const data = await res.json();
 
