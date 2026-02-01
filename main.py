@@ -234,42 +234,70 @@ async def ingest(data: IngestRequest):
     return {"status": "saved"}
 
 # ======================================================
-# LISTADO DE GASTOS (PÚBLICO PARA DASHBOARD)
+# LISTADO DE GASTOS (PÚBLICO PARA DASHBOARD) + FILTROS
 # ======================================================
+def _iso_start(date_str: str) -> str:
+    # "YYYY-MM-DD" -> inicio del día UTC
+    return f"{date_str}T00:00:00+00:00"
+
+def _iso_end(date_str: str) -> str:
+    # "YYYY-MM-DD" -> final del día UTC
+    return f"{date_str}T23:59:59+00:00"
+
 @app.get("/expenses")
-def list_expenses(user_id: str | None = None, limit: int = 200):
+def list_expenses(
+    user_id: str | None = None,
+    limit: int = 200,
+    category: str | None = None,
+    q: str | None = None,
+    date_from: str | None = None,  # formato: YYYY-MM-DD
+    date_to: str | None = None,    # formato: YYYY-MM-DD
+):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    if user_id:
-        cur.execute(
-            """
-            SELECT id, user_id, amount, currency, merchant_clean, category, created_at
-            FROM expenses
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-            """,
-            (user_id, limit),
-        )
-    else:
-        cur.execute(
-            """
-            SELECT id, user_id, amount, currency, merchant_clean, category, created_at
-            FROM expenses
-            ORDER BY created_at DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
+    where = []
+    params = []
 
+    if user_id:
+        where.append("user_id = ?")
+        params.append(user_id)
+
+    if category:
+        where.append("category = ?")
+        params.append(category)
+
+    if q:
+        where.append("(merchant_clean LIKE ? OR sms LIKE ?)")
+        params.extend([f"%{q}%", f"%{q}%"])
+
+    if date_from:
+        where.append("created_at >= ?")
+        params.append(_iso_start(date_from))
+
+    if date_to:
+        where.append("created_at <= ?")
+        params.append(_iso_end(date_to))
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+
+    sql = f"""
+        SELECT id, user_id, amount, currency, merchant_clean, category, created_at
+        FROM expenses
+        {where_sql}
+        ORDER BY created_at DESC
+        LIMIT ?
+    """
+    params.append(limit)
+
+    cur.execute(sql, tuple(params))
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return {"count": len(rows), "expenses": rows}
 
 # ======================================================
-# RESUMEN (HOY / 7 DÍAS / MES / AÑO)
+# RESUMEN (HOY / 7 DÍAS / MES / AÑO) - PÚBLICO PARA DASHBOARD
 # ======================================================
 @app.get("/summary")
 def summary(user_id: str | None = None):
