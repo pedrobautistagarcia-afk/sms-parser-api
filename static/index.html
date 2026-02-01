@@ -1,314 +1,64 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Registro de gastos</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registro Gastos</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
-    h1 { margin-bottom: 12px; }
-
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-    .spacer { flex: 1; }
-
-    label { font-size: 13px; opacity: 0.8; }
-
-    input, select {
-      padding: 6px 8px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      outline: none;
-    }
-    input:focus, select:focus { border-color: #bbb; }
-
-    button {
-      padding: 7px 12px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      background: #fff;
-      cursor: pointer;
-    }
-    button:hover { background: #f6f6f6; }
-
-    .chip { user-select: none; }
-    .chip.active { border-color: #333; background: #eee; }
-
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-    th { background: #f2f2f2; text-align: left; }
-    td.num { text-align: right; }
-
-    tfoot td {
-      font-weight: 700;
-      background: #fafafa;
-    }
-
-    .muted { opacity: 0.7; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; background:#fafafa; color:#111; }
+    .wrap { max-width:1100px; margin:24px auto; padding:0 16px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .card { background:#fff; border:1px solid #e6e6e6; border-radius:14px; padding:12px; }
+    .btn { padding:10px 12px; border:1px solid #ddd; border-radius:12px; background:#fff; cursor:pointer; }
+    .btn.active { border-color:#111; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:10px; border-bottom:1px solid #eee; font-size:14px; }
+    th { background:#f7f7f7; }
+    .muted { opacity:.7; }
   </style>
 </head>
+
 <body>
+  <div class="wrap">
+    <h2>Registro Gastos</h2>
+    <p class="muted">Dashboard con insights automáticos</p>
 
-<h1>Registro de gastos</h1>
+    <div class="row" style="margin-bottom:12px;">
+      <button class="btn active">Today</button>
+      <button class="btn">7d</button>
+      <button class="btn">Month</button>
+      <button class="btn">Year</button>
+    </div>
 
-<!-- Chips: solo selección (sin números) -->
-<div class="row">
-  <button id="chip-today" type="button" class="chip">Hoy</button>
-  <button id="chip-7" type="button" class="chip">7 días</button>
-  <button id="chip-month" type="button" class="chip">Mes</button>
-  <button id="chip-year" type="button" class="chip">Año</button>
-</div>
+    <div class="card" style="margin-bottom:12px;">
+      <b>Insights</b>
+      <p class="muted">Aquí irán KPIs, top merchants y donut</p>
+      <canvas id="catDonut" width="300" height="300"></canvas>
+    </div>
 
-<!-- Filtros -->
-<div class="row">
-  <label>Usuario</label>
-  <input id="user" placeholder="pedro (opcional)" style="min-width: 140px;">
-
-  <label>Categoría</label>
-  <select id="category">
-    <option value="">Todas</option>
-    <option value="coffee">coffee</option>
-    <option value="food">food</option>
-    <option value="groceries">groceries</option>
-    <option value="transport">transport</option>
-    <option value="shopping">shopping</option>
-    <option value="health">health</option>
-    <option value="subscriptions">subscriptions</option>
-    <option value="other">other</option>
-  </select>
-
-  <label>Buscar</label>
-  <input id="q" placeholder="starbucks, wamd, lulu..." style="min-width: 220px;">
-
-  <label>Desde</label>
-  <input id="date_from" type="date">
-
-  <label>Hasta</label>
-  <input id="date_to" type="date">
-
-  <label>Límite</label>
-  <input id="limit" type="number" value="200" min="1" max="1000" style="width: 90px;">
-
-  <button id="apply" type="button">Aplicar</button>
-  <button id="clear" type="button">Limpiar</button>
-
-  <span class="spacer"></span>
-  <span id="status" class="muted">—</span>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th>Fecha</th>
-      <th>Usuario</th>
-      <th>Comercio</th>
-      <th>Categoría</th>
-      <th>Importe</th>
-      <th>Moneda</th>
-    </tr>
-  </thead>
-
-  <tbody id="expenses-body"></tbody>
-
-  <!-- Fila total -->
-  <tfoot>
-    <tr>
-      <td colspan="4">TOTAL (según filtros)</td>
-      <td id="total-amount" class="num">—</td>
-      <td id="total-currency">—</td>
-    </tr>
-  </tfoot>
-</table>
-
-<script>
-function pad2(n) { return String(n).padStart(2, "0"); }
-function toDateInput(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
-
-function setRange(fromDate, toDate) {
-  document.getElementById("date_from").value = toDateInput(fromDate);
-  document.getElementById("date_to").value = toDateInput(toDate);
-}
-
-function clearActiveChips() {
-  for (const id of ["chip-today","chip-7","chip-month","chip-year"]) {
-    document.getElementById(id).classList.remove("active");
-  }
-}
-
-function applyPreset(presetId) {
-  const now = new Date();
-
-  let from, to;
-
-  if (presetId === "chip-today") {
-    from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  } else if (presetId === "chip-7") {
-    to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    from = new Date(to);
-    from.setDate(from.getDate() - 6); // 7 días incluyendo hoy
-  } else if (presetId === "chip-month") {
-    from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  } else if (presetId === "chip-year") {
-    from = new Date(now.getFullYear(), 0, 1);
-    to = new Date(now.getFullYear(), 11, 31);
-  }
-
-  const btn = document.getElementById(presetId);
-  const wasActive = btn.classList.contains("active");
-
-  clearActiveChips();
-
-  if (wasActive) {
-    document.getElementById("date_from").value = "";
-    document.getElementById("date_to").value = "";
-  } else {
-    btn.classList.add("active");
-    setRange(from, to);
-  }
-
-  loadExpenses();
-}
-
-function buildParams() {
-  const user = document.getElementById("user").value.trim();
-  const category = document.getElementById("category").value;
-  const q = document.getElementById("q").value.trim();
-  const dateFrom = document.getElementById("date_from").value;
-  const dateTo = document.getElementById("date_to").value;
-  const limit = document.getElementById("limit").value || 200;
-
-  const params = new URLSearchParams();
-  params.set("limit", limit);
-  if (user) params.set("user_id", user);
-  if (category) params.set("category", category);
-  if (q) params.set("q", q);
-  if (dateFrom) params.set("date_from", dateFrom);
-  if (dateTo) params.set("date_to", dateTo);
-
-  return params;
-}
-
-function renderTotals(expenses) {
-  // Total por moneda (para no mezclar)
-  const totals = {}; // {KWD: number, EUR: number...}
-  let count = 0;
-
-  for (const e of expenses) {
-    const amt = (typeof e.amount === "number") ? e.amount : parseFloat(e.amount);
-    const cur = (e.currency || "").toUpperCase().trim();
-    if (!cur || !Number.isFinite(amt)) continue;
-    totals[cur] = (totals[cur] || 0) + amt;
-    count += 1;
-  }
-
-  const totalAmountEl = document.getElementById("total-amount");
-  const totalCurrencyEl = document.getElementById("total-currency");
-
-  const entries = Object.entries(totals);
-  if (entries.length === 0) {
-    totalAmountEl.textContent = "0";
-    totalCurrencyEl.textContent = `(${expenses.length} filas)`;
-    return;
-  }
-
-  // Mostrar como: "123.450 | 20.00" y "KWD | EUR" (mismo orden)
-  // (Si quieres, lo convertimos a formato bonito con 3 decimales para KWD)
-  const amounts = entries.map(([c, v]) => {
-    const decimals = (c === "KWD") ? 3 : 2;
-    return Number(v).toFixed(decimals);
-  }).join(" | ");
-
-  const currencies = entries.map(([c]) => c).join(" | ");
-
-  totalAmountEl.textContent = amounts;
-  totalCurrencyEl.textContent = `${currencies}  (${expenses.length} filas)`;
-}
-
-async function loadExpenses() {
-  const tbody = document.getElementById("expenses-body");
-  const status = document.getElementById("status");
-  tbody.innerHTML = "";
-  status.textContent = "Cargando…";
-
-  // Reset total mientras carga
-  document.getElementById("total-amount").textContent = "—";
-  document.getElementById("total-currency").textContent = "—";
-
-  try {
-    const params = buildParams();
-    const res = await fetch(`/expenses?${params.toString()}`, { cache: "no-store" });
-    if (!res.ok) {
-      status.textContent = `Error HTTP ${res.status}`;
-      return;
-    }
-    const data = await res.json();
-    const expenses = data.expenses || [];
-
-    status.textContent = `Registros: ${expenses.length}`;
-
-    if (expenses.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay resultados</td></tr>`;
-      renderTotals([]);
-      return;
-    }
-
-    for (const e of expenses) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${e.created_at || ""}</td>
-        <td>${e.user_id || ""}</td>
-        <td>${e.merchant_clean || ""}</td>
-        <td>${e.category || ""}</td>
-        <td class="num">${e.amount ?? ""}</td>
-        <td>${e.currency || ""}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    // Total del rango (en el footer)
-    renderTotals(expenses);
-
-  } catch (e) {
-    console.error(e);
-    status.textContent = "Error cargando gastos";
-  }
-}
-
-function clearFilters() {
-  document.getElementById("user").value = "";
-  document.getElementById("category").value = "";
-  document.getElementById("q").value = "";
-  document.getElementById("date_from").value = "";
-  document.getElementById("date_to").value = "";
-  document.getElementById("limit").value = "200";
-  clearActiveChips();
-}
-
-// --- listeners ---
-document.getElementById("apply").addEventListener("click", () => {
-  clearActiveChips(); // manual -> quitamos preset activo
-  loadExpenses();
-});
-
-document.getElementById("clear").addEventListener("click", () => {
-  clearFilters();
-  loadExpenses();
-});
-
-document.getElementById("chip-today").addEventListener("click", () => applyPreset("chip-today"));
-document.getElementById("chip-7").addEventListener("click", () => applyPreset("chip-7"));
-document.getElementById("chip-month").addEventListener("click", () => applyPreset("chip-month"));
-document.getElementById("chip-year").addEventListener("click", () => applyPreset("chip-year"));
-
-// Si cambias filtros manualmente, desactivamos chips (para que no “mienta” la UI)
-["user","category","q","date_from","date_to","limit"].forEach(id => {
-  document.getElementById(id).addEventListener("change", clearActiveChips);
-});
-
-// init
-loadExpenses();
-</script>
-
+    <div class="card">
+      <b>Expenses</b>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Merchant</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="5" class="muted">Tabla cargará aquí</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </body>
 </html>
