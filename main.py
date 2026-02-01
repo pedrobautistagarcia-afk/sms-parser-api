@@ -5,7 +5,7 @@ import sqlite3
 import hashlib
 from datetime import datetime, timezone
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,11 @@ from pydantic import BaseModel, Field
 # CONFIGURACIÓN
 # ======================================================
 API_KEY = os.getenv("API_KEY", "CHANGE_ME")
-DB_PATH = os.getenv("DB_PATH", "gastos.db")
+
+# IMPORTANTE:
+# - En Render con Disk montado en /var/data, esta ruta hace que SQLite sea persistente.
+# - Si quieres cambiarla, usa la env var DB_PATH.
+DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
 app = FastAPI(title="Registro Gastos API")
 
@@ -35,7 +39,10 @@ class IngestRequest(BaseModel):
 # BASE DE DATOS
 # ======================================================
 def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True) if "/" in DB_PATH else None
+    # Crear carpeta si hace falta (p.ej. /var/data)
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -64,10 +71,18 @@ init_db()
 
 # ======================================================
 # SEGURIDAD – API KEY (HEADER O QUERY)
+#   - Hacemos pública la web /app y los estáticos /static/*
+#   - Protegemos los endpoints sensibles (/ingest, /parse, /expenses, etc.)
 # ======================================================
+PUBLIC_PATHS = {"/", "/app", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico"}
+PUBLIC_PREFIXES = ("/static",)
+
 @app.middleware("http")
 async def api_key_guard(request: Request, call_next):
-    if request.url.path in ("/", "/health", "/docs", "/openapi.json", "/redoc"):
+    path = request.url.path
+
+    # Permitir web + assets sin API key
+    if path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES):
         return await call_next(request)
 
     header_key = request.headers.get("x-api-key")
@@ -83,7 +98,8 @@ async def api_key_guard(request: Request, call_next):
 # ======================================================
 @app.get("/")
 def root():
-    return {"ok": True}
+    # Para que abrir la URL base te lleve directamente al dashboard
+    return RedirectResponse(url="/app")
 
 @app.get("/health")
 def health():
@@ -91,6 +107,7 @@ def health():
 
 @app.get("/app")
 def app_page():
+    # Página del dashboard
     return FileResponse("static/index.html", media_type="text/html")
 
 # ======================================================
@@ -159,7 +176,7 @@ def categorize(merchant_raw: str | None, sms: str | None = None) -> str:
     return "other"
 
 # ======================================================
-# PARSE (SIN GUARDAR)
+# PARSE (SIN GUARDAR) - PROTEGIDO
 # ======================================================
 @app.post("/parse")
 async def parse_only(data: IngestRequest):
@@ -174,7 +191,7 @@ async def parse_only(data: IngestRequest):
     }
 
 # ======================================================
-# INGEST (GUARDAR)
+# INGEST (GUARDAR) - PROTEGIDO
 # ======================================================
 @app.post("/ingest")
 async def ingest(data: IngestRequest):
@@ -221,10 +238,10 @@ async def ingest(data: IngestRequest):
     return {"status": "saved"}
 
 # ======================================================
-# LISTADO
+# LISTADO - PROTEGIDO
 # ======================================================
 @app.get("/expenses")
-def list_expenses(user_id: str | None = None, limit: int = 100):
+def list_expenses(user_id: str | None = None, limit: int = 200):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
