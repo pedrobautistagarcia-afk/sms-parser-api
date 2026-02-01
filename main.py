@@ -74,7 +74,7 @@ init_db()
 #   - Hacemos pública la web /app y los estáticos /static/*
 #   - Protegemos los endpoints sensibles (/ingest, /parse, /expenses, etc.)
 # ======================================================
-PUBLIC_PATHS = {"/", "/app", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico"}
+PUBLIC_PATHS = {"/", "/app", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico", "/expenses"}
 PUBLIC_PREFIXES = ("/static",)
 
 @app.middleware("http")
