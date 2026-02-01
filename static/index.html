@@ -6,22 +6,18 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background: #f7f7f7; }
     h1 { margin-bottom: 10px; }
-
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .filters { margin-bottom: 12px; }
     .filters button { margin-right: 6px; padding: 6px 10px; cursor: pointer; }
     .filters input, .filters select { padding: 6px 8px; }
-
     .insights { display: flex; gap: 20px; margin: 12px 0 18px; flex-wrap: wrap; }
     .box { background: white; padding: 12px; border: 1px solid #ddd; flex: 1; min-width: 260px; }
     .box h3 { margin: 0 0 8px; font-size: 16px; }
     .muted { color: #777; font-size: 13px; }
-
     table { border-collapse: collapse; width: 100%; background: white; }
     th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
     th { background: #efefef; text-align: left; }
     tfoot td { font-weight: bold; background: #fafafa; }
-
     .pill { display: inline-block; padding: 2px 6px; border: 1px solid #ddd; border-radius: 10px; font-size: 12px; background: #fff; }
   </style>
 </head>
@@ -39,12 +35,31 @@
   </div>
 
   <div class="row">
-    <input id="q" type="text" placeholder="Buscar comercio (q)..." style="min-width:220px;" />
-    <input id="category" type="text" placeholder="Categoría (opcional)..." style="min-width:180px;" />
+    <input id="q" type="text" placeholder="Buscar comercio..." />
+
+    <select id="category">
+      <option value="">Todas las categorías</option>
+      <option value="apartment rental">Apartment rental</option>
+      <option value="coffee">Coffee</option>
+      <option value="food">Food</option>
+      <option value="groceries">Groceries</option>
+      <option value="transport">Transport</option>
+      <option value="uncategorized">Uncategorized</option>
+      <option value="other">Other</option>
+    </select>
+
     <label class="muted">Desde</label>
     <input id="date_from" type="date" />
     <label class="muted">Hasta</label>
     <input id="date_to" type="date" />
+
+    <label class="muted">Orden</label>
+    <select id="sort">
+      <option value="date_desc" selected>Fecha (nuevo → viejo)</option>
+      <option value="date_asc">Fecha (viejo → nuevo)</option>
+      <option value="amount_desc">Importe (alto → bajo)</option>
+      <option value="amount_asc">Importe (bajo → alto)</option>
+    </select>
 
     <label class="muted">Límite</label>
     <select id="limit">
@@ -69,7 +84,6 @@
   <div class="box">
     <h3>Top categorías</h3>
     <div id="topCategories">–</div>
-    <div class="muted" id="insightsNote"></div>
   </div>
 </div>
 
@@ -85,166 +99,74 @@
   <tbody id="expensesBody"></tbody>
   <tfoot>
     <tr>
-      <td colspan="3">TOTAL (lo que se ve)</td>
+      <td colspan="3">TOTAL</td>
       <td id="tableTotal">–</td>
     </tr>
   </tfoot>
 </table>
 
 <script>
-  // Estado
-  let currentRange = null; // today | 7d | month | year | null (custom)
+let currentRange = null;
 
-  function isoDate(d) {
-    // YYYY-MM-DD
-    const pad = (n) => String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  }
+function iso(d){return d.toISOString().slice(0,10)}
 
-  function setActiveRangeLabel() {
-    const el = document.getElementById("activeRange");
-    el.textContent = `rango: ${currentRange || "custom"}`;
-  }
-
-  function setQuickRange(range) {
-    currentRange = range;
-    setActiveRangeLabel();
-
-    const now = new Date();
-    let from = null;
-    let to = null;
-
-    if (range === "today") {
-      from = isoDate(now);
-      to = isoDate(now);
-    } else if (range === "7d") {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 7);
-      from = isoDate(d);
-      to = isoDate(now);
-    } else if (range === "month") {
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      from = isoDate(d);
-      to = isoDate(now);
-    } else if (range === "year") {
-      const d = new Date(now.getFullYear(), 0, 1);
-      from = isoDate(d);
-      to = isoDate(now);
-    }
-
-    // Escribimos fechas para que el usuario vea el filtro activo
-    document.getElementById("date_from").value = from;
-    document.getElementById("date_to").value = to;
-
-    loadAll();
-  }
-
-  function applyFilters() {
-    // si el usuario toca filtros manuales => custom
-    currentRange = null;
-    setActiveRangeLabel();
-    loadAll();
-  }
-
-  function resetFilters() {
-    currentRange = null;
-    setActiveRangeLabel();
-    document.getElementById("q").value = "";
-    document.getElementById("category").value = "";
-    document.getElementById("date_from").value = "";
-    document.getElementById("date_to").value = "";
-    document.getElementById("limit").value = "200";
-    loadAll();
-  }
-
-  function buildCommonParams() {
-    const q = document.getElementById("q").value.trim();
-    const category = document.getElementById("category").value.trim();
-    const date_from = document.getElementById("date_from").value;
-    const date_to = document.getElementById("date_to").value;
-    const limit = document.getElementById("limit").value;
-
-    return { q, category, date_from, date_to, limit };
-  }
-
-  async function loadAll() {
-    const { q, category, date_from, date_to, limit } = buildCommonParams();
-    await loadInsights({ q, category, date_from, date_to });
-    await loadExpenses({ q, category, date_from, date_to, limit });
-  }
-
-  async function loadInsights({ q, category, date_from, date_to }) {
-    const params = new URLSearchParams();
-
-    // Backend: /api/insights acepta range o from_date/to_date
-    if (currentRange) {
-      params.set("range", currentRange);
-    } else {
-      if (date_from) params.set("from_date", date_from);
-      if (date_to) params.set("to_date", date_to);
-    }
-
-    if (q) params.set("q", q);
-    if (category) params.set("category", category);
-
-    const res = await fetch(`/api/insights?${params.toString()}`);
-    const data = await res.json();
-
-    document.getElementById("totalAmount").innerText =
-      (data.total_amount ?? 0).toFixed(3) + " KWD";
-
-    document.getElementById("txCount").innerText =
-      (data.tx_count ?? 0) + " movimientos";
-
-    let html = "";
-    (data.category_share || []).forEach(c => {
-      html += `<div>${c.category}: ${Number(c.amount).toFixed(3)} KWD (${c.pct}%)</div>`;
-    });
-
-    document.getElementById("topCategories").innerHTML =
-      html || "<span class='muted'>Sin datos</span>";
-
-    document.getElementById("insightsNote").innerText =
-      "Top comercios eliminado (solo categorías).";
-  }
-
-  async function loadExpenses({ q, category, date_from, date_to, limit }) {
-    const params = new URLSearchParams();
-    // Backend: /expenses usa date_from/date_to (strings), q, category, limit
-    if (q) params.set("q", q);
-    if (category) params.set("category", category);
-    if (date_from) params.set("date_from", date_from);
-    if (date_to) params.set("date_to", date_to);
-    if (limit) params.set("limit", limit);
-
-    const res = await fetch(`/expenses?${params.toString()}`);
-    const data = await res.json();
-
-    const tbody = document.getElementById("expensesBody");
-    tbody.innerHTML = "";
-
-    let total = 0;
-
-    (data.expenses || []).forEach(e => {
-      total += Number(e.amount || 0);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${String(e.created_at || "").slice(0, 10)}</td>
-        <td>${e.merchant_clean || ""}</td>
-        <td>${e.category || ""}</td>
-        <td>${Number(e.amount || 0).toFixed(3)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById("tableTotal").innerText =
-      total.toFixed(3) + " KWD";
-  }
-
-  // init
-  setActiveRangeLabel();
+function setQuickRange(r){
+  currentRange=r;
+  const n=new Date();let f,t;
+  if(r==='today'){f=t=iso(n)}
+  if(r==='7d'){f=iso(new Date(n-7*864e5));t=iso(n)}
+  if(r==='month'){f=iso(new Date(n.getFullYear(),n.getMonth(),1));t=iso(n)}
+  if(r==='year'){f=iso(new Date(n.getFullYear(),0,1));t=iso(n)}
+  date_from.value=f;date_to.value=t;
+  activeRange.textContent='rango: '+r;
   loadAll();
+}
+
+function applyFilters(){currentRange=null;activeRange.textContent='rango: custom';loadAll()}
+function resetFilters(){
+  q.value='';
+  category.value='';
+  date_from.value='';
+  date_to.value='';
+  sort.value='date_desc';
+  limit.value='200';
+  currentRange=null;
+  activeRange.textContent='rango: custom';
+  loadAll()
+}
+
+async function loadAll(){await loadInsights();await loadExpenses()}
+
+async function loadInsights(){
+  const p=new URLSearchParams();
+  if(currentRange)p.set('range',currentRange);
+  else{if(date_from.value)p.set('from_date',date_from.value);if(date_to.value)p.set('to_date',date_to.value)}
+  if(q.value)p.set('q',q.value);
+  if(category.value)p.set('category',category.value);
+  const d=await (await fetch('/api/insights?'+p)).json();
+  totalAmount.textContent=(d.total_amount||0).toFixed(3)+' KWD';
+  txCount.textContent=(d.tx_count||0)+' movimientos';
+  topCategories.innerHTML=(d.category_share||[]).map(c=>`${c.category}: ${Number(c.amount).toFixed(3)} KWD (${c.pct}%)`).join('<br>')||'<span class="muted">Sin datos</span>';
+}
+
+async function loadExpenses(){
+  const p=new URLSearchParams({limit:limit.value, sort:sort.value});
+  if(q.value)p.set('q',q.value);
+  if(category.value)p.set('category',category.value);
+  if(date_from.value)p.set('date_from',date_from.value);
+  if(date_to.value)p.set('date_to',date_to.value);
+
+  const d=await (await fetch('/expenses?'+p)).json();
+  expensesBody.innerHTML='';
+  let t=0;
+  (d.expenses||[]).forEach(e=>{
+    t+=Number(e.amount||0);
+    expensesBody.innerHTML+=`<tr><td>${String(e.created_at||'').slice(0,10)}</td><td>${e.merchant_clean||''}</td><td>${e.category||''}</td><td>${Number(e.amount||0).toFixed(3)}</td></tr>`;
+  });
+  tableTotal.textContent=t.toFixed(3)+' KWD';
+}
+
+loadAll();
 </script>
 
 </body>

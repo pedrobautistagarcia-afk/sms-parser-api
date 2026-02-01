@@ -8,7 +8,6 @@ from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-# Router de suscripciones (archivo subscriptions.py en la misma carpeta)
 from subscriptions import router as subscriptions_router
 
 # ======================================================
@@ -18,8 +17,6 @@ API_KEY = os.getenv("API_KEY", "ElPortichuelo99")
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
 app = FastAPI(title="Registro Gastos API")
-
-# Enchufamos el router de suscripciones
 app.include_router(subscriptions_router)
 
 # ======================================================
@@ -87,9 +84,6 @@ def parse_amount(sms: str) -> float | None:
 
 
 def parse_merchant(sms: str) -> str:
-    # Ejemplos:
-    # "debited with KWD 3.750 from PICK DAILY PICKS  , ALSALMIYA"
-    # "debited with KWD 3.000 for WAMD Service on 2026-01-15 ..."
     m = re.search(r"\bfrom\s+(.+?)(?:\s+on|\s*,|\.)", sms, re.IGNORECASE)
     if m:
         return m.group(1).strip().lower()
@@ -102,11 +96,6 @@ def parse_merchant(sms: str) -> str:
 
 
 def detect_category(sms: str, merchant_clean: str) -> str | None:
-    """
-    Regla simple y explícita:
-    - si aparece 'upayments' en el sms o en el merchant => 'apartment rental'
-    (lo demás lo dejamos como None por ahora).
-    """
     s = (sms or "").lower()
     m = (merchant_clean or "").lower()
 
@@ -139,7 +128,6 @@ async def ingest(request: Request):
 
     currency = "KWD"
     created_at = datetime.now(timezone.utc).isoformat()
-
     sms_hash = hash_sms(user_id, sms)
 
     conn = get_db()
@@ -177,6 +165,7 @@ def get_expenses(
     date_from: str | None = None,
     date_to: str | None = None,
     limit: int = 500,
+    sort: str = Query("date_desc"),  # date_desc|date_asc|amount_desc|amount_asc
 ):
     conn = get_db()
     cur = conn.cursor()
@@ -184,9 +173,13 @@ def get_expenses(
     sql = "SELECT * FROM expenses WHERE user_id = ?"
     params = [user_id]
 
+    # category: soporta "uncategorized" para NULL/vacío
     if category:
-        sql += " AND category = ?"
-        params.append(category)
+        if category == "uncategorized":
+            sql += " AND (category IS NULL OR TRIM(category) = '')"
+        else:
+            sql += " AND category = ?"
+            params.append(category)
 
     if q:
         sql += " AND merchant_clean LIKE ?"
@@ -200,7 +193,15 @@ def get_expenses(
         sql += " AND created_at <= ?"
         params.append(date_to)
 
-    sql += " ORDER BY created_at DESC LIMIT ?"
+    order_map = {
+        "date_desc": "created_at DESC",
+        "date_asc": "created_at ASC",
+        "amount_desc": "amount DESC, created_at DESC",
+        "amount_asc": "amount ASC, created_at DESC",
+    }
+    order_by = order_map.get(sort, "created_at DESC")
+
+    sql += f" ORDER BY {order_by} LIMIT ?"
     params.append(limit)
 
     rows = cur.execute(sql, params).fetchall()
@@ -254,8 +255,11 @@ def insights(
         params.append(to_date)
 
     if category:
-        sql += " AND category = ?"
-        params.append(category)
+        if category == "uncategorized":
+            sql += " AND (category IS NULL OR TRIM(category) = '')"
+        else:
+            sql += " AND category = ?"
+            params.append(category)
 
     if q:
         sql += " AND merchant_clean LIKE ?"
