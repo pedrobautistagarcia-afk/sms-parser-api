@@ -101,6 +101,21 @@ def parse_merchant(sms: str) -> str:
     return "unknown"
 
 
+def detect_category(sms: str, merchant_clean: str) -> str | None:
+    """
+    Regla simple y explícita:
+    - si aparece 'upayments' en el sms o en el merchant => 'apartment rental'
+    (lo demás lo dejamos como None por ahora).
+    """
+    s = (sms or "").lower()
+    m = (merchant_clean or "").lower()
+
+    if "upayments" in s or "upayments" in m:
+        return "apartment rental"
+
+    return None
+
+
 # ======================================================
 # INGEST (PROTEGIDO)
 # ======================================================
@@ -120,6 +135,8 @@ async def ingest(request: Request):
         return JSONResponse(status_code=400, content={"error": "Amount not found"})
 
     merchant = parse_merchant(sms)
+    category = detect_category(sms, merchant)
+
     currency = "KWD"
     created_at = datetime.now(timezone.utc).isoformat()
 
@@ -135,15 +152,13 @@ async def ingest(request: Request):
             (user_id, amount, currency, merchant_clean, category, sms_hash, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (user_id, amount, currency, merchant, None, sms_hash, created_at),
+            (user_id, amount, currency, merchant, category, sms_hash, created_at),
         )
         conn.commit()
     except sqlite3.IntegrityError:
-        # Duplicado por hash
         conn.close()
         return {"status": "duplicate", "count": 0, "expenses": []}
 
-    # Devolvemos el último insertado (opcional, útil para debug)
     last_id = cur.lastrowid
     row = cur.execute("SELECT * FROM expenses WHERE id = ?", (last_id,)).fetchone()
     conn.close()
@@ -156,7 +171,6 @@ async def ingest(request: Request):
 # ======================================================
 @app.get("/expenses")
 def get_expenses(
-    # ✅ FIX: por defecto "pedro" para que el dashboard no dé 422
     user_id: str = Query("pedro"),
     category: str | None = None,
     q: str | None = None,
@@ -179,9 +193,6 @@ def get_expenses(
         params.append(f"%{q.lower()}%")
 
     if date_from:
-        # esperas YYYY-MM-DD, pero tu created_at es ISO; esto funciona si mandas ISO también
-        # tu frontend manda YYYY-MM-DD; lo comparamos como string (ok si usas ISO completo)
-        # (más adelante lo pulimos, pero no rompe nada)
         sql += " AND created_at >= ?"
         params.append(date_from)
 
@@ -196,17 +207,16 @@ def get_expenses(
     conn.close()
 
     expenses = [dict(r) for r in rows]
-    total = round(sum(r["amount"] for r in expenses), 3)
+    total = round(sum(float(r["amount"]) for r in expenses), 3)
 
     return {"count": len(expenses), "total": total, "expenses": expenses}
 
 
 # ======================================================
-# INSIGHTS (PÚBLICO – dashboard)
+# INSIGHTS (PÚBLICO – dashboard) — SIN TOP MERCHANTS
 # ======================================================
 @app.get("/api/insights")
 def insights(
-    # ✅ FIX: por defecto "pedro" para que el dashboard no dé 422
     user_id: str = Query("pedro"),
     range: str | None = None,
     from_date: str | None = None,
@@ -225,7 +235,6 @@ def insights(
     elif range == "year":
         start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
     elif from_date:
-        # from_date viene como YYYY-MM-DD en tu UI; lo convertimos a ISO UTC inicio de día
         try:
             start = datetime.fromisoformat(from_date).replace(tzinfo=timezone.utc)
         except Exception:
@@ -241,7 +250,6 @@ def insights(
         params.append(start.isoformat())
 
     if to_date:
-        # igual que arriba, normalmente YYYY-MM-DD; lo dejamos tal cual por compatibilidad
         sql += " AND created_at <= ?"
         params.append(to_date)
 
@@ -257,18 +265,13 @@ def insights(
     rows = conn.execute(sql, params).fetchall()
     conn.close()
 
-    total_amount = round(sum(r["amount"] for r in rows), 3)
+    total_amount = round(sum(float(r["amount"]) for r in rows), 3)
 
-    by_merchant = {}
     by_category = {}
-
     for r in rows:
-        m = r["merchant_clean"] or "unknown"
         c = r["category"] or "uncategorized"
-        by_merchant[m] = by_merchant.get(m, 0.0) + float(r["amount"])
         by_category[c] = by_category.get(c, 0.0) + float(r["amount"])
 
-    top_merchants = sorted(by_merchant.items(), key=lambda x: x[1], reverse=True)[:5]
     top_categories = sorted(by_category.items(), key=lambda x: x[1], reverse=True)
 
     category_share = []
@@ -281,7 +284,6 @@ def insights(
     return {
         "tx_count": len(rows),
         "total_amount": total_amount,
-        "top_merchants": top_merchants,
         "top_categories": top_categories,
         "category_share": category_share,
     }
