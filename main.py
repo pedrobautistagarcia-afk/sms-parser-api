@@ -11,23 +11,15 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-# ======================================================
-# CONFIG
-# ======================================================
 API_KEY = os.getenv("API_KEY", "CHANGE_ME")
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 APP_TITLE = os.getenv("APP_TITLE", "Registro Gastos API")
 
 db_lock = Lock()
 app = FastAPI(title=APP_TITLE)
-
-# Static dashboard
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
-# ======================================================
-# DB
-# ======================================================
+# ---------------- DB helpers ----------------
 def ensure_db_dir():
     folder = os.path.dirname(DB_PATH)
     if folder and folder != ".":
@@ -44,69 +36,87 @@ def table_columns(cur: sqlite3.Cursor, table: str) -> List[str]:
     return [row[1] for row in cur.fetchall()]
 
 def init_db():
+    """
+    Unified schema compatible with your existing DB:
+    - sms is NOT NULL
+    - sms_hash is UNIQUE
+    - sms_raw exists
+    - date_raw / date_iso exist (legacy)
+    """
     with db_lock:
         conn = get_conn()
         cur = conn.cursor()
 
-        # Base table (compatible)
+        # Fresh installs (create full schema)
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS expenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL,
-                amount REAL NOT NULL,
-                currency TEXT NOT NULL,
+                sms TEXT NOT NULL,
+                amount REAL,
+                currency TEXT,
                 merchant_raw TEXT,
                 merchant_clean TEXT,
                 category TEXT,
-                created_at TEXT NOT NULL,
-                hash TEXT NOT NULL
+                hash TEXT,
+                created_at TEXT,
+                date_raw TEXT,
+                date_iso TEXT,
+                sms_hash TEXT,
+                sms_raw TEXT
             )
             """
         )
 
-        # MIGRATIONS: add missing columns safely
         cols = set(table_columns(cur, "expenses"))
-        if "sms_raw" not in cols:
-            cur.execute("ALTER TABLE expenses ADD COLUMN sms_raw TEXT")
 
-        # Enforce uniqueness of hash via unique index (safe)
-        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
+        # Migrations (add missing columns if older DB)
+        add_cols = {
+            "sms": "TEXT",
+            "sms_hash": "TEXT",
+            "sms_raw": "TEXT",
+            "date_raw": "TEXT",
+            "date_iso": "TEXT",
+            "merchant_raw": "TEXT",
+            "merchant_clean": "TEXT",
+            "category": "TEXT",
+            "hash": "TEXT",
+            "created_at": "TEXT",
+        }
+        for c, t in add_cols.items():
+            if c not in cols:
+                cur.execute(f"ALTER TABLE expenses ADD COLUMN {c} {t}")
 
-        # Helpful indexes
+        # Indexes (safe if already exist)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
+
+        # Unique indexes
+        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
+        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
 
         conn.commit()
         conn.close()
 
 init_db()
 
-
-# ======================================================
-# MODELS
-# ======================================================
+# ---------------- Models ----------------
 class IngestRequest(BaseModel):
     user_id: str = Field(..., alias="userid")
     sms: str
-
     class Config:
         populate_by_name = True
 
-
-# ======================================================
-# AUTH
-# ======================================================
+# ---------------- Auth ----------------
 def require_api_key(x_api_key: Optional[str], api_key_q: Optional[str]):
     supplied = x_api_key or api_key_q
     if not supplied or supplied != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-
-# ======================================================
-# PARSING
-# ======================================================
+# ---------------- Parsing ----------------
 CURRENCY_RE = r"(KWD|EUR|USD|GBP|AED|SAR|QAR|BHD|OMR)"
 AMOUNT_RE = r"(\d+(?:[.,]\d{1,3})?)"
 
@@ -169,9 +179,11 @@ def parse_sms(sms: str) -> Dict[str, Any]:
 
     merchant_raw = merchant.strip() if merchant else ""
 
+    date_raw = None
     date_iso = None
     dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
     if dm:
+        date_raw = f"{dm.group(1)} {dm.group(2)}"
         try:
             dt = datetime.fromisoformat(f"{dm.group(1)}T{dm.group(2)}").replace(tzinfo=timezone.utc)
             date_iso = dt.isoformat()
@@ -189,20 +201,23 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         "merchant_clean": merchant_clean,
         "category": category,
         "created_at": created_at,
+        "date_raw": date_raw,
+        "date_iso": date_iso,
         "sms_raw": sms_norm,
     }
 
+def sha256_hex(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
 def compute_hash(user_id: str, payload: Dict[str, Any]) -> str:
+    # keep your previous hash logic (stable)
     base = (
         f"{user_id}|{payload.get('amount')}|{payload.get('currency')}|"
         f"{payload.get('merchant_clean')}|{payload.get('created_at')}|{payload.get('sms_raw')}"
     )
-    return hashlib.sha256(base.encode("utf-8")).hexdigest()
+    return sha256_hex(base)
 
-
-# ======================================================
-# ROUTES
-# ======================================================
+# ---------------- Routes ----------------
 @app.get("/")
 def root():
     return FileResponse("static/index.html")
@@ -217,7 +232,6 @@ def debug_schema(
     api_key: Optional[str] = Query(default=None),
 ):
     require_api_key(x_api_key, api_key)
-
     with db_lock:
         conn = get_conn()
         cur = conn.cursor()
@@ -252,10 +266,11 @@ async def ingest(
 
     payload = parse_sms(req.sms)
     h = compute_hash(req.user_id, payload)
+    sms_hash = sha256_hex(payload["sms_raw"])  # unique per exact SMS (normalized spaces)
 
     inserted = False
     expense_id = None
-    existing_payload = None
+    existing = None
     integrity_error = None
 
     with db_lock:
@@ -266,19 +281,23 @@ async def ingest(
             cur.execute(
                 """
                 INSERT INTO expenses
-                (user_id, amount, currency, merchant_raw, merchant_clean, category, sms_raw, created_at, hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, sms, amount, currency, merchant_raw, merchant_clean, category, hash, created_at, date_raw, date_iso, sms_hash, sms_raw)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     req.user_id,
+                    payload["sms_raw"],   # sms NOT NULL
                     payload["amount"],
                     payload["currency"],
                     payload["merchant_raw"],
                     payload["merchant_clean"],
                     payload["category"],
-                    payload["sms_raw"],
-                    payload["created_at"],
                     h,
+                    payload["created_at"],
+                    payload["date_raw"],
+                    payload["date_iso"],
+                    sms_hash,
+                    payload["sms_raw"],
                 ),
             )
             conn.commit()
@@ -286,25 +305,33 @@ async def ingest(
             expense_id = cur.lastrowid
 
         except sqlite3.IntegrityError as e:
-            # Capture the real SQLite integrity error
             integrity_error = str(e)
 
-            # Try to fetch existing row by hash (if that was the failing constraint)
+            # Try find existing by sms_hash first (your DB has a unique index on it)
             cur.execute(
-                "SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses WHERE hash = ?",
-                (h,),
+                "SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses WHERE sms_hash = ?",
+                (sms_hash,),
             )
-            existing = cur.fetchone()
-            if existing:
-                expense_id = existing["id"]
-                existing_payload = {
-                    "id": existing["id"],
-                    "user_id": existing["user_id"],
-                    "amount": existing["amount"],
-                    "currency": existing["currency"],
-                    "merchant_clean": existing["merchant_clean"] or "",
-                    "category": existing["category"] or "other",
-                    "created_at": existing["created_at"],
+            row = cur.fetchone()
+
+            # If not found, try by hash
+            if not row:
+                cur.execute(
+                    "SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses WHERE hash = ?",
+                    (h,),
+                )
+                row = cur.fetchone()
+
+            if row:
+                expense_id = row["id"]
+                existing = {
+                    "id": row["id"],
+                    "user_id": row["user_id"],
+                    "amount": row["amount"],
+                    "currency": row["currency"],
+                    "merchant_clean": row["merchant_clean"] or "",
+                    "category": row["category"] or "other",
+                    "created_at": row["created_at"],
                 }
 
         finally:
@@ -314,6 +341,7 @@ async def ingest(
         "inserted": inserted,
         "id": expense_id,
         "hash": h,
+        "sms_hash": sms_hash,
         "integrity_error": integrity_error,
         "expense": {
             "user_id": req.user_id,
@@ -323,7 +351,7 @@ async def ingest(
             "category": payload["category"],
             "created_at": payload["created_at"],
         },
-        "existing": existing_payload,
+        "existing": existing,
     }
 
 @app.get("/expenses")
