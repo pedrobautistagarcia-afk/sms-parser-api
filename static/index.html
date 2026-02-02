@@ -1,266 +1,57 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registro de Gastos</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Registro Gastos</title>
   <style>
-    :root { color-scheme: light; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f6f7f9; }
-    header { padding: 16px 18px; background: #111827; color: white; }
-    header h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    header p { margin: 6px 0 0; opacity: .8; font-size: 13px; }
-    .wrap { padding: 16px 18px; max-width: 1100px; margin: 0 auto; }
-    .card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.03); }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 900px) { .grid { grid-template-columns: 420px 1fr; } }
-    label { display: block; font-size: 12px; color: #374151; margin-bottom: 6px; }
-    input, select, textarea, button {
-      font: inherit; padding: 10px 10px; border-radius: 10px;
-      border: 1px solid #d1d5db; width: 100%; box-sizing: border-box; background: white;
-    }
-    textarea { min-height: 96px; resize: vertical; }
-    .row { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    button { cursor: pointer; border: 1px solid #111827; background: #111827; color: white; }
-    button.secondary { background: white; color: #111827; }
-    .muted { color: #6b7280; font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 8px; border-bottom: 1px solid #eef2f7; font-size: 13px; text-align: left; }
-    th { color: #374151; font-weight: 700; font-size: 12px; }
-    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; }
-    .right { text-align: right; }
-    .topline { display:flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-    .kpis { display:flex; gap: 10px; flex-wrap: wrap; }
-    .kpi { background:#f9fafb; border:1px solid #e5e7eb; border-radius: 12px; padding: 10px 12px; min-width: 130px; }
-    .kpi .v { font-size: 16px; font-weight: 800; margin-top: 4px; }
-    .danger { border-color:#fecaca !important; background:#fff1f2 !important; color:#9f1239 !important; }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
+    input,button{padding:10px;font-size:14px}
+    table{border-collapse:collapse;width:100%;margin-top:16px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f5f5f5}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Registro de Gastos</h1>
-    <p>Dashboard simple (FastAPI + SQLite). Lee gastos desde <span class="pill">/expenses</span> y permite testear <span class="pill">/ingest</span>.</p>
-  </header>
+  <h1>Registro Gastos</h1>
 
-  <div class="wrap">
-    <div class="grid">
-      <div class="card">
-        <div class="row">
-          <div>
-            <label>User ID</label>
-            <input id="userId" placeholder="pedro" />
-            <div class="muted">Esto filtra el GET /expenses?user_id=...</div>
-          </div>
-
-          <div class="row2">
-            <div>
-              <label>Currency (opcional)</label>
-              <select id="currency">
-                <option value="">(todas)</option>
-                <option value="KWD">KWD</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
-              </select>
-            </div>
-            <div>
-              <label>Limit</label>
-              <input id="limit" type="number" min="1" max="2000" value="200" />
-            </div>
-          </div>
-
-          <div class="actions">
-            <button id="refreshBtn" class="secondary" type="button">Refrescar</button>
-            <button id="autoBtn" class="secondary" type="button">Auto (10s)</button>
-          </div>
-
-          <hr style="border:none;border-top:1px solid #eef2f7;margin:10px 0;" />
-
-          <div>
-            <label>API Key (solo para testear /ingest desde aquí)</label>
-            <input id="apiKey" placeholder="(se guarda en este navegador)" />
-            <div class="muted">Tu Shortcut seguirá enviando con su API Key; esto es para probar desde el dashboard.</div>
-          </div>
-
-          <div>
-            <label>SMS (test manual)</label>
-            <textarea id="sms" placeholder="Pega aquí un SMS del banco..."></textarea>
-          </div>
-
-          <button id="sendBtn" type="button">Enviar a /ingest (test)</button>
-          <div id="msg" class="muted"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="topline">
-          <div>
-            <div class="muted">Última actualización</div>
-            <div id="last" style="font-weight:800;">—</div>
-          </div>
-          <div class="kpis">
-            <div class="kpi">
-              <div class="muted">Registros</div>
-              <div class="v" id="k_count">0</div>
-            </div>
-            <div class="kpi">
-              <div class="muted">Total (visible)</div>
-              <div class="v" id="k_total">0</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:12px; overflow:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Fecha (UTC)</th>
-                <th>Merchant</th>
-                <th>Categoría</th>
-                <th class="right">Importe</th>
-              </tr>
-            </thead>
-            <tbody id="tbody">
-              <tr><td colspan="5" class="muted">Cargando…</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="muted" style="margin-top:10px;">
-          Tip: borra un gasto con <span class="pill">DELETE /expenses/{id}?api_key=...</span>
-        </div>
-      </div>
-    </div>
+  <div class="row">
+    <input id="user" placeholder="user_id" value="pedro"/>
+    <button onclick="load()">Cargar</button>
   </div>
 
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Fecha</th><th>Importe</th><th>Moneda</th><th>Comercio</th><th>Categoría</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
 <script>
-  const $ = (id) => document.getElementById(id);
-
-  // Persist small settings
-  function loadSettings() {
-    $("userId").value = localStorage.getItem("rg_userId") || "pedro";
-    $("apiKey").value = localStorage.getItem("rg_apiKey") || "";
-    $("currency").value = localStorage.getItem("rg_currency") || "";
-    $("limit").value = localStorage.getItem("rg_limit") || "200";
+async function load(){
+  const user = document.getElementById('user').value.trim();
+  const url = user ? `/expenses?user_id=${encodeURIComponent(user)}&limit=200` : `/expenses?limit=200`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = "";
+  for(const e of data.expenses){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${e.id}</td>
+      <td>${e.created_at}</td>
+      <td>${e.amount}</td>
+      <td>${e.currency}</td>
+      <td>${e.merchant_clean}</td>
+      <td>${e.category}</td>
+    `;
+    tb.appendChild(tr);
   }
-
-  function saveSettings() {
-    localStorage.setItem("rg_userId", $("userId").value.trim());
-    localStorage.setItem("rg_apiKey", $("apiKey").value.trim());
-    localStorage.setItem("rg_currency", $("currency").value);
-    localStorage.setItem("rg_limit", $("limit").value);
-  }
-
-  function fmtMoney(n) {
-    if (Number.isNaN(n)) return "0";
-    return n.toFixed(3).replace(/\.000$/, ".000");
-  }
-
-  async function fetchExpenses() {
-    saveSettings();
-
-    const user = $("userId").value.trim();
-    const currency = $("currency").value;
-    const limit = $("limit").value || "200";
-
-    let url = `/expenses?limit=${encodeURIComponent(limit)}`;
-    if (user) url += `&user_id=${encodeURIComponent(user)}`;
-    if (currency) url += `&currency=${encodeURIComponent(currency)}`;
-
-    $("tbody").innerHTML = `<tr><td colspan="5" class="muted">Cargando…</td></tr>`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    $("k_count").textContent = data.count || 0;
-
-    let total = 0;
-    const rows = (data.expenses || []).map(e => {
-      const amount = Number(e.amount || 0);
-      total += amount;
-
-      const date = (e.created_at || "").replace("T", " ").replace("+00:00","").replace("Z","");
-      const merchant = e.merchant_clean || "";
-      const cat = e.category || "other";
-      const money = `${fmtMoney(amount)} ${e.currency || ""}`;
-
-      return `
-        <tr>
-          <td>${e.id}</td>
-          <td>${date}</td>
-          <td>${merchant}</td>
-          <td><span class="pill">${cat}</span></td>
-          <td class="right" style="font-weight:800;">${money}</td>
-        </tr>
-      `;
-    }).join("");
-
-    $("tbody").innerHTML = rows || `<tr><td colspan="5" class="muted">Sin gastos aún</td></tr>`;
-    $("k_total").textContent = fmtMoney(total);
-    $("last").textContent = new Date().toISOString().replace("T"," ").slice(0,19) + " UTC";
-  }
-
-  async function sendIngest() {
-    saveSettings();
-
-    const apiKey = $("apiKey").value.trim();
-    const user = $("userId").value.trim() || "pedro";
-    const sms = $("sms").value.trim();
-
-    if (!sms) {
-      $("msg").textContent = "Pega un SMS primero.";
-      $("msg").className = "muted danger";
-      return;
-    }
-
-    $("msg").textContent = "Enviando…";
-    $("msg").className = "muted";
-
-    const res = await fetch(`/ingest?api_key=${encodeURIComponent(apiKey)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userid: user, sms })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      $("msg").textContent = `Error: ${data.detail || "falló la petición"}`;
-      $("msg").className = "muted danger";
-      return;
-    }
-
-    $("msg").textContent = data.inserted ? "OK: insertado ✅" : "OK: duplicado (ya existía) ↩️";
-    $("msg").className = "muted";
-    $("sms").value = "";
-    await fetchExpenses();
-  }
-
-  let timer = null;
-
-  $("refreshBtn").addEventListener("click", fetchExpenses);
-  $("sendBtn").addEventListener("click", sendIngest);
-
-  $("autoBtn").addEventListener("click", () => {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-      $("autoBtn").textContent = "Auto (10s)";
-      return;
-    }
-    timer = setInterval(fetchExpenses, 10000);
-    $("autoBtn").textContent = "Auto ON (10s)";
-  });
-
-  ["userId","apiKey","currency","limit"].forEach(id => {
-    $(id).addEventListener("change", fetchExpenses);
-  });
-
-  loadSettings();
-  fetchExpenses();
+}
+load();
 </script>
 </body>
 </html>
