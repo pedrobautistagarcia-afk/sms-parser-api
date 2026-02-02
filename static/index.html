@@ -1632,5 +1632,84 @@ document.addEventListener("click", handleRuleButtonClick);
 })();
 </script>
 
+
+<!-- FORCE_RENDER_EXPENSES_V1 -->
+<script>
+(function(){
+  async function forceLoadAndRender(){
+    try{
+      const res = await fetch("/expenses?user_id=pedro&limit=200");
+      const data = await res.json();
+      if(!data || !Array.isArray(data.expenses)){
+        console.warn("forceRender: respuesta inesperada", data);
+        return;
+      }
+
+      // Guardar donde casi cualquier render lo va a leer
+      window.expenses = data.expenses;
+      window.currentExpenses = data.expenses;
+      window.__expenses = data.expenses;
+      window.__expensesData = data.expenses;
+
+      // Si existe tu render, úsalo
+      if(typeof window.renderTable === "function"){
+        window.renderTable(data.expenses);
+        return;
+      }
+      if(typeof window.render === "function"){
+        window.render(data.expenses);
+        return;
+      }
+
+      // Fallback: pintar tabla mínima
+      let table = document.querySelector("table");
+      if(!table){
+        table = document.createElement("table");
+        table.style.width = "100%";
+        table.style.borderCollapse = "collapse";
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Created</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Merchant</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Category</th>
+              <th style="text-align:right;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Amount</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Currency</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+        // meterla en el body cerca del top
+        const anchor = document.querySelector("#app") || document.body;
+        anchor.appendChild(table);
+      }
+
+      const tb = table.querySelector("tbody");
+      tb.innerHTML = "";
+      for(const e of data.expenses){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);white-space:nowrap;">${(e.created_at||"").replace("T"," ").replace("+00:00","")}</td>
+          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);">${e.merchant_clean||""}</td>
+          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);text-transform:capitalize;">${e.category||"other"}</td>
+          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);text-align:right;">${(Number(e.amount)||0).toFixed(3)}</td>
+          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);">${(e.currency||"KWD")}</td>
+        `;
+        tb.appendChild(tr);
+      }
+      console.log("forceRender OK rows=", data.expenses.length);
+    } catch(err){
+      console.error("forceRender FAIL", err);
+    }
+  }
+
+  // ejecuta al cargar
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(forceLoadAndRender, 200);
+  });
+})();
+</script>
+<!-- /FORCE_RENDER_EXPENSES_V1 -->
+
 </body>
 </html>
