@@ -3,64 +3,57 @@ import re
 import sqlite3
 import hashlib
 from datetime import datetime, timezone
-from threading import Lock
-from typing import Optional, Any, Dict, List
+from typing import Optional, List, Dict, Any
 
-from fastapi import FastAPI, Query, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request, Query, HTTPException
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # ======================================================
 # CONFIG
 # ======================================================
-API_KEY = os.getenv("API_KEY", "CHANGE_ME")
+API_KEY = os.getenv("API_KEY", "ElPortichuelo99")
+
+# DB persistente en Render (Disk montado en /var/data)
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
 app = FastAPI(title="Registro Gastos API")
+
+# Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-db_lock = Lock()
-
 # ======================================================
-# DB HELPERS
+# HELPERS
 # ======================================================
-def ensure_db_dir():
-    folder = os.path.dirname(DB_PATH)
-    if folder and folder != ".":
-        os.makedirs(folder, exist_ok=True)
+def db() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-def conn() -> sqlite3.Connection:
-    ensure_db_dir()
-    c = sqlite3.connect(DB_PATH, check_same_thread=False)
-    c.row_factory = sqlite3.Row
-    return c
-
-def sha256_hex(s: str) -> str:
+def sha256(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
-def require_key(x_api_key: Optional[str], api_key: Optional[str]):
-    k = x_api_key or api_key
-    if not k or k != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-
-def normalize_spaces(s: str) -> str:
+def norm_spaces(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip())
 
-def normalize_merchant(s: str) -> str:
-    s = normalize_spaces(s)
-    return s.strip(" ,.-")
+def now_iso_utc() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+def require_api_key(api_key: str):
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
 
 # ======================================================
-# DB INIT + RULES SEED
+# DB INIT + MIGRATION
 # ======================================================
 def init_db():
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
+    conn = db()
+    cur = conn.cursor()
 
-        # Expenses
-        cur.execute("""
+    # expenses
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT NOT NULL,
@@ -74,54 +67,43 @@ def init_db():
             created_at TEXT,
             date_raw TEXT,
             date_iso TEXT,
-            sms_hash TEXT,
+            sms_hash TEXT UNIQUE,
             sms_raw TEXT
         )
-        """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
-        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
-        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
+        """
+    )
 
-        # Rules (auto-categorization / auto-merchant normalization)
-        cur.execute("""
+    # indexes (safe if already exist)
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
+
+    # rules table
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS rules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pattern TEXT NOT NULL,
-            field TEXT NOT NULL DEFAULT 'merchant',     -- 'merchant' | 'sms'
-            match_type TEXT NOT NULL DEFAULT 'contains',-- only 'contains' for v1
-            set_category TEXT,                          -- optional
-            set_merchant_clean TEXT,                    -- optional
+            user_id TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
             priority INTEGER NOT NULL DEFAULT 100,
-            enabled INTEGER NOT NULL DEFAULT 1
+            match_field TEXT NOT NULL DEFAULT 'merchant',   -- 'merchant' | 'sms'
+            match_type TEXT NOT NULL DEFAULT 'contains',    -- 'contains' | 'regex'
+            pattern TEXT NOT NULL,
+            set_category TEXT,
+            set_merchant_clean TEXT,
+            created_at TEXT NOT NULL
         )
-        """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_enabled_priority ON rules(enabled, priority)")
+        """
+    )
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_user ON rules(user_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_priority ON rules(priority)")
 
-        # Seed rules once (if empty)
-        cur.execute("SELECT COUNT(1) AS n FROM rules")
-        n = cur.fetchone()["n"]
-        if n == 0:
-            seeds = [
-                # Food delivery
-                ("TALABAT", "merchant", "contains", "food", "TALABAT", 300, 1),
-                # Coffee
-                ("STARBUCKS", "merchant", "contains", "coffee", "STARBUCKS", 250, 1),
-                ("CAFE", "merchant", "contains", "coffee", None, 200, 1),
-                # Transport
-                ("UBER", "merchant", "contains", "transport", "UBER", 220, 1),
-                # Groceries example
-                ("PICK DAILY PICKS", "merchant", "contains", "groceries", "PICK DAILY PICKS", 210, 1),
-            ]
-            cur.executemany("""
-                INSERT INTO rules(pattern, field, match_type, set_category, set_merchant_clean, priority, enabled)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, seeds)
-
-        c.commit()
-        c.close()
+    conn.commit()
+    conn.close()
 
 init_db()
 
@@ -131,384 +113,498 @@ init_db()
 class IngestRequest(BaseModel):
     user_id: str = Field(..., alias="userid")
     sms: str
+
     class Config:
         populate_by_name = True
 
-class PatchCategoryRequest(BaseModel):
-    category: str
-
-class PatchMerchantRequest(BaseModel):
-    merchant_clean: str
-
-class RestoreRequest(BaseModel):
+class RuleCreate(BaseModel):
     user_id: str
-    sms: str
+    pattern: str
+    match_field: str = "merchant"   # merchant | sms
+    match_type: str = "contains"    # contains | regex
+    priority: int = 100
+    enabled: bool = True
+    set_category: Optional[str] = None
+    set_merchant_clean: Optional[str] = None
+
+class RulePatch(BaseModel):
+    pattern: Optional[str] = None
+    match_field: Optional[str] = None
+    match_type: Optional[str] = None
+    priority: Optional[int] = None
+    enabled: Optional[bool] = None
+    set_category: Optional[str] = None
+    set_merchant_clean: Optional[str] = None
+
+class ExpensePatch(BaseModel):
     amount: Optional[float] = None
     currency: Optional[str] = None
-    merchant_raw: Optional[str] = None
     merchant_clean: Optional[str] = None
     category: Optional[str] = None
     created_at: Optional[str] = None
-    date_raw: Optional[str] = None
-    date_iso: Optional[str] = None
 
 # ======================================================
-# PARSING
+# PARSER (robusto para KWD/USD/EUR y "from/for" opcional)
 # ======================================================
-CURRENCY_RE = r"(KWD|EUR|USD|GBP|AED|SAR|QAR|BHD|OMR)"
-AMOUNT_RE = r"(\d+(?:[.,]\d{1,3})?)"
-
-def to_float(s: str) -> float:
-    return float(s.replace(",", "."))
+AMT_RE = re.compile(r"\b([A-Z]{3})\s*([0-9][0-9,]*\.?[0-9]*)\b")
+DT_RE = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b")
 
 def parse_sms(sms: str) -> Dict[str, Any]:
-    sms_norm = normalize_spaces(sms)
+    raw = sms or ""
+    sms_n = norm_spaces(raw)
 
-    # Currency + Amount
-    currency = "KWD"
-    amount = 0.0
-    m1 = re.search(rf"\b{CURRENCY_RE}\s*{AMOUNT_RE}\b", sms_norm, re.IGNORECASE)
-    m2 = re.search(rf"\b{AMOUNT_RE}\s*{CURRENCY_RE}\b", sms_norm, re.IGNORECASE)
-    if m1:
-        currency = m1.group(1).upper()
-        amount = to_float(m1.group(2))
-    elif m2:
-        amount = to_float(m2.group(1))
-        currency = m2.group(2).upper()
+    # currency + amount
+    currency = None
+    amount = None
+    m = AMT_RE.search(sms_n)
+    if m:
+        currency = m.group(1)
+        amt_txt = m.group(2).replace(",", "")
+        try:
+            amount = float(amt_txt)
+        except:
+            amount = None
 
-    # Merchant
-    merchant = ""
-    mm = re.search(r"\bfor\s+(.+?)\s+\bon\b", sms_norm, re.IGNORECASE)
-    if mm:
-        merchant = mm.group(1)
-    else:
-        mm = re.search(r"\bfrom\s+(.+?)(?:\s*,\s*|\s+\bon\b|$)", sms_norm, re.IGNORECASE)
-        if mm:
-            merchant = mm.group(1)
-
-    merchant_raw = normalize_spaces(merchant)
-    merchant_clean = normalize_merchant(merchant_raw)
-
-    # Date (optional)
-    created_at = datetime.now(timezone.utc).isoformat()
+    # date
+    created_at = now_iso_utc()
     date_raw = None
     date_iso = None
-    dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
-    if dm:
-        date_raw = f"{dm.group(1)} {dm.group(2)}"
+    mdt = DT_RE.search(sms_n)
+    if mdt:
+        date_raw = f"{mdt.group(1)} {mdt.group(2)}"
         try:
-            dt = datetime.fromisoformat(f"{dm.group(1)}T{dm.group(2)}").replace(tzinfo=timezone.utc)
+            dt = datetime.fromisoformat(f"{mdt.group(1)}T{mdt.group(2)}+00:00")
+            created_at = dt.isoformat()
             date_iso = dt.isoformat()
-            created_at = date_iso
-        except Exception:
+        except:
             pass
 
+    # merchant extraction:
+    # patterns like:
+    # "debited with KWD 3.000 from PICK DAILY PICKS , ALSALMIYA on 2026-..."
+    # "debited with KWD 3.000 for WAMD Service on 2026-..."
+    # "debited with USD 1.00 on 2026-..." (no merchant)
+    merchant_raw = ""
+    mm = re.search(r"\b(?:from|for)\s+(.+?)\s+on\s+20\d{2}-\d{2}-\d{2}\b", sms_n, flags=re.IGNORECASE)
+    if mm:
+        merchant_raw = mm.group(1).strip(" .,-")
+
+    merchant_clean = norm_spaces(merchant_raw)
+    if merchant_clean:
+        merchant_clean = merchant_clean.strip(" ,.-")
+
+    category = "other"
+    # super básico: si no parsea bien, lo marcas como other (se puede mejorar con reglas)
     return {
-        "sms_norm": sms_norm,
-        "amount": amount,
-        "currency": currency,
+        "amount": amount if amount is not None else 0.0,
+        "currency": currency or "KWD",
         "merchant_raw": merchant_raw,
         "merchant_clean": merchant_clean,
-        "category": "other",
+        "category": category,
         "created_at": created_at,
         "date_raw": date_raw,
         "date_iso": date_iso,
+        "sms_norm": sms_n,
+        "sms_raw": raw
     }
 
-def compute_hash(user_id: str, amount: Any, currency: Any, merchant_clean: Any, created_at: Any) -> str:
-    base = f"{user_id}|{amount}|{currency}|{merchant_clean}|{created_at}"
-    return sha256_hex(base)
-
 # ======================================================
-# RULE ENGINE (v1: contains)
+# RULES ENGINE v1
 # ======================================================
-def apply_rules(merchant_clean: str, sms_norm: str) -> Dict[str, Optional[str]]:
-    """
-    Returns possibly updated: category, merchant_clean
-    """
-    m_up = (merchant_clean or "").upper()
-    sms_up = (sms_norm or "").upper()
+def load_rules(user_id: str) -> List[sqlite3.Row]:
+    conn = db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT * FROM rules
+        WHERE user_id = ? AND enabled = 1
+        ORDER BY priority ASC, id ASC
+        """,
+        (user_id,)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
 
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-        cur.execute("""
-            SELECT pattern, field, match_type, set_category, set_merchant_clean
-            FROM rules
-            WHERE enabled = 1
-            ORDER BY priority DESC, id ASC
-        """)
-        rules = cur.fetchall()
-        c.close()
+def rule_matches(rule: sqlite3.Row, merchant_clean: str, sms_norm: str) -> bool:
+    field = (rule["match_field"] or "merchant").lower()
+    mtype = (rule["match_type"] or "contains").lower()
+    pattern = (rule["pattern"] or "").strip()
+    if not pattern:
+        return False
 
-    out_category = None
-    out_merchant = None
+    hay = sms_norm if field == "sms" else (merchant_clean or "")
+    hay_l = hay.lower()
+    pat_l = pattern.lower()
 
-    for r in rules:
-        pattern = (r["pattern"] or "").upper()
-        field = (r["field"] or "merchant").lower()
-        match_type = (r["match_type"] or "contains").lower()
+    if mtype == "contains":
+        return pat_l in hay_l
+    elif mtype == "regex":
+        try:
+            return re.search(pattern, hay, flags=re.IGNORECASE) is not None
+        except:
+            return False
+    else:
+        return False
 
-        haystack = m_up if field == "merchant" else sms_up
-        ok = False
-        if match_type == "contains" and pattern and pattern in haystack:
-            ok = True
+def apply_rules(user_id: str, parsed: Dict[str, Any]) -> Dict[str, Any]:
+    # first-match-wins por campo (estable)
+    merchant_clean = parsed.get("merchant_clean", "") or ""
+    sms_norm = parsed.get("sms_norm", "") or ""
 
-        if ok:
-            if r["set_category"]:
-                out_category = normalize_spaces(r["set_category"]).lower()
-            if r["set_merchant_clean"]:
-                out_merchant = normalize_merchant(r["set_merchant_clean"])
-            # Primera regla que matchea con mayor prioridad manda
+    fixed_category = None
+    fixed_merchant = None
+
+    for r in load_rules(user_id):
+        if not rule_matches(r, merchant_clean, sms_norm):
+            continue
+
+        if fixed_category is None and r["set_category"]:
+            fixed_category = r["set_category"].strip().lower()
+
+        if fixed_merchant is None and r["set_merchant_clean"]:
+            fixed_merchant = norm_spaces(r["set_merchant_clean"])
+
+        # si ya fijamos ambos, paramos
+        if fixed_category is not None and fixed_merchant is not None:
             break
 
-    return {"category": out_category, "merchant_clean": out_merchant}
+    if fixed_category is not None:
+        parsed["category"] = fixed_category
+    if fixed_merchant is not None:
+        parsed["merchant_clean"] = fixed_merchant
+
+    return parsed
 
 # ======================================================
 # ROUTES
 # ======================================================
 @app.get("/")
 def home():
-    return FileResponse("static/index.html")
+    # Evita caché rara de HTML
+    return FileResponse("static/index.html", headers={"Cache-Control": "no-store"})
 
 @app.get("/health")
 def health():
-    return {"ok": True, "db_path": DB_PATH}
-
-# --------- READ is FREE (no key) ---------
-
-@app.get("/expenses")
-def expenses(
-    user_id: Optional[str] = Query(default=None),
-    limit: int = Query(default=200, ge=1, le=2000),
-):
-    q = """
-    SELECT id, user_id, amount, currency, merchant_clean, category, created_at
-    FROM expenses
-    """
-    params: List[Any] = []
-    if user_id:
-        q += " WHERE user_id = ?"
-        params.append(user_id)
-    q += " ORDER BY datetime(created_at) DESC LIMIT ?"
-    params.append(limit)
-
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-        cur.execute(q, params)
-        rows = cur.fetchall()
-        c.close()
-
-    out = []
-    for r in rows:
-        out.append({
-            "id": r["id"],
-            "user_id": r["user_id"],
-            "amount": r["amount"],
-            "currency": r["currency"],
-            "merchant_clean": r["merchant_clean"] or "",
-            "category": r["category"] or "other",
-            "created_at": r["created_at"],
-        })
-    return {"count": len(out), "expenses": out}
-
-# --------- INGEST requires key ---------
+    conn = db()
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(expenses)")
+    cols = [dict(r) for r in cur.fetchall()]
+    cur.execute("PRAGMA index_list(expenses)")
+    idxs = []
+    for r in cur.fetchall():
+        name = r["name"]
+        cur.execute(f"PRAGMA index_info({name})")
+        idx_cols = [x["name"] for x in cur.fetchall()]
+        idxs.append({"name": name, "unique": bool(r["unique"]), "columns": idx_cols})
+    conn.close()
+    return {"db_path": DB_PATH, "columns": cols, "indexes": idxs}
 
 @app.post("/ingest")
-def ingest(
-    req: IngestRequest,
-    x_api_key: Optional[str] = Header(default=None),
-    api_key: Optional[str] = Query(default=None),
-):
-    require_key(x_api_key, api_key)
+async def ingest(req: IngestRequest, api_key: str = Query(...)):
+    require_api_key(api_key)
 
-    p = parse_sms(req.sms)
+    user_id = norm_spaces(req.user_id).lower()
+    sms_raw = req.sms or ""
+    sms_norm = norm_spaces(sms_raw)
 
-    # Apply rules BEFORE insert
-    ruled = apply_rules(p["merchant_clean"], p["sms_norm"])
-    if ruled["category"]:
-        p["category"] = ruled["category"]
-    if ruled["merchant_clean"]:
-        p["merchant_clean"] = ruled["merchant_clean"]
+    parsed = parse_sms(sms_raw)
+    parsed["sms_norm"] = sms_norm
+    parsed["sms_raw"] = sms_raw
 
-    sms_hash = sha256_hex(p["sms_norm"])
-    h = compute_hash(req.user_id, p["amount"], p["currency"], p["merchant_clean"], p["created_at"])
+    # aplica reglas v1
+    parsed = apply_rules(user_id, parsed)
 
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-        try:
-            cur.execute(
-                """
-                INSERT INTO expenses
-                (user_id, sms, amount, currency, merchant_raw, merchant_clean, category, hash, created_at, date_raw, date_iso, sms_hash, sms_raw)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    req.user_id,
-                    p["sms_norm"],
-                    p["amount"],
-                    p["currency"],
-                    p["merchant_raw"],
-                    p["merchant_clean"],
-                    p["category"],
-                    h,
-                    p["created_at"],
-                    p["date_raw"],
-                    p["date_iso"],
-                    sms_hash,
-                    p["sms_norm"],
-                ),
-            )
-            c.commit()
-            new_id = cur.lastrowid
-            c.close()
-            return {"inserted": True, "id": new_id}
-        except sqlite3.IntegrityError:
-            cur.execute("SELECT id FROM expenses WHERE sms_hash = ?", (sms_hash,))
-            row = cur.fetchone()
-            if not row:
-                cur.execute("SELECT id FROM expenses WHERE hash = ?", (h,))
-                row = cur.fetchone()
-            c.close()
-            return {"inserted": False, "id": (row["id"] if row else None)}
+    # hashes
+    sms_hash = sha256(f"{user_id}|{sms_norm}")
+    # hash transaccional (más "estable")
+    tx_hash = sha256(
+        f"{user_id}|{parsed.get('amount')}|{parsed.get('currency')}|{parsed.get('merchant_clean')}|{parsed.get('created_at')}"
+    )
 
-# --------- Write ops require key ---------
+    conn = db()
+    cur = conn.cursor()
 
-@app.patch("/expenses/{expense_id}/category")
-def patch_category(
-    expense_id: int,
-    body: PatchCategoryRequest,
-    x_api_key: Optional[str] = Header(default=None),
-    api_key: Optional[str] = Query(default=None),
-):
-    require_key(x_api_key, api_key)
-    cat = normalize_spaces(body.category).lower() or "other"
+    # si existe por sms_hash, devolvemos el existente
+    cur.execute("SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses WHERE sms_hash = ?", (sms_hash,))
+    row = cur.fetchone()
+    if row:
+        conn.close()
+        return {
+            "inserted": False,
+            "id": row["id"],
+            "expense": {
+                "user_id": row["user_id"],
+                "amount": row["amount"],
+                "currency": row["currency"],
+                "merchant_clean": row["merchant_clean"],
+                "category": row["category"],
+                "created_at": row["created_at"],
+            },
+            "existing": "sms_hash"
+        }
 
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-        cur.execute("UPDATE expenses SET category = ? WHERE id = ?", (cat, expense_id))
-        c.commit()
-        updated = cur.rowcount
-        c.close()
-
-    return {"updated": updated, "id": expense_id, "category": cat}
-
-@app.patch("/expenses/{expense_id}/merchant")
-def patch_merchant(
-    expense_id: int,
-    body: PatchMerchantRequest,
-    x_api_key: Optional[str] = Header(default=None),
-    api_key: Optional[str] = Query(default=None),
-):
-    require_key(x_api_key, api_key)
-    m = normalize_merchant(body.merchant_clean)
-
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-        cur.execute("UPDATE expenses SET merchant_clean = ? WHERE id = ?", (m, expense_id))
-        c.commit()
-        updated = cur.rowcount
-        c.close()
-
-    return {"updated": updated, "id": expense_id, "merchant_clean": m}
-
-@app.delete("/expenses/{expense_id}")
-def delete_expense(
-    expense_id: int,
-    x_api_key: Optional[str] = Header(default=None),
-    api_key: Optional[str] = Query(default=None),
-):
-    require_key(x_api_key, api_key)
-
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-
-        cur.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
-        row = cur.fetchone()
-        if not row:
-            c.close()
-            return {"deleted": 0, "deleted_row": None}
-
-        cur.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
-        c.commit()
-        deleted = cur.rowcount
-
-        deleted_row = dict(row) if row else None
-        c.close()
-
-    return {"deleted": deleted, "deleted_row": deleted_row}
-
-@app.post("/expenses/restore")
-def restore_expense(
-    body: RestoreRequest,
-    x_api_key: Optional[str] = Header(default=None),
-    api_key: Optional[str] = Query(default=None),
-):
-    require_key(x_api_key, api_key)
-
-    user_id = normalize_spaces(body.user_id)
-    sms_norm = normalize_spaces(body.sms)
-
-    amount = body.amount
-    currency = (body.currency or "KWD").upper()
-    merchant_raw = normalize_spaces(body.merchant_raw or (body.merchant_clean or ""))
-    merchant_clean = normalize_merchant(body.merchant_clean or merchant_raw)
-    category = normalize_spaces(body.category or "other").lower() or "other"
-
-    created_at = body.created_at or datetime.now(timezone.utc).isoformat()
-    date_raw = body.date_raw
-    date_iso = body.date_iso
-
-    sms_hash = sha256_hex(sms_norm)
-    h = compute_hash(user_id, amount, currency, merchant_clean, created_at)
-
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
+    try:
         cur.execute(
             """
-            INSERT INTO expenses
-            (user_id, sms, amount, currency, merchant_raw, merchant_clean, category, hash, created_at, date_raw, date_iso, sms_hash, sms_raw)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO expenses (
+                user_id, sms, amount, currency,
+                merchant_raw, merchant_clean, category,
+                hash, created_at, date_raw, date_iso,
+                sms_hash, sms_raw
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
                 sms_norm,
-                amount,
-                currency,
-                merchant_raw,
-                merchant_clean,
-                category,
-                h,
-                created_at,
-                date_raw,
-                date_iso,
+                float(parsed.get("amount", 0.0)),
+                parsed.get("currency"),
+                parsed.get("merchant_raw"),
+                parsed.get("merchant_clean"),
+                parsed.get("category"),
+                tx_hash,
+                parsed.get("created_at"),
+                parsed.get("date_raw"),
+                parsed.get("date_iso"),
                 sms_hash,
-                sms_norm,
-            ),
+                sms_raw
+            )
         )
-        c.commit()
+        conn.commit()
         new_id = cur.lastrowid
-        c.close()
+        conn.close()
+        return {
+            "inserted": True,
+            "id": new_id,
+            "hash": tx_hash,
+            "sms_hash": sms_hash,
+            "expense": {
+                "user_id": user_id,
+                "amount": float(parsed.get("amount", 0.0)),
+                "currency": parsed.get("currency"),
+                "merchant_clean": parsed.get("merchant_clean"),
+                "category": parsed.get("category"),
+                "created_at": parsed.get("created_at"),
+            }
+        }
+    except sqlite3.IntegrityError as e:
+        # por si choca por hash unique
+        cur.execute("SELECT id FROM expenses WHERE sms_hash = ?", (sms_hash,))
+        r2 = cur.fetchone()
+        conn.close()
+        return {"inserted": False, "id": (r2["id"] if r2 else None), "integrity_error": str(e)}
 
-    return {"restored": True, "id": new_id}
-
-# Optional: debug rules (requires key)
-@app.get("/rules")
-def list_rules(
-    x_api_key: Optional[str] = Header(default=None),
-    api_key: Optional[str] = Query(default=None),
+@app.get("/expenses")
+def list_expenses(
+    user_id: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0
 ):
-    require_key(x_api_key, api_key)
-    with db_lock:
-        c = conn()
-        cur = c.cursor()
-        cur.execute("SELECT * FROM rules ORDER BY priority DESC, id ASC")
-        rows = [dict(r) for r in cur.fetchall()]
-        c.close()
-    return {"count": len(rows), "rules": rows}
+    limit = max(1, min(limit, 5000))
+    offset = max(0, offset)
+
+    conn = db()
+    cur = conn.cursor()
+
+    if user_id:
+        uid = norm_spaces(user_id).lower()
+        cur.execute("SELECT COUNT(*) AS c FROM expenses WHERE user_id = ?", (uid,))
+        count = cur.fetchone()["c"]
+        cur.execute(
+            """
+            SELECT id, user_id, amount, currency, merchant_clean, category, created_at
+            FROM expenses
+            WHERE user_id = ?
+            ORDER BY datetime(created_at) DESC, id DESC
+            LIMIT ? OFFSET ?
+            """,
+            (uid, limit, offset)
+        )
+    else:
+        cur.execute("SELECT COUNT(*) AS c FROM expenses")
+        count = cur.fetchone()["c"]
+        cur.execute(
+            """
+            SELECT id, user_id, amount, currency, merchant_clean, category, created_at
+            FROM expenses
+            ORDER BY datetime(created_at) DESC, id DESC
+            LIMIT ? OFFSET ?
+            """,
+            (limit, offset)
+        )
+
+    rows = cur.fetchall()
+    conn.close()
+
+    expenses = []
+    for r in rows:
+        expenses.append({
+            "id": r["id"],
+            "user_id": r["user_id"],
+            "amount": r["amount"],
+            "currency": r["currency"],
+            "merchant_clean": r["merchant_clean"],
+            "category": r["category"],
+            "created_at": r["created_at"],
+        })
+
+    return {"count": count, "expenses": expenses}
+
+@app.patch("/expenses/{expense_id}")
+async def patch_expense(expense_id: int, payload: ExpensePatch, api_key: str = Query(...)):
+    require_api_key(api_key)
+
+    fields = {}
+    for k, v in payload.model_dump(exclude_none=True).items():
+        fields[k] = v
+
+    if not fields:
+        return {"updated": False}
+
+    allowed = {"amount", "currency", "merchant_clean", "category", "created_at"}
+    for k in list(fields.keys()):
+        if k not in allowed:
+            fields.pop(k, None)
+
+    if not fields:
+        return {"updated": False}
+
+    sets = ", ".join([f"{k} = ?" for k in fields.keys()])
+    params = list(fields.values()) + [expense_id]
+
+    conn = db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE expenses SET {sets} WHERE id = ?", params)
+    conn.commit()
+    updated = cur.rowcount
+    conn.close()
+    return {"updated": bool(updated)}
+
+@app.delete("/expenses/{expense_id}")
+async def delete_expense(expense_id: int, api_key: str = Query(...)):
+    require_api_key(api_key)
+    conn = db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+    conn.commit()
+    deleted = cur.rowcount
+    conn.close()
+    return {"deleted": bool(deleted)}
+
+# ---------------- RULES API ----------------
+@app.get("/rules")
+def get_rules(user_id: str):
+    uid = norm_spaces(user_id).lower()
+    conn = db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id, user_id, enabled, priority, match_field, match_type, pattern,
+               set_category, set_merchant_clean, created_at
+        FROM rules
+        WHERE user_id = ?
+        ORDER BY priority ASC, id ASC
+        """,
+        (uid,)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return {
+        "count": len(rows),
+        "rules": [dict(r) for r in rows]
+    }
+
+@app.post("/rules")
+def create_rule(rule: RuleCreate, api_key: str = Query(...)):
+    require_api_key(api_key)
+    uid = norm_spaces(rule.user_id).lower()
+
+    match_field = (rule.match_field or "merchant").lower()
+    match_type = (rule.match_type or "contains").lower()
+    if match_field not in ("merchant", "sms"):
+        raise HTTPException(400, "match_field must be 'merchant' or 'sms'")
+    if match_type not in ("contains", "regex"):
+        raise HTTPException(400, "match_type must be 'contains' or 'regex'")
+
+    pattern = norm_spaces(rule.pattern)
+    if not pattern:
+        raise HTTPException(400, "pattern is required")
+
+    conn = db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO rules (user_id, enabled, priority, match_field, match_type, pattern, set_category, set_merchant_clean, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            uid,
+            1 if rule.enabled else 0,
+            int(rule.priority),
+            match_field,
+            match_type,
+            pattern,
+            (rule.set_category.strip().lower() if rule.set_category else None),
+            (norm_spaces(rule.set_merchant_clean) if rule.set_merchant_clean else None),
+            now_iso_utc()
+        )
+    )
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+    return {"created": True, "id": rid}
+
+@app.patch("/rules/{rule_id}")
+def patch_rule(rule_id: int, payload: RulePatch, api_key: str = Query(...)):
+    require_api_key(api_key)
+    fields = payload.model_dump(exclude_none=True)
+    if not fields:
+        return {"updated": False}
+
+    if "match_field" in fields:
+        mf = (fields["match_field"] or "").lower()
+        if mf not in ("merchant", "sms"):
+            raise HTTPException(400, "match_field must be 'merchant' or 'sms'")
+        fields["match_field"] = mf
+
+    if "match_type" in fields:
+        mt = (fields["match_type"] or "").lower()
+        if mt not in ("contains", "regex"):
+            raise HTTPException(400, "match_type must be 'contains' or 'regex'")
+        fields["match_type"] = mt
+
+    if "pattern" in fields:
+        fields["pattern"] = norm_spaces(fields["pattern"])
+        if not fields["pattern"]:
+            raise HTTPException(400, "pattern cannot be empty")
+
+    if "set_category" in fields and fields["set_category"] is not None:
+        fields["set_category"] = fields["set_category"].strip().lower()
+
+    if "set_merchant_clean" in fields and fields["set_merchant_clean"] is not None:
+        fields["set_merchant_clean"] = norm_spaces(fields["set_merchant_clean"])
+
+    if "enabled" in fields:
+        fields["enabled"] = 1 if fields["enabled"] else 0
+
+    sets = ", ".join([f"{k} = ?" for k in fields.keys()])
+    params = list(fields.values()) + [rule_id]
+
+    conn = db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE rules SET {sets} WHERE id = ?", params)
+    conn.commit()
+    updated = cur.rowcount
+    conn.close()
+    return {"updated": bool(updated)}
+
+@app.delete("/rules/{rule_id}")
+def delete_rule(rule_id: int, api_key: str = Query(...)):
+    require_api_key(api_key)
+    conn = db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
+    conn.commit()
+    deleted = cur.rowcount
+    conn.close()
+    return {"deleted": bool(deleted)}

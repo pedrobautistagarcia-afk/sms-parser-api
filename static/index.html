@@ -802,6 +802,181 @@ async function deleteSelected(){
 
 updateSelectedUI();
 refreshAll();
+
+// -------------------- Rules Panel (v1) --------------------
+async function apiGetJson(url){
+  const r = await fetch(url, {cache:"no-store"});
+  if(!r.ok) throw new Error("HTTP " + r.status);
+  return await r.json();
+}
+async function apiSendJson(url, method, body){
+  const r = await fetch(url, {
+    method,
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body),
+    cache: "no-store"
+  });
+  const j = await r.json().catch(()=> ({}));
+  if(!r.ok) throw new Error((j && j.detail) ? j.detail : ("HTTP " + r.status));
+  return j;
+}
+
+function getUiUser(){
+  const el = document.getElementById("user");
+  return (el ? el.value : "").trim() || "pedro";
+}
+function getUiKey(){
+  // si no tienes input de key en tu UI, ponemos la default
+  const el = document.getElementById("apiKey");
+  return (el ? el.value : "").trim() || "ElPortichuelo99";
+}
+
+function rulesSetOpen(open){
+  const box = document.getElementById("rulesBox");
+  if(!box) return;
+  box.style.display = open ? "block" : "none";
+}
+
+async function rulesRefresh(){
+  const user = getUiUser();
+  const list = document.getElementById("rulesList");
+  const cnt = document.getElementById("rulesCount");
+  if(!list) return;
+  list.innerHTML = "<div class='muted' style='font-size:12px;'>Loading…</div>";
+
+  try{
+    const data = await apiGetJson(`/rules?user_id=${encodeURIComponent(user)}`);
+    const rules = data.rules || [];
+    if(cnt) cnt.textContent = `${rules.length} rules`;
+
+    if(!rules.length){
+      list.innerHTML = "<div class='muted' style='font-size:12px;'>No rules yet.</div>";
+      return;
+    }
+
+    list.innerHTML = "";
+    for(const r of rules){
+      const row = document.createElement("div");
+      row.style.display = "grid";
+      row.style.gridTemplateColumns = "1fr auto";
+      row.style.gap = "8px";
+      row.style.alignItems = "center";
+      row.style.padding = "8px 0";
+      row.style.borderBottom = "1px solid rgba(0,0,0,.06)";
+
+      const left = document.createElement("div");
+      left.innerHTML = `<div style="font-size:12px;"><b>${(r.match_field||"merchant")}</b> contains <b>${escapeHtml(r.pattern||"")}</b></div>
+                        <div class="muted" style="font-size:12px;margin-top:2px;">
+                          → category: <b>${escapeHtml((r.set_category||""))}</b>${r.set_merchant_clean ? `, merchant: <b>${escapeHtml(r.set_merchant_clean)}</b>` : ""}
+                        </div>
+                        <div class="muted" style="font-size:11px;margin-top:2px;">priority ${r.priority} · ${r.enabled ? "enabled" : "disabled"}</div>`;
+
+      const right = document.createElement("div");
+      right.style.display = "flex";
+      right.style.gap = "6px";
+
+      const btnToggle = document.createElement("button");
+      btnToggle.className = "btn";
+      btnToggle.textContent = r.enabled ? "Disable" : "Enable";
+      btnToggle.onclick = async () => {
+        const key = getUiKey();
+        await apiSendJson(`/rules/${r.id}?api_key=${encodeURIComponent(key)}`, "PATCH", {enabled: !r.enabled});
+        await rulesRefresh();
+      };
+
+      const btnDel = document.createElement("button");
+      btnDel.className = "btn";
+      btnDel.textContent = "Delete";
+      btnDel.onclick = async () => {
+        if(!confirm("Delete this rule?")) return;
+        const key = getUiKey();
+        await fetch(`/rules/${r.id}?api_key=${encodeURIComponent(key)}`, {method:"DELETE"});
+        await rulesRefresh();
+      };
+
+      right.appendChild(btnToggle);
+      right.appendChild(btnDel);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    }
+  }catch(e){
+    list.innerHTML = `<div class='muted' style='font-size:12px;'>Error: ${escapeHtml(String(e.message||e))}</div>`;
+  }
+}
+
+async function rulesCreate(){
+  const user = getUiUser();
+  const key = getUiKey();
+  const pat = (document.getElementById("rulePattern")?.value || "").trim();
+  const cat = (document.getElementById("ruleCategory")?.value || "").trim();
+  const mer = (document.getElementById("ruleMerchant")?.value || "").trim();
+
+  if(!pat){ alert("Pattern required"); return; }
+  if(!cat && !mer){ alert("Set category and/or merchant_clean"); return; }
+
+  await apiSendJson(`/rules?api_key=${encodeURIComponent(key)}`, "POST", {
+    user_id: user,
+    pattern: pat,
+    match_field: "merchant",
+    match_type: "contains",
+    priority: 100,
+    enabled: true,
+    set_category: cat || null,
+    set_merchant_clean: mer || null
+  });
+
+  document.getElementById("rulePattern").value = "";
+  document.getElementById("ruleCategory").value = "";
+  document.getElementById("ruleMerchant").value = "";
+  await rulesRefresh();
+}
+
+function rulesInit(){
+  const btn = document.getElementById("rulesToggleBtn");
+  const box = document.getElementById("rulesBox");
+  if(btn && box){
+    btn.addEventListener("click", () => {
+      const open = box.style.display !== "block";
+      rulesSetOpen(open);
+      if(open) rulesRefresh();
+    });
+  }
+  document.getElementById("ruleCreateBtn")?.addEventListener("click", rulesCreate);
+  document.getElementById("ruleRefreshBtn")?.addEventListener("click", rulesRefresh);
+}
+
+document.addEventListener("DOMContentLoaded", rulesInit);
+// ----------------------------------------------------------
+
 </script>
+
+<div id="rulesPanel" style="position:fixed;right:16px;bottom:16px;z-index:9999;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;max-width:360px;">
+  <button id="rulesToggleBtn" class="btn" style="box-shadow:0 6px 20px rgba(0,0,0,.15);">Rules</button>
+  <div id="rulesBox" style="display:none;margin-top:10px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <b style="font-size:14px;">Auto Rules</b>
+      <span id="rulesCount" class="muted" style="font-size:12px;"></span>
+    </div>
+
+    <div class="muted" style="font-size:12px;margin-top:6px;line-height:1.35;">
+      Crea reglas tipo “si merchant contiene X → categoría Y”. Se aplican al insertar.
+    </div>
+
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <input id="rulePattern" placeholder="pattern (ej: talabat)" style="padding:8px;border:1px solid rgba(0,0,0,.12);border-radius:10px;width:100%;" />
+      <input id="ruleCategory" placeholder="category (ej: food)" style="padding:8px;border:1px solid rgba(0,0,0,.12);border-radius:10px;width:100%;" />
+      <input id="ruleMerchant" placeholder="merchant_clean opcional" style="padding:8px;border:1px solid rgba(0,0,0,.12);border-radius:10px;width:100%;grid-column:1 / span 2;" />
+      <div style="display:flex;gap:8px;grid-column:1 / span 2;">
+        <button id="ruleCreateBtn" class="btn" style="flex:1;">Create</button>
+        <button id="ruleRefreshBtn" class="btn" style="flex:1;">Refresh</button>
+      </div>
+    </div>
+
+    <div id="rulesList" style="margin-top:10px;max-height:260px;overflow:auto;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;"></div>
+  </div>
+</div>
+
 </body>
 </html>
