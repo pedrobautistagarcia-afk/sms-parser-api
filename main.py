@@ -458,3 +458,13 @@ def list_rules(user_id: str = Query("pedro")):
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return {"count": len(rows), "rules": rows}
+
+
+@app.get("/debug/users")
+def debug_users():
+    conn = db()
+    cur = conn.cursor()
+    cur.execute("SELECT user_id, COUNT(*) as n FROM expenses GROUP BY user_id ORDER BY n DESC")
+    rows = [{"user_id": r[0], "count": r[1]} for r in cur.fetchall()]
+    conn.close()
+    return {"db_path": DB_PATH, "users": rows}
