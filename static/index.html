@@ -5,12 +5,40 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Registro Gastos</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
-    input,button{padding:10px;font-size:14px}
-    table{border-collapse:collapse;width:100%;margin-top:16px}
-    th,td{border:1px solid #ddd;padding:8px;text-align:left}
-    th{background:#f5f5f5}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      margin:20px
+    }
+    input,button{
+      padding:10px;
+      font-size:14px
+    }
+    table{
+      border-collapse:collapse;
+      width:100%;
+      margin-top:16px
+    }
+    th,td{
+      border:1px solid #ddd;
+      padding:8px;
+      text-align:left
+    }
+    th{
+      background:#f5f5f5
+    }
+    tr.duplicate{
+      background:#ffe5e5; /* rojo clarito */
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap
+    }
+    .hint{
+      margin-top:10px;
+      font-size:13px;
+      color:#666
+    }
   </style>
 </head>
 <body>
@@ -21,10 +49,19 @@
     <button onclick="load()">Cargar</button>
   </div>
 
+  <div class="hint">
+    Las filas en rojo indican un gasto duplicado detectado en la última inserción.
+  </div>
+
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>Fecha</th><th>Importe</th><th>Moneda</th><th>Comercio</th><th>Categoría</th>
+        <th>ID</th>
+        <th>Fecha</th>
+        <th>Importe</th>
+        <th>Moneda</th>
+        <th>Comercio</th>
+        <th>Categoría</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -33,13 +70,24 @@
 <script>
 async function load(){
   const user = document.getElementById('user').value.trim();
-  const url = user ? `/expenses?user_id=${encodeURIComponent(user)}&limit=200` : `/expenses?limit=200`;
+  const url = user
+    ? `/expenses?user_id=${encodeURIComponent(user)}&limit=200`
+    : `/expenses?limit=200`;
+
   const res = await fetch(url);
   const data = await res.json();
+
+  const duplicatedId = localStorage.getItem("last_duplicate_id");
   const tb = document.getElementById('tbody');
   tb.innerHTML = "";
+
   for(const e of data.expenses){
     const tr = document.createElement('tr');
+
+    if(duplicatedId && String(e.id) === duplicatedId){
+      tr.classList.add("duplicate");
+    }
+
     tr.innerHTML = `
       <td>${e.id}</td>
       <td>${e.created_at}</td>
@@ -51,6 +99,13 @@ async function load(){
     tb.appendChild(tr);
   }
 }
+
+// Helper para marcar duplicado desde consola (o futuro POST)
+window.markDuplicate = function(id){
+  localStorage.setItem("last_duplicate_id", String(id));
+  load();
+}
+
 load();
 </script>
 </body>
