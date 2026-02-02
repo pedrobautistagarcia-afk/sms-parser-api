@@ -5,7 +5,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
-from fastapi import FastAPI, Request, Query, HTTPException
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -13,7 +13,6 @@ from pydantic import BaseModel, Field
 # ======================================================
 # CONFIG
 # ======================================================
-API_KEY = os.getenv("API_KEY", "ElPortichuelo99")
 
 # DB persistente en Render (Disk montado en /var/data)
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
@@ -41,9 +40,6 @@ def now_iso_utc() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 def require_api_key(api_key: str):
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-
 # ======================================================
 # DB INIT + MIGRATION
 # ======================================================
@@ -342,7 +338,7 @@ def health():
     return {"db_path": DB_PATH, "columns": cols, "indexes": idxs}
 
 @app.post("/ingest")
-async def ingest(req: IngestRequest, api_key: str = Query(...)):
+async def ingest(req: IngestRequest):
     require_api_key(api_key)
 
     user_id = norm_spaces(req.user_id).lower()
@@ -492,7 +488,7 @@ def list_expenses(
     return {"count": count, "expenses": expenses}
 
 @app.patch("/expenses/{expense_id}")
-async def patch_expense(expense_id: int, payload: ExpensePatch, api_key: str = Query(...)):
+async def patch_expense(expense_id: int, payload: ExpensePatch):
     require_api_key(api_key)
 
     fields = {}
@@ -522,7 +518,7 @@ async def patch_expense(expense_id: int, payload: ExpensePatch, api_key: str = Q
     return {"updated": bool(updated)}
 
 @app.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: int, api_key: str = Query(...)):
+async def delete_expense(expense_id: int):
     require_api_key(api_key)
     conn = db()
     cur = conn.cursor()
@@ -556,7 +552,7 @@ def get_rules(user_id: str):
     }
 
 @app.post("/rules")
-def create_rule(rule: RuleCreate, api_key: str = Query(...)):
+def create_rule(rule: RuleCreate):
     require_api_key(api_key)
     uid = norm_spaces(rule.user_id).lower()
 
@@ -596,7 +592,7 @@ def create_rule(rule: RuleCreate, api_key: str = Query(...)):
     return {"created": True, "id": rid}
 
 @app.patch("/rules/{rule_id}")
-def patch_rule(rule_id: int, payload: RulePatch, api_key: str = Query(...)):
+def patch_rule(rule_id: int, payload: RulePatch):
     require_api_key(api_key)
     fields = payload.model_dump(exclude_none=True)
     if not fields:
@@ -640,7 +636,7 @@ def patch_rule(rule_id: int, payload: RulePatch, api_key: str = Query(...)):
     return {"updated": bool(updated)}
 
 @app.delete("/rules/{rule_id}")
-def delete_rule(rule_id: int, api_key: str = Query(...)):
+def delete_rule(rule_id: int):
     require_api_key(api_key)
     conn = db()
     cur = conn.cursor()
