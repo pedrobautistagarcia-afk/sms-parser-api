@@ -11,6 +11,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+# ======================================================
+# CONFIG
+# ======================================================
 API_KEY = os.getenv("API_KEY", "CHANGE_ME")
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
@@ -19,30 +22,39 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 db_lock = Lock()
 
+# ======================================================
+# DB HELPERS
+# ======================================================
 def ensure_db_dir():
     folder = os.path.dirname(DB_PATH)
     if folder and folder != ".":
         os.makedirs(folder, exist_ok=True)
 
-def conn():
+def conn() -> sqlite3.Connection:
     ensure_db_dir()
     c = sqlite3.connect(DB_PATH, check_same_thread=False)
     c.row_factory = sqlite3.Row
     return c
+
+def sha256_hex(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 def require_key(x_api_key: Optional[str], api_key: Optional[str]):
     k = x_api_key or api_key
     if not k or k != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-def sha256_hex(s: str) -> str:
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
-
 def init_db():
-    # Compatible con tu DB actual (sms NOT NULL, sms_hash UNIQUE)
+    """
+    Schema compatible con tu DB real:
+    - sms TEXT NOT NULL
+    - sms_hash UNIQUE (dedupe)
+    Mantiene columnas legacy.
+    """
     with db_lock:
         c = conn()
         cur = c.cursor()
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,24 +73,35 @@ def init_db():
             sms_raw TEXT
         )
         """)
-        # Índices (si ya existen, no pasa nada)
+
+        # Indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
+
+        # Unique (dedupe)
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
+
         c.commit()
         c.close()
 
 init_db()
 
+# ======================================================
+# MODELS
+# ======================================================
 class IngestRequest(BaseModel):
     user_id: str = Field(..., alias="userid")
     sms: str
+
     class Config:
         populate_by_name = True
 
+# ======================================================
+# PARSING
+# ======================================================
 CURRENCY_RE = r"(KWD|EUR|USD|GBP|AED|SAR|QAR|BHD|OMR)"
 AMOUNT_RE = r"(\d+(?:[.,]\d{1,3})?)"
 
@@ -88,7 +111,7 @@ def to_float(s: str) -> float:
 def parse_sms(sms: str) -> Dict[str, Any]:
     sms_norm = re.sub(r"\s+", " ", sms.strip())
 
-    # currency + amount
+    # Currency + Amount
     currency = "KWD"
     amount = 0.0
     m1 = re.search(rf"\b{CURRENCY_RE}\s*{AMOUNT_RE}\b", sms_norm, re.IGNORECASE)
@@ -100,7 +123,7 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         amount = to_float(m2.group(1))
         currency = m2.group(2).upper()
 
-    # merchant
+    # Merchant
     merchant = ""
     mm = re.search(r"\bfor\s+(.+?)\s+\bon\b", sms_norm, re.IGNORECASE)
     if mm:
@@ -113,11 +136,11 @@ def parse_sms(sms: str) -> Dict[str, Any]:
     merchant_raw = merchant.strip()
     merchant_clean = merchant_raw.strip(" ,.-")
 
-    # date
+    # Date (optional)
     created_at = datetime.now(timezone.utc).isoformat()
-    dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
     date_raw = None
     date_iso = None
+    dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
     if dm:
         date_raw = f"{dm.group(1)} {dm.group(2)}"
         try:
@@ -140,9 +163,13 @@ def parse_sms(sms: str) -> Dict[str, Any]:
     }
 
 def compute_hash(user_id: str, p: Dict[str, Any]) -> str:
+    # Hash lógico (dedupe “semántico” básico)
     base = f"{user_id}|{p['amount']}|{p['currency']}|{p['merchant_clean']}|{p['created_at']}"
     return sha256_hex(base)
 
+# ======================================================
+# ROUTES
+# ======================================================
 @app.get("/")
 def home():
     return FileResponse("static/index.html")
@@ -161,11 +188,12 @@ def ingest(
 
     p = parse_sms(req.sms)
     h = compute_hash(req.user_id, p)
-    sms_hash = sha256_hex(p["sms_norm"])
+    sms_hash = sha256_hex(p["sms_norm"])  # dedupe por SMS exacto (normalizado)
 
     with db_lock:
         c = conn()
         cur = c.cursor()
+
         try:
             cur.execute(
                 """
@@ -175,7 +203,7 @@ def ingest(
                 """,
                 (
                     req.user_id,
-                    p["sms_norm"],         # sms NOT NULL
+                    p["sms_norm"],   # sms NOT NULL
                     p["amount"],
                     p["currency"],
                     p["merchant_raw"],
@@ -186,16 +214,23 @@ def ingest(
                     p["date_raw"],
                     p["date_iso"],
                     sms_hash,
-                    p["sms_norm"],         # sms_raw (same)
+                    p["sms_norm"],   # sms_raw (igual)
                 ),
             )
             c.commit()
             new_id = cur.lastrowid
             c.close()
             return {"inserted": True, "id": new_id}
+
         except sqlite3.IntegrityError:
+            # Duplicado: devuelve el id existente (por sms_hash y si no, por hash)
+            cur.execute("SELECT id FROM expenses WHERE sms_hash = ?", (sms_hash,))
+            row = cur.fetchone()
+            if not row:
+                cur.execute("SELECT id FROM expenses WHERE hash = ?", (h,))
+                row = cur.fetchone()
             c.close()
-            return {"inserted": False, "id": None}
+            return {"inserted": False, "id": (row["id"] if row else None)}
 
 @app.get("/expenses")
 def expenses(
@@ -229,3 +264,21 @@ def expenses(
             "created_at": r["created_at"],
         })
     return {"count": len(out), "expenses": out}
+
+@app.delete("/expenses/{expense_id}")
+def delete_expense(
+    expense_id: int,
+    x_api_key: Optional[str] = Header(default=None),
+    api_key: Optional[str] = Query(default=None),
+):
+    require_key(x_api_key, api_key)
+
+    with db_lock:
+        c = conn()
+        cur = c.cursor()
+        cur.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+        c.commit()
+        deleted = cur.rowcount
+        c.close()
+
+    return {"deleted": deleted}
