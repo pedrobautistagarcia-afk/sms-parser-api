@@ -1,1794 +1,399 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Registro Gastos</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:18px}
-    input,button,select{padding:7px 9px;font-size:14px}
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;max-width:1200px}
-    .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .card{border:1px solid #ddd;border-radius:12px;padding:12px;max-width:1200px;margin-top:10px}
-    .muted{color:#666;font-size:13px}
-    .ok{color:#0a7a2f;font-size:13px}
-    .warn{color:#a15600;font-size:13px}
-    .err{color:#b00020;font-size:13px}
-
-    table{border-collapse:collapse;width:100%;margin-top:14px;max-width:1200px}
-    th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:middle}
-    thead th{background:#f5f5f5;position:sticky;top:0;z-index:2}
-    thead tr.filters th{background:#fafafa;top:37px;z-index:1}
-    .num{text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap}
-    tr.duplicate{background:#ffe5e5}
-    tr.newrow{background:#e9f7ff}
-    .badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:12px;background:#f2f2f2}
-    .totals{margin-top:10px;border:1px solid #ddd;border-radius:12px;padding:10px;max-width:1200px}
-    .totals b{font-size:15px}
-    .danger{background:#fff0f0;border:1px solid #ffd2d2}
-    .thin{padding:6px;font-size:13px;width:100%;box-sizing:border-box}
-    .w-date{width:170px}
-    .w-amt{width:120px}
-    .w-cur{width:95px}
-    .w-cat{width:160px}
-
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
-    .btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:7px 10px}
-    .btn:hover{background:#f7f7f7}
-    .btn.active{border-color:#111}
-
-    .merchant{font-weight:600}
-    .date{color:#444}
-    .cat{text-transform:lowercase}
-
-    .cat-coffee{background:#fff3e6}
-    .cat-food{background:#eaffea}
-    .cat-transport{background:#eaf2ff}
-    .cat-groceries{background:#f0fff5}
-    .cat-shopping{background:#f7efff}
-    .cat-other{background:#f5f5f5}
-
-    tr.selected{outline:2px solid #111;outline-offset:-2px;}
-
-    .cell-edit{width:100%;box-sizing:border-box;padding:6px;font-size:13px;}
-    .cell-click{cursor:pointer}
-
-    .snackbar{
-      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-      background:#111;color:#fff;border-radius:12px;padding:10px 12px;
-      display:none;align-items:center;gap:10px;max-width:95vw;z-index:9999;
+    :root{
+      --bg:#0b1220;
+      --card:#0f1b33;
+      --muted:rgba(255,255,255,.7);
+      --line:rgba(255,255,255,.08);
+      --text:#fff;
+      --chip:rgba(255,255,255,.08);
     }
-    .snackbar button{
-      background:#fff;color:#111;border:0;border-radius:10px;padding:7px 10px;
-      cursor:pointer;font-weight:600;
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(84,140,255,.28), transparent 60%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(255,170,80,.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
     }
-    .snackbar .mut{opacity:.85;font-size:13px}
+    .wrap{ max-width:1200px; margin:0 auto; padding:22px 18px 28px; }
+    .top{
+      display:flex; gap:14px; align-items:center; justify-content:space-between;
+      margin-bottom:14px;
+    }
+    h1{ font-size:18px; margin:0; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:12px; margin-top:4px; }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .toolbar{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.15);
+    }
+    .left, .right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    input, select, button{
+      font: inherit;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:8px 10px;
+      outline:none;
+    }
+    input::placeholder{ color:rgba(255,255,255,.45); }
+    button{
+      cursor:pointer;
+      background: rgba(255,255,255,.10);
+      transition: transform .05s ease, background .15s ease;
+    }
+    button:hover{ background: rgba(255,255,255,.16); }
+    button:active{ transform: scale(.98); }
+    .chip{
+      padding:7px 10px; border-radius:999px; background:var(--chip); border:1px solid var(--line);
+      font-size:12px; color:var(--muted);
+    }
+    .kpis{ display:flex; gap:10px; flex-wrap:wrap; }
+    table{ width:100%; border-collapse:collapse; }
+    thead th{
+      text-align:left; font-size:12px; color:rgba(255,255,255,.75);
+      padding:10px 12px; border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      position:sticky; top:0; z-index:1;
+    }
+    tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:13px;
+      vertical-align:middle;
+      line-height:1.25;
+      white-space:nowrap;
+    }
+    tbody tr:hover{ background: rgba(255,255,255,.03); }
+    .amt{ text-align:right; font-variant-numeric: tabular-nums; }
+    .amt-expense{ color: rgba(255,90,90,.95); font-weight:600; }
+    .amt-income{ color: rgba(90,255,160,.95); font-weight:600; }
+    .muted{ color:var(--muted); }
+    .category select{
+      text-transform: capitalize;
+      padding:6px 10px;
+      background: rgba(255,255,255,.07);
+    }
+    .actions{ text-align:right; width:1%; }
+    .btn-mini{
+      padding:6px 10px;
+      font-size:12px;
+      border-radius:10px;
+    }
+    /* Rule button: solo visible al hover */
+    .ruleBtn{ opacity:0; pointer-events:none; transition: opacity .12s ease; }
+    tr:hover .ruleBtn{ opacity:1; pointer-events:auto; }
+
+    /* Keep cell size stable on click */
+    td:focus, td:active, td *:focus, td *:active{ outline:none !important; box-shadow:none !important; }
   </style>
 </head>
 <body>
-
-<!-- ===== Insights (KPIs) - collapsed by default ===== -->
-<div id="kpiWrap" style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid rgba(0,0,0,.08);">
-  <div style="max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button id="kpiToggleBtn" class="btn" style="font-weight:600;">▸ Insights</button>
-      <span class="muted" style="font-size:12px;">(KPIs sobre lo filtrado/visible)</span>
-    </div>
-    <button id="kpiRefreshBtn" class="btn" style="display:none;">Refresh</button>
-  </div>
-
-  <div id="kpiPanel" style="display:none;">
-    <div style="max-width:1100px;margin:0 auto;padding:0 16px 12px 16px;">
-      <div style="display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:10px;">
-        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
-          <div class="muted" style="font-size:11px;">Total mes</div>
-          <div id="kpiMonth" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
-        </div>
-        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
-          <div class="muted" style="font-size:11px;">Total hoy</div>
-          <div id="kpiToday" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
-        </div>
-        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
-          <div class="muted" style="font-size:11px;">Media diaria (mes)</div>
-          <div id="kpiAvg" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
-        </div>
-        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
-          <div class="muted" style="font-size:11px;">Mayor gasto (mes)</div>
-          <div id="kpiMax" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
-        </div>
-        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
-          <div class="muted" style="font-size:11px;">Top categoría (mes)</div>
-          <div id="kpiTopCat" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
-        </div>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Registro Gastos</h1>
+        <div class="sub" id="statusLine">Loading…</div>
       </div>
-      <div class="muted" id="kpiNote" style="font-size:12px;margin-top:8px;line-height:1.35;">
-        Se calculan con las filas visibles. Si cambias filtros, vuelve a abrir/cerrar “Insights” o pulsa Refresh.
-      </div>
-    </div>
-  </div>
-</div>
-<!-- ===== /Insights ===== -->
-
-
-  <div class="topbar">
-    <div>
-      <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
-      <div class="muted">Ver es libre. Editar/borrar pide clave una vez. Reglas auto aplican al ingerir.</div>
-    </div>
-
-    <div class="right">
-      <button class="btn" id="btnToday" onclick="setQuickRange('today')">Today</button>
-      <button class="btn" id="btnWeek" onclick="setQuickRange('week')">Last week</button>
-      <button class="btn" id="btnMonth" onclick="setQuickRange('month')">Last month</button>
-      <button class="btn" id="btnYtd" onclick="setQuickRange('ytd')">This year</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="row" style="justify-content:space-between">
-      <div class="row">
-        <button onclick="refreshAll()">Recargar</button>
-        <button class="btn" onclick="exportCSV()">Export CSV</button>
-        <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
-
-        <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
-        <span id="status" class="muted">Listo.</span>
-      </div>
-
-      <div class="row">
-        <label class="muted"><b>Desde</b></label>
-        <input id="dateFrom" type="date" onchange="render()"/>
-        <label class="muted"><b>Hasta</b></label>
-        <input id="dateTo" type="date" onchange="render()"/>
-        <button class="btn" onclick="clearDateRange()">Quitar fechas</button>
-        <button class="btn" onclick="setOrChangeKey()">🔒 Key</button>
+      <div class="right">
+        <button class="btn-mini" id="btnRefresh">Refresh</button>
+        <button class="btn-mini" id="btnCsv">Export CSV</button>
       </div>
     </div>
 
-    <div class="row" style="margin-top:10px">
-      <label><b>User</b></label>
-      <input id="user" placeholder="userid" value="pedro"/>
-      <span class="muted">Puedes dejarlo vacío para ver todo.</span>
-    </div>
-  </div>
-
-  <div class="totals">
-    <b>Resumen (filtrado)</b>
-    <div class="row" style="margin-top:8px">
-      <span class="pill">Filas: <span id="sumCount">0</span></span>
-      <span class="pill">Total KWD: <span id="sumKwd">0.000</span></span>
-      <button onclick="clearFilters()">Limpiar filtros</button>
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th class="w-date cell-click" onclick="toggleSort('date')">Fecha <span id="sort_date"></span></th>
-        <th class="w-amt cell-click" onclick="toggleSort('amount')">Importe <span id="sort_amount"></span></th>
-        <th class="w-cur">Moneda</th>
-        <th>Comercio</th>
-        <th class="w-cat">Categoría</th>
-      </tr>
-
-      <tr class="filters">
-        <th class="w-date">
-          <span class="muted" style="font-size:12px">Usa “Desde/Hasta” arriba</span>
-        </th>
-        <th class="w-amt">
-          <span class="muted" style="font-size:12px">—</span>
-        </th>
-        <th class="w-cur">
-          <select id="fCur" class="thin" onchange="render()">
-            <option value="">Todas</option>
+    <div class="card">
+      <div class="toolbar">
+        <div class="left">
+          <input id="q" placeholder="Search merchant…" />
+          <select id="cur">
+            <option value="">All currencies</option>
+            <option value="KWD">KWD</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
           </select>
-        </th>
-        <th>
-          <input id="fMerchant" class="thin" placeholder="buscar comercio..." oninput="render()"/>
-        </th>
-        <th class="w-cat">
-          <select id="fCat" class="thin" onchange="render()">
-            <option value="">Todas</option>
+          <select id="cat">
+            <option value="">All categories</option>
           </select>
-        </th>
-      </tr>
-    </thead>
-
-    <tbody id="tbody"></tbody>
-  </table>
-
-  <div id="snack" class="snackbar">
-    <div>
-      <div id="snackText" style="font-weight:700"></div>
-      <div id="snackSub" class="mut"></div>
-    </div>
-    <button onclick="undoDelete()">Deshacer</button>
-  </div>
-
-<script>
-let ALL = [];
-let SORT = { field: "date", dir: "desc" };
-let undoPayload = null;
-let undoTimer = null;
-
-
-const BASE_CATEGORIES = ["coffee","food","transport","groceries","shopping","other"];
-const CAT_STORAGE = "rg_categories";
-
-function getStoredCategories(){
-  try{
-    const raw = localStorage.getItem(CAT_STORAGE);
-    const arr = raw ? JSON.parse(raw) : [];
-    if(!Array.isArray(arr)) return [];
-    return arr.map(x => String(x||"").trim().toLowerCase()).filter(Boolean);
-  }catch(e){
-    return [];
-  }
-}
-function saveStoredCategories(arr){
-  const clean = Array.from(new Set(arr.map(x => String(x||"").trim().toLowerCase()).filter(Boolean))).sort();
-  localStorage.setItem(CAT_STORAGE, JSON.stringify(clean));
-  return clean;
-}
-function addStoredCategory(cat){
-  const c = String(cat||"").trim().toLowerCase();
-  if(!c) return null;
-  const current = getStoredCategories();
-  if(!current.includes(c)){
-    current.push(c);
-    saveStoredCategories(current);
-  }
-  return c;
-}
-function getCategoryOptions(){
-  // Combina: base + categorías guardadas + las que existan en ALL
-  const fromAll = Array.isArray(ALL) ? ALL.map(e => (e.category || "other")) : [];
-  const merged = BASE_CATEGORIES
-    .concat(getStoredCategories())
-    .concat(fromAll)
-    .map(x => String(x||"").trim().toLowerCase())
-    .filter(Boolean);
-
-  return Array.from(new Set(merged)).sort();
-}
-
-const KEY_STORAGE = "rg_api_key";
-
-function setStatus(text, cls){
-  const el = document.getElementById('status');
-  el.className = cls || "muted";
-  el.textContent = text;
-}
-
-function fmtAmt(a){
-  if(a === null || a === undefined || Number.isNaN(Number(a))) return "";
-  return Number(a).toFixed(3);
-}
-function fmtDate(s){
-  if(!s) return "";
-  return String(s).replace("T"," ").replace("+00:00","").slice(0,16);
-}
-function catClass(cat){
-  const c = (cat || "other").toLowerCase();
-  if(c === "coffee") return "cat-coffee";
-  if(c === "food") return "cat-food";
-  if(c === "transport") return "cat-transport";
-  if(c === "groceries") return "cat-groceries";
-  if(c === "shopping") return "cat-shopping";
-  return "cat-other";
-}
-
-function getSelectedId(){ return localStorage.getItem("selected_row_id"); }
-function setSelectedId(id){
-  if(id === null || id === undefined) localStorage.removeItem("selected_row_id");
-  else localStorage.setItem("selected_row_id", String(id));
-  updateSelectedUI();
-}
-function updateSelectedUI(){
-  const id = getSelectedId();
-  document.getElementById("selLabel").textContent = id ? "sí" : "ninguno";
-  document.getElementById("btnDelete").disabled = !id;
-}
-
-/* ---------- KEY: prompt only when needed ---------- */
-function getApiKey(passive=false){
-  const k = (localStorage.getItem(KEY_STORAGE) || "").trim();
-  if(k) return k;
-  if(passive) return "";
-  const entered = prompt("Introduce API key para editar/borrar:");
-  if(!entered) return "";
-  localStorage.setItem(KEY_STORAGE, entered.trim());
-  return entered.trim();
-}
-function setOrChangeKey(){
-  const current = localStorage.getItem(KEY_STORAGE) || "";
-  const entered = prompt("API key (se guarda en este navegador):", current);
-  if(entered === null) return; // cancel
-  const v = entered.trim();
-  if(!v){
-    localStorage.removeItem(KEY_STORAGE);
-    setStatus("Key borrada de este navegador.", "warn");
-  }else{
-    localStorage.setItem(KEY_STORAGE, v);
-    setStatus("Key guardada ✅", "ok");
-    setTimeout(()=>setStatus("Listo.","muted"), 900);
-  }
-}
-
-async function fetchAll(){
-  const user = (document.getElementById('user')?.value || "").trim();
-  const url = user
-    ? `/expenses?user_id=${encodeURIComponent(user)}&limit=2000`
-    : `/expenses?limit=2000`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-  ALL = data.expenses || [];
-}
-
-function populateCategorySelect(){
-  const sel = document.getElementById("fCat");
-  const current = sel.value;
-  const cats = getCategoryOptions();
-  sel.innerHTML = `<option value="">Todas</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join("");
-  sel.value = cats.includes(current) ? current : "";
-}
-
-function populateCurrencySelect(){
-  const sel = document.getElementById("fCur");
-  const current = sel.value;
-
-  const currencies = Array.from(new Set(ALL.map(e => (e.currency || "KWD")))).sort();
-  ["KWD","USD","EUR"].forEach(c => { if(!currencies.includes(c)) currencies.push(c); });
-  currencies.sort();
-
-  sel.innerHTML =
-    `<option value="">Todas</option>` +
-    currencies.map(c => `<option value="${c}">${c}</option>`).join("");
-
-  sel.value = (current === "" || currencies.includes(current)) ? current : "";
-}
-
-function parseISODateOnly(isoStr){
-  if(!isoStr) return "";
-  return String(isoStr).slice(0,10);
-}
-
-function withinDateRange(e){
-  const from = document.getElementById("dateFrom").value;
-  const to = document.getElementById("dateTo").value;
-  if(!from && !to) return true;
-
-  const d = parseISODateOnly(e.created_at);
-  if(!d) return false;
-
-  if(from && d < from) return false;
-  if(to && d > to) return false;
-  return true;
-}
-
-function applyFilters(){
-  const fCur = document.getElementById("fCur").value; // "" => todas
-  const fMerchant = document.getElementById("fMerchant").value.trim().toLowerCase();
-  const fCat = document.getElementById("fCat").value;
-
-  return ALL.filter(e => {
-    if(fCur && (e.currency || "") !== fCur) return false;
-    if(fCat && (e.category || "other") !== fCat) return false;
-
-    if(fMerchant){
-      const m = (e.merchant_clean || "").toLowerCase();
-      if(!m.includes(fMerchant)) return false;
-    }
-
-    if(!withinDateRange(e)) return false;
-    return true;
-  });
-}
-
-function sortRows(rows){
-  const copy = [...rows];
-  const field = SORT.field;
-  const dir = SORT.dir;
-
-  const cmpText = (a,b) => String(a||"").localeCompare(String(b||""));
-  const cmpNum  = (a,b) => (Number(a||0) - Number(b||0));
-
-  copy.sort((ra, rb) => {
-    let v = 0;
-    if(field === "amount") v = cmpNum(ra.amount, rb.amount);
-    else v = cmpText(ra.created_at, rb.created_at);
-    return dir === "asc" ? v : -v;
-  });
-  return copy;
-}
-
-function updateSortIndicators(){
-  document.getElementById("sort_date").textContent = SORT.field==="date" ? (SORT.dir==="asc"?"↑":"↓") : "";
-  document.getElementById("sort_amount").textContent = SORT.field==="amount" ? (SORT.dir==="asc"?"↑":"↓") : "";
-}
-
-function toggleSort(field){
-  if(SORT.field === field){
-    SORT.dir = (SORT.dir === "asc") ? "desc" : "asc";
-  }else{
-    SORT.field = field;
-    SORT.dir = (field === "date") ? "desc" : "asc";
-  }
-  updateSortIndicators();
-  render();
-}
-
-function setActiveQuickButton(kind){
-  const ids = ["btnToday","btnWeek","btnMonth","btnYtd"];
-  ids.forEach(id => document.getElementById(id).classList.remove("active"));
-  if(kind === "today") document.getElementById("btnToday").classList.add("active");
-  if(kind === "week") document.getElementById("btnWeek").classList.add("active");
-  if(kind === "month") document.getElementById("btnMonth").classList.add("active");
-  if(kind === "ytd") document.getElementById("btnYtd").classList.add("active");
-}
-
-function todayISO(){
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const dd = String(d.getDate()).padStart(2,"0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-function addDaysISO(baseISO, delta){
-  const d = new Date(baseISO + "T00:00:00");
-  d.setDate(d.getDate() + delta);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const dd = String(d.getDate()).padStart(2,"0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-function setQuickRange(kind){
-  const t = todayISO();
-  const fromEl = document.getElementById("dateFrom");
-  const toEl = document.getElementById("dateTo");
-
-  if(kind === "today"){
-    fromEl.value = t; toEl.value = t;
-  }else if(kind === "week"){
-    fromEl.value = addDaysISO(t, -6); toEl.value = t;
-  }else if(kind === "month"){
-    fromEl.value = addDaysISO(t, -29); toEl.value = t;
-  }else if(kind === "ytd"){
-    fromEl.value = `${new Date().getFullYear()}-01-01`; toEl.value = t;
-  }
-  setActiveQuickButton(kind);
-  render();
-}
-function clearDateRange(){
-  document.getElementById("dateFrom").value = "";
-  document.getElementById("dateTo").value = "";
-  setActiveQuickButton(null);
-  render();
-}
-function clearFilters(){
-  document.getElementById("fCur").value = "";
-  document.getElementById("fMerchant").value = "";
-  document.getElementById("fCat").value = "";
-  clearDateRange();
-  SORT = { field: "date", dir: "desc" };
-  updateSortIndicators();
-  render();
-}
-
-function getFilteredRows(){
-  return sortRows(applyFilters());
-}
-
-function exportCSV(){
-  const rows = getFilteredRows();
-  const header = ["created_at","amount","currency","merchant_clean","category"];
-  const lines = [header.join(",")];
-
-  for(const e of rows){
-    const vals = [
-      e.created_at || "",
-      (e.amount ?? ""),
-      e.currency || "",
-      e.merchant_clean || "",
-      e.category || "other"
-    ].map(v => `"${String(v).replace(/"/g,'""')}"`);
-    lines.push(vals.join(","));
-  }
-
-  const csv = lines.join("\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
-  a.href = url;
-  a.download = `gastos-${stamp}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-
-  setStatus(`CSV exportado (${rows.length} filas)`, "ok");
-  setTimeout(()=>setStatus("Listo.","muted"), 1200);
-}
-
-/* ---------------- Inline edit (requires key) ---------------- */
-async function saveCategory(id, newCat){
-  const apiKey = getApiKey(false);
-  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return false; }
-
-  const res = await fetch(`/expenses/${encodeURIComponent(id)}/category?api_key=${encodeURIComponent(apiKey)}`,{
-    method:"PATCH",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({category:newCat})
-  });
-  if(res.status === 401){ setStatus("Key incorrecta.", "err"); return false; }
-  const data = await res.json();
-  return data.updated === 1;
-}
-
-async function saveMerchant(id, newMerchant){
-  const apiKey = getApiKey(false);
-  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return false; }
-
-  const res = await fetch(`/expenses/${encodeURIComponent(id)}/merchant?api_key=${encodeURIComponent(apiKey)}`,{
-    method:"PATCH",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({merchant_clean:newMerchant})
-  });
-  if(res.status === 401){ setStatus("Key incorrecta.", "err"); return false; }
-  const data = await res.json();
-  return data.updated === 1;
-}
-
-/* ---------------- Undo Snackbar ---------------- */
-function showSnack(title, subtitle){
-  document.getElementById("snackText").textContent = title;
-  document.getElementById("snackSub").textContent = subtitle || "";
-  document.getElementById("snack").style.display = "flex";
-}
-function hideSnack(){
-  document.getElementById("snack").style.display = "none";
-}
-async function undoDelete(){
-  if(!undoPayload) return;
-
-  const apiKey = getApiKey(false);
-  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return; }
-
-  try{
-    const res = await fetch(`/expenses/restore?api_key=${encodeURIComponent(apiKey)}`,{
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(undoPayload)
-    });
-    if(res.status === 401){ setStatus("Key incorrecta.", "err"); return; }
-    const data = await res.json();
-    if(data.restored){
-      setStatus("Deshecho ✅", "ok");
-      hideSnack();
-      undoPayload = null;
-      if(undoTimer) clearTimeout(undoTimer);
-      await refreshAll();
-    }else{
-      setStatus("No se pudo deshacer.", "warn");
-    }
-  }catch(e){
-    setStatus("Error en undo.", "err");
-  }
-}
-
-/* ---------------- Render table ---------------- */
-function render(){
-  updateSortIndicators();
-
-  const selectedId = getSelectedId();
-  const filtered = getFilteredRows();
-
-  let sumKwd = 0;
-  for(const e of filtered){
-    if(e.currency === "KWD") sumKwd += Number(e.amount || 0);
-  }
-  document.getElementById("sumCount").textContent = String(filtered.length);
-  document.getElementById("sumKwd").textContent = sumKwd.toFixed(3);
-
-  const tb = document.getElementById('tbody');
-  tb.innerHTML = "";
-
-  for(const e of filtered){
-    const tr = document.createElement('tr');
-    tr.classList.add(catClass(e.category));
-    tr.dataset.id = String(e.id);
-
-    if(selectedId && String(e.id) === selectedId) tr.classList.add("selected");
-
-    const tdDate = document.createElement("td");
-    tdDate.className = "date";
-    tdDate.textContent = fmtDate(e.created_at);
-
-    const tdAmt = document.createElement("td");
-    tdAmt.className = "num";
-    tdAmt.innerHTML = `<b>${fmtAmt(e.amount)}</b>`;
-
-    const tdCur = document.createElement("td");
-    tdCur.textContent = e.currency || "";
-
-    const tdMer = document.createElement("td");
-    tdMer.className = "merchant cell-click";
-    tdMer.textContent = e.merchant_clean || "";
-    tdMer.title = "Click para editar (pedirá key)";
-
-    const tdCat = document.createElement("td");
-    tdCat.className = "cell-click";
-    tdCat.title = "Click para editar (pedirá key)";
-
-    const catSpan = document.createElement("span");
-    catSpan.className = "badge cat";
-    catSpan.textContent = (e.category || "other");
-    tdCat.appendChild(catSpan);
-
-    tr.addEventListener("click", (ev) => {
-      const tag = (ev.target && ev.target.tagName) ? ev.target.tagName.toLowerCase() : "";
-      if(tag === "input" || tag === "select" || tag === "option") return;
-      setSelectedId(e.id);
-      render();
-    });
-
-    // Merchant inline edit
-    tdMer.addEventListener("click", async (ev) => {
-      ev.stopPropagation();
-
-      const input = document.createElement("input");
-      input.className = "cell-edit";
-      input.value = e.merchant_clean || "";
-      tdMer.innerHTML = "";
-      tdMer.appendChild(input);
-      input.focus();
-      input.select();
-
-      const finish = async (commit) => {
-        const val = input.value.trim();
-        tdMer.innerHTML = "";
-        tdMer.textContent = val;
-
-        if(!commit) return;
-        if(val === (e.merchant_clean || "")) return;
-
-        setStatus("Guardando comercio...", "muted");
-        const ok = await saveMerchant(e.id, val);
-        if(ok){
-          setStatus("Guardado ✅", "ok");
-          e.merchant_clean = val;
-          setTimeout(()=>setStatus("Listo.","muted"), 900);
-        }else{
-          setStatus("No guardado.", "warn");
-          tdMer.textContent = e.merchant_clean || "";
-        }
-      };
-
-      input.addEventListener("keydown", (k) => {
-        if(k.key === "Enter") finish(true);
-        if(k.key === "Escape") finish(false);
-      });
-      input.addEventListener("blur", () => finish(true));
-    });
-
-    // Category inline edit
-    tdCat.addEventListener("click", async (ev) => {
-      ev.stopPropagation();
-
-      const sel = document.createElement("select");
-      sel.className = "cell-edit";
-      for(const c of getCategoryOptions()){
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c;
-        if((e.category || "other").toLowerCase() === c) opt.selected = true;
-        sel.appendChild(opt);
-      }
-      tdCat.innerHTML = "";
-      // Opción para crear categoría nueva
-      const optAdd = document.createElement("option");
-      optAdd.value = "__add__";
-      optAdd.textContent = "+ Añadir categoría…";
-      sel.appendChild(optAdd);
-
-      tdCat.appendChild(sel);
-      sel.focus();
-
-      const commit = async () => {
-        const val = (tdCat.querySelector("select")||sel).value;
-        // Si el usuario quiere añadir una categoría nueva
-        if(val === "__add__"){
-          const typed = prompt("Nueva categoría (ej: gym, rent, fuel):");
-          const newCat = addStoredCategory(typed);
-          if(!newCat){
-            render();
-            return;
-          }
-          // Repintar filtro categorías y volver a abrir selector ya con la nueva categoría
-          populateCategorySelect();
-
-          // Re-crear selector con la nueva lista y seleccionarla
-          tdCat.innerHTML = "";
-          const sel2 = document.createElement("select");
-          sel2.className = "cell-edit";
-          for(const c of getCategoryOptions()){
-            const opt = document.createElement("option");
-            opt.value = c;
-            opt.textContent = c;
-            if(c === newCat) opt.selected = true;
-            sel2.appendChild(opt);
-          }
-          const optAdd2 = document.createElement("option");
-          optAdd2.value = "__add__";
-          optAdd2.textContent = "+ Añadir categoría…";
-          sel2.appendChild(optAdd2);
-
-          tdCat.appendChild(sel2);
-          sel2.focus();
-
-          // Reasignar eventos para confirmar
-          sel2.addEventListener("change", commit);
-          sel2.addEventListener("blur", commit);
-          sel2.addEventListener("keydown", (k) => { if(k.key === "Escape") { render(); } });
-
-          // Cambiamos sel por sel2 en el cierre: hack simple -> actualizamos referencia
-          // (commit leerá el valor actual del select visible)
-          return;
-        }
-
-        tdCat.innerHTML = "";
-        const span = document.createElement("span");
-        span.className = "badge cat";
-        span.textContent = val;
-        tdCat.appendChild(span);
-
-        if(val === (e.category || "other")) return;
-
-        setStatus("Guardando categoría...", "muted");
-        const ok = await saveCategory(e.id, val);
-        if(ok){
-          setStatus("Guardado ✅", "ok");
-          e.category = val;
-          setTimeout(()=>setStatus("Listo.","muted"), 900);
-          render();
-        }else{
-          setStatus("No guardado.", "warn");
-          render();
-        }
-      };
-
-      sel.addEventListener("change", commit);
-      sel.addEventListener("blur", commit);
-      sel.addEventListener("keydown", (k) => {
-        if(k.key === "Escape") { render(); }
-      });
-    });
-
-    tr.appendChild(tdDate);
-    tr.appendChild(tdAmt);
-    tr.appendChild(tdCur);
-    tr.appendChild(tdMer);
-    tr.appendChild(tdCat);
-
-    tb.appendChild(tr);
-  }
-
-  updateSelectedUI();
-}
-
-async function refreshAll(){
-  setStatus("Cargando...", "muted");
-  await fetchAll();
-  populateCategorySelect();
-  populateCurrencySelect();
-  render();
-  setStatus("Listo.", "muted");
-}
-
-/* ---------------- Delete + Undo (requires key) ---------------- */
-async function deleteSelected(){
-  const id = getSelectedId();
-  if(!id) return;
-
-  const apiKey = getApiKey(false);
-  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return; }
-
-  const ok = confirm(`¿Seguro que quieres borrar este gasto?`);
-  if(!ok) return;
-
-  setStatus("Borrando...", "muted");
-
-  try{
-    const res = await fetch(`/expenses/${encodeURIComponent(id)}?api_key=${encodeURIComponent(apiKey)}`, {
-      method: "DELETE"
-    });
-    if(res.status === 401){ setStatus("Key incorrecta.", "err"); return; }
-    const data = await res.json();
-
-    if(data.deleted === 1 && data.deleted_row){
-      const r = data.deleted_row;
-      undoPayload = {
-        user_id: r.user_id,
-        sms: r.sms || r.sms_raw || "",
-        amount: r.amount,
-        currency: r.currency,
-        merchant_raw: r.merchant_raw,
-        merchant_clean: r.merchant_clean,
-        category: r.category,
-        created_at: r.created_at,
-        date_raw: r.date_raw,
-        date_iso: r.date_iso
-      };
-
-      showSnack("Gasto eliminado", `${(undoPayload.merchant_clean||"").slice(0,40)} · ${undoPayload.amount ?? ""} ${undoPayload.currency||""}`);
-      if(undoTimer) clearTimeout(undoTimer);
-      undoTimer = setTimeout(() => {
-        hideSnack();
-        undoPayload = null;
-      }, 5000);
-
-      setSelectedId(null);
-      await refreshAll();
-      setStatus("Borrado (undo disponible).", "warn");
-      setTimeout(()=>setStatus("Listo.","muted"), 1200);
-    }else{
-      setStatus("No se ha borrado.", "warn");
-    }
-  }catch(e){
-    setStatus("Error borrando.", "err");
-  }
-}
-
-updateSelectedUI();
-refreshAll();
-
-// -------------------- Rules Panel (v1) --------------------
-async function apiGetJson(url){
-  const r = await fetch(url, {cache:"no-store"});
-  if(!r.ok) throw new Error("HTTP " + r.status);
-  return await r.json();
-}
-async function apiSendJson(url, method, body){
-  const r = await fetch(url, {
-    method,
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(body),
-    cache: "no-store"
-  });
-  const j = await r.json().catch(()=> ({}));
-  if(!r.ok) throw new Error((j && j.detail) ? j.detail : ("HTTP " + r.status));
-  return j;
-}
-
-function getUiUser(){
-  const el = document.getElementById("user");
-  return (el ? el.value : "").trim() || "pedro";
-}
-function getUiKey(){
-  // si no tienes input de key en tu UI, ponemos la default
-  const el = document.getElementById("apiKey");
-  return (el ? el.value : "").trim() || "ElPortichuelo99";
-}
-
-function rulesSetOpen(open){
-  const box = document.getElementById("rulesBox");
-  if(!box) return;
-  box.style.display = open ? "block" : "none";
-}
-
-async function rulesRefresh(){
-  const user = getUiUser();
-  const list = document.getElementById("rulesList");
-  const cnt = document.getElementById("rulesCount");
-  if(!list) return;
-  list.innerHTML = "<div class='muted' style='font-size:12px;'>Loading…</div>";
-
-  try{
-    const data = await apiGetJson(`/rules?user_id=${encodeURIComponent(user)}`);
-    const rules = data.rules || [];
-    if(cnt) cnt.textContent = `${rules.length} rules`;
-
-    if(!rules.length){
-      list.innerHTML = "<div class='muted' style='font-size:12px;'>No rules yet.</div>";
-      return;
-    }
-
-    list.innerHTML = "";
-    for(const r of rules){
-      const row = document.createElement("div");
-      row.style.display = "grid";
-      row.style.gridTemplateColumns = "1fr auto";
-      row.style.gap = "8px";
-      row.style.alignItems = "center";
-      row.style.padding = "8px 0";
-      row.style.borderBottom = "1px solid rgba(0,0,0,.06)";
-
-      const left = document.createElement("div");
-      left.innerHTML = `<div style="font-size:12px;"><b>${(r.match_field||"merchant")}</b> contains <b>${escapeHtml(r.pattern||"")}</b></div>
-                        <div class="muted" style="font-size:12px;margin-top:2px;">
-                          → category: <b>${escapeHtml((r.set_category||""))}</b>${r.set_merchant_clean ? `, merchant: <b>${escapeHtml(r.set_merchant_clean)}</b>` : ""}
-                        </div>
-                        <div class="muted" style="font-size:11px;margin-top:2px;">priority ${r.priority} · ${r.enabled ? "enabled" : "disabled"}</div>`;
-
-      const right = document.createElement("div");
-      right.style.display = "flex";
-      right.style.gap = "6px";
-
-      const btnToggle = document.createElement("button");
-      btnToggle.className = "btn";
-      btnToggle.textContent = r.enabled ? "Disable" : "Enable";
-      btnToggle.onclick = async () => {
-        const key = getUiKey();
-        await apiSendJson(`/rules/${r.id}?api_key=${encodeURIComponent(key)}`, "PATCH", {enabled: !r.enabled});
-        await rulesRefresh();
-      };
-
-      const btnDel = document.createElement("button");
-      btnDel.className = "btn";
-      btnDel.textContent = "Delete";
-      btnDel.onclick = async () => {
-        if(!confirm("Delete this rule?")) return;
-        const key = getUiKey();
-        await fetch(`/rules/${r.id}?api_key=${encodeURIComponent(key)}`, {method:"DELETE"});
-        await rulesRefresh();
-      };
-
-      right.appendChild(btnToggle);
-      right.appendChild(btnDel);
-
-      row.appendChild(left);
-      row.appendChild(right);
-      list.appendChild(row);
-    }
-  }catch(e){
-    list.innerHTML = `<div class='muted' style='font-size:12px;'>Error: ${escapeHtml(String(e.message||e))}</div>`;
-  }
-}
-
-async function rulesCreate(){
-  const user = getUiUser();
-  const key = getUiKey();
-  const pat = (document.getElementById("rulePattern")?.value || "").trim();
-  const cat = (document.getElementById("ruleCategory")?.value || "").trim();
-  const mer = (document.getElementById("ruleMerchant")?.value || "").trim();
-
-  if(!pat){ alert("Pattern required"); return; }
-  if(!cat && !mer){ alert("Set category and/or merchant_clean"); return; }
-
-  await apiSendJson(`/rules?api_key=${encodeURIComponent(key)}`, "POST", {
-    user_id: user,
-    pattern: pat,
-    match_field: "merchant",
-    match_type: "contains",
-    priority: 100,
-    enabled: true,
-    set_category: cat || null,
-    set_merchant_clean: mer || null
-  });
-
-  document.getElementById("rulePattern").value = "";
-  document.getElementById("ruleCategory").value = "";
-  document.getElementById("ruleMerchant").value = "";
-  await rulesRefresh();
-}
-
-function rulesInit(){
-  const btn = document.getElementById("rulesToggleBtn");
-  const box = document.getElementById("rulesBox");
-  if(btn && box){
-    btn.addEventListener("click", () => {
-      const open = box.style.display !== "block";
-      rulesSetOpen(open);
-      if(open) rulesRefresh();
-    });
-  }
-  document.getElementById("ruleCreateBtn")?.addEventListener("click", rulesCreate);
-  document.getElementById("ruleRefreshBtn")?.addEventListener("click", rulesRefresh);
-}
-
-document.addEventListener("DOMContentLoaded", rulesInit);
-// ----------------------------------------------------------
-
-
-// ================== KPIs (Insights) ==================
-function kpiFormatMoneyMap(map){
-  const entries = Object.entries(map).filter(([k,v]) => Math.abs(v) > 1e-9);
-  if(!entries.length) return "—";
-  entries.sort((a,b) => (a[0]==="KWD"?-1:0) - (b[0]==="KWD"?-1:0) || a[0].localeCompare(b[0]));
-  return entries.map(([cur,val]) => `${cur} ${val.toFixed(3)}`).join(" | ");
-}
-
-function kpiGetVisibleRows(){
-  const candidates = ["expenses", "currentExpenses", "__expenses", "__expensesData"];
-  for(const key of candidates){
-    if(Array.isArray(window[key])) return window[key];
-  }
-
-  const table = document.querySelector("table");
-  if(!table) return [];
-
-  const ths = Array.from(table.querySelectorAll("thead th")).map(th => (th.textContent||"").trim().toLowerCase());
-  const idxAmount = ths.findIndex(t => t.includes("amount") || t.includes("importe"));
-  const idxCurr   = ths.findIndex(t => t.includes("currency") || t.includes("moneda"));
-  const idxCat    = ths.findIndex(t => t.includes("category") || t.includes("categor"));
-  const idxDate   = ths.findIndex(t => t.includes("created") || t.includes("date") || t.includes("fecha"));
-
-  const rows = [];
-  const trs = Array.from(table.querySelectorAll("tbody tr"));
-  for(const tr of trs){
-    const style = window.getComputedStyle(tr);
-    if(style.display === "none" || style.visibility === "hidden") continue;
-
-    const tds = Array.from(tr.querySelectorAll("td")).map(td => (td.textContent||"").trim());
-    const amountTxt = idxAmount >= 0 ? tds[idxAmount] : "";
-    const curTxt    = idxCurr   >= 0 ? tds[idxCurr]   : "KWD";
-    const catTxt    = idxCat    >= 0 ? tds[idxCat]    : "other";
-    const dateTxt   = idxDate   >= 0 ? tds[idxDate]   : "";
-
-    const amt = parseFloat((amountTxt||"").replace(/[^\d\.\-]/g,"")) || 0;
-    rows.push({
-      amount: amt,
-      currency: (curTxt || "KWD").toUpperCase(),
-      category: (catTxt || "other").toLowerCase(),
-      created_at: dateTxt
-    });
-  }
-  return rows;
-}
-
-function kpiCompute(){
-  const data = kpiGetVisibleRows();
-
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
-  const startMonth = new Date(y, m, 1);
-  const startToday = new Date(y, now.getMonth(), now.getDate());
-
-  const inMonth = (d) => d >= startMonth && d <= now;
-  const isToday = (d) => d >= startToday && d <= now;
-
-  const sumMonth = {};
-  const sumToday = {};
-  const sumCatMonth = {};
-  let maxByCur = {};
-
-  for(const e of data){
-    const cur = (e.currency || "KWD").toUpperCase();
-    const amt = Number(e.amount) || 0;
-
-    const dt = e.created_at ? new Date(e.created_at) : null;
-    if(!dt || isNaN(dt.getTime())) continue;
-
-    if(inMonth(dt)){
-      sumMonth[cur] = (sumMonth[cur] || 0) + amt;
-
-      const cat = (e.category || "other").toLowerCase();
-      const ck = `${cur}|${cat}`;
-      sumCatMonth[ck] = (sumCatMonth[ck] || 0) + amt;
-
-      if(!maxByCur[cur] || amt > maxByCur[cur].amt){
-        maxByCur[cur] = {amt, label: `${cur} ${amt.toFixed(3)}`};
-      }
-    }
-    if(isToday(dt)){
-      sumToday[cur] = (sumToday[cur] || 0) + amt;
-    }
-  }
-
-  const dayOfMonth = now.getDate();
-  const avg = {};
-  for(const [cur, total] of Object.entries(sumMonth)){
-    avg[cur] = total / Math.max(1, dayOfMonth);
-  }
-
-  const topCatByCur = {};
-  for(const [ck, total] of Object.entries(sumCatMonth)){
-    const [cur, cat] = ck.split("|");
-    if(!topCatByCur[cur] || total > topCatByCur[cur].total){
-      topCatByCur[cur] = {cat, total};
-    }
-  }
-  const topCatText = Object.entries(topCatByCur)
-    .sort((a,b) => (a[0]==="KWD"?-1:0) - (b[0]==="KWD"?-1:0) || a[0].localeCompare(b[0]))
-    .map(([cur, v]) => `${cur} ${v.cat} (${v.total.toFixed(3)})`)
-    .join(" | ") || "—";
-
-  const maxText = Object.entries(maxByCur)
-    .sort((a,b) => (a[0]==="KWD"?-1:0) - (b[0]==="KWD"?-1:0) || a[0].localeCompare(b[0]))
-    .map(([cur, v]) => v.label)
-    .join(" | ") || "—";
-
-  document.getElementById("kpiMonth") && (document.getElementById("kpiMonth").textContent = kpiFormatMoneyMap(sumMonth));
-  document.getElementById("kpiToday") && (document.getElementById("kpiToday").textContent = kpiFormatMoneyMap(sumToday));
-  document.getElementById("kpiAvg") && (document.getElementById("kpiAvg").textContent = kpiFormatMoneyMap(avg));
-  document.getElementById("kpiMax") && (document.getElementById("kpiMax").textContent = maxText);
-  document.getElementById("kpiTopCat") && (document.getElementById("kpiTopCat").textContent = topCatText);
-}
-
-function kpiInit(){
-  const btn = document.getElementById("kpiToggleBtn");
-  const panel = document.getElementById("kpiPanel");
-  const refresh = document.getElementById("kpiRefreshBtn");
-  if(!btn || !panel) return;
-
-  btn.addEventListener("click", () => {
-    const open = panel.style.display === "block";
-    panel.style.display = open ? "none" : "block";
-    btn.textContent = open ? "▸ Insights" : "▾ Insights";
-    if(!open){
-      kpiCompute();
-      if(refresh) refresh.style.display = "inline-block";
-    } else {
-      if(refresh) refresh.style.display = "none";
-    }
-  });
-
-  refresh && refresh.addEventListener("click", () => kpiCompute());
-}
-
-document.addEventListener("DOMContentLoaded", kpiInit);
-// =======================================================
-
-
-// ================== Rules UI (Create from row) ==================
-let __ruleRowCtx = null;
-
-function ruleToast(msg, ok=true){
-  const el = document.getElementById("ruleToast");
-  if(!el) return;
-  el.style.display = "block";
-  el.style.marginTop = "8px";
-  el.style.fontWeight = "700";
-  el.style.color = ok ? "rgba(12,120,55,.95)" : "rgba(180,30,30,.95)";
-  el.textContent = msg;
-  setTimeout(()=>{ el.style.display="none"; }, 2400);
-}
-
-function normalizePatternFromMerchant(merchant){
-  const m = (merchant || "").toLowerCase();
-  // keep letters/numbers/spaces only
-  const cleaned = m.replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
-  // pick first "word" of length >= 3
-  const parts = cleaned.split(" ").filter(x => x.length >= 3);
-  return (parts[0] || cleaned || "").slice(0, 32);
-}
-
-function openRuleModal(ctx){
-  __ruleRowCtx = ctx || {};
-  const modal = document.getElementById("ruleModal");
-  if(!modal) return;
-
-  const merchant = __ruleRowCtx.merchant_clean || __ruleRowCtx.merchant_raw || "";
-  const suggested = normalizePatternFromMerchant(merchant);
-
-  document.getElementById("rulePattern").value = suggested;
-  document.getElementById("ruleMerchantClean").value = (merchant || "").toUpperCase().slice(0, 64);
-
-  modal.style.display = "block";
-}
-
-function closeRuleModal(){
-  const modal = document.getElementById("ruleModal");
-  if(modal) modal.style.display = "none";
-  __ruleRowCtx = null;
-}
-
-async function createRuleFromModal(){
-  const pattern = (document.getElementById("rulePattern").value || "").trim();
-  const set_category = (document.getElementById("ruleCategory").value || "other").trim();
-  const set_merchant_clean = (document.getElementById("ruleMerchantClean").value || "").trim();
-
-  if(!pattern){
-    ruleToast("Pattern vacío.", false);
-    return;
-  }
-
-  // read user/api_key from existing inputs if you have them; otherwise fallback to 'pedro'
-  const userInput = document.querySelector('input[name="user_id"], input#userId, input#user_id, input#user');
-  const apiInput  = document.querySelector('input[name="api_key"], input#apiKey, input#api_key');
-  const user_id = (userInput && userInput.value) ? userInput.value.trim() : (__ruleRowCtx.user_id || "pedro");
-  const api_key = (apiInput && apiInput.value) ? apiInput.value.trim() : "";
-
-  const payload = {
-    user_id,
-    pattern,
-    match_field: "merchant",
-    match_type: "contains",
-    priority: 50,
-    enabled: True,
-    set_category,
-    set_merchant_clean: set_merchant_clean || null
-  };
-
-  // Build URL same-origin + /rules (your backend serves static + api)
-  const url = api_key ? `/rules?api_key=${encodeURIComponent(api_key)}` : `/rules`;
-
-  try{
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json().catch(()=> ({}));
-    if(!res.ok){
-      ruleToast(`Error: ${data.detail || res.status}`, false);
-      return;
-    }
-    ruleToast("Rule created ✅", true);
-    // Close modal after a moment
-    setTimeout(()=>closeRuleModal(), 700);
-  } catch(e){
-    ruleToast("Network error creating rule", false);
-  }
-}
-
-function bindRuleModal(){
-  const modal = document.getElementById("ruleModal");
-  if(!modal) return;
-  document.getElementById("ruleCloseBtn")?.addEventListener("click", closeRuleModal);
-  document.getElementById("ruleCancelBtn")?.addEventListener("click", closeRuleModal);
-  document.getElementById("ruleCreateBtn")?.addEventListener("click", createRuleFromModal);
-  modal.addEventListener("click", (e)=>{ if(e.target === modal) closeRuleModal(); });
-}
-
-document.addEventListener("DOMContentLoaded", bindRuleModal);
-// =======================================================
-
-
-// ===== delegated handler for Rule buttons =====
-function handleRuleButtonClick(e){
-  const btn = e.target.closest && e.target.closest('button[data-action="rule"]');
-  if(!btn) return;
-
-  // Find row context from dataset if present, else from row text
-  const tr = btn.closest("tr");
-  if(!tr) return;
-
-  // Try data attributes first
-  const ctx = {
-    user_id: tr.getAttribute("data-user-id") || "pedro",
-    merchant_clean: tr.getAttribute("data-merchant-clean") || "",
-    merchant_raw: tr.getAttribute("data-merchant-raw") || ""
-  };
-
-  // If not found, try to infer merchant from cells (best effort)
-  if(!ctx.merchant_clean){
-    const tds = Array.from(tr.querySelectorAll("td")).map(td => (td.textContent||"").trim());
-    // heuristic: merchant is usually the 2nd/3rd texty column; pick the longest non-numeric cell
-    let best = "";
-    for(const t of tds){
-      if(!t) continue;
-      if(/^\d+(\.\d+)?$/.test(t)) continue;
-      if(t.length > best.length) best = t;
-    }
-    ctx.merchant_clean = best;
-  }
-
-  openRuleModal(ctx);
-}
-
-document.addEventListener("click", handleRuleButtonClick);
-// ===============================================
-
-</script>
-
-<div id="rulesPanel" style="position:fixed;right:16px;bottom:16px;z-index:9999;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;max-width:360px;">
-  <button id="rulesToggleBtn" class="btn" style="box-shadow:0 6px 20px rgba(0,0,0,.15);">Rules</button>
-  <div id="rulesBox" style="display:none;margin-top:10px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-      <b style="font-size:14px;">Auto Rules</b>
-      <span id="rulesCount" class="muted" style="font-size:12px;"></span>
-    </div>
-
-    <div class="muted" style="font-size:12px;margin-top:6px;line-height:1.35;">
-      Crea reglas tipo “si merchant contiene X → categoría Y”. Se aplican al insertar.
-    </div>
-
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <input id="rulePattern" placeholder="pattern (ej: talabat)" style="padding:8px;border:1px solid rgba(0,0,0,.12);border-radius:10px;width:100%;" />
-      <input id="ruleCategory" placeholder="category (ej: food)" style="padding:8px;border:1px solid rgba(0,0,0,.12);border-radius:10px;width:100%;" />
-      <input id="ruleMerchant" placeholder="merchant_clean opcional" style="padding:8px;border:1px solid rgba(0,0,0,.12);border-radius:10px;width:100%;grid-column:1 / span 2;" />
-      <div style="display:flex;gap:8px;grid-column:1 / span 2;">
-        <button id="ruleCreateBtn" class="btn" style="flex:1;">Create</button>
-        <button id="ruleRefreshBtn" class="btn" style="flex:1;">Refresh</button>
-      </div>
-    </div>
-
-    <div id="rulesList" style="margin-top:10px;max-height:260px;overflow:auto;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;"></div>
-  </div>
-</div>
-
-
-<!-- ===== Rule Modal ===== -->
-<div id="ruleModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.35);">
-  <div style="max-width:520px;margin:8vh auto;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);overflow:hidden;">
-    <div style="padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-weight:800;">Create rule</div>
-      <button class="btn" id="ruleCloseBtn">✕</button>
-    </div>
-
-    <div style="padding:14px 16px;display:grid;gap:10px;">
-      <div class="muted" style="font-size:12px;line-height:1.35;">
-        Esto crea una regla para que futuros SMS se categoricen automáticamente.
+          <span class="chip" id="chipCount">0 rows</span>
+        </div>
+
+        <div class="right">
+          <button class="btn-mini" data-preset="today">Today</button>
+          <button class="btn-mini" data-preset="week">Last week</button>
+          <button class="btn-mini" data-preset="month">Last month</button>
+          <button class="btn-mini" data-preset="year">This year</button>
+          <button class="btn-mini" id="btnClear">Clear filters</button>
+        </div>
       </div>
 
-      <label style="display:grid;gap:6px;">
-        <div style="font-size:12px;font-weight:700;">Pattern (merchant contains)</div>
-        <input id="rulePattern" class="input" placeholder="e.g. starbucks" />
-      </label>
-
-      <label style="display:grid;gap:6px;">
-        <div style="font-size:12px;font-weight:700;">Set category</div>
-        <select id="ruleCategory" class="input">
-          <option value="coffee">coffee</option>
-          <option value="food">food</option>
-          <option value="groceries">groceries</option>
-          <option value="transport">transport</option>
-          <option value="shopping">shopping</option>
-          <option value="rent">rent</option>
-          <option value="utilities">utilities</option>
-          <option value="health">health</option>
-          <option value="other">other</option>
-        </select>
-      </label>
-
-      <label style="display:grid;gap:6px;">
-        <div style="font-size:12px;font-weight:700;">Normalize merchant (optional)</div>
-        <input id="ruleMerchantClean" class="input" placeholder="e.g. STARBUCKS" />
-      </label>
-
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-        <button class="btn" id="ruleCancelBtn">Cancel</button>
-        <button class="btn" id="ruleCreateBtn" style="font-weight:800;">Create</button>
-      </div>
-
-      <div id="ruleToast" class="muted" style="display:none;font-size:12px;"></div>
-    </div>
-  </div>
-</div>
-<!-- ===== /Rule Modal ===== -->
-
-
-<!-- UI_HOTFIX_CATEGORY_AND_RULE -->
-<script>
-/**
- * Hotfix UI:
- * - Category <select> no se cierra al click (stopPropagation en captura)
- * - Mantiene selección aunque haya re-render (overrides por id)
- * - Inyecta botón Rule en cada fila aunque el render no lo añada
- */
-
-(function(){
-  // ---- 1) Overrides de categoría (en memoria + localStorage)
-  const OV_KEY = "rg_category_overrides_v1";
-  const overrides = (() => {
-    try { return JSON.parse(localStorage.getItem(OV_KEY) || "{}"); } catch { return {}; }
-  })();
-
-  function saveOverrides(){
-    try { localStorage.setItem(OV_KEY, JSON.stringify(overrides)); } catch {}
-  }
-
-  // ---- 2) Evitar que el select se cierre por handlers globales
-  function isCategorySelect(el){
-    if(!el) return false;
-    if(el.tagName !== "SELECT") return false;
-    const id = (el.id || "").toLowerCase();
-    const cls = (el.className || "").toLowerCase();
-    const name = (el.name || "").toLowerCase();
-    // cubre varios nombres típicos
-    return id.includes("cat") || cls.includes("cat") || name.includes("cat") ||
-           el.getAttribute("data-field") === "category";
-  }
-
-  // Captura en mousedown/click para que nada "arriba" lo cierre
-  ["mousedown","click"].forEach(ev => {
-    document.addEventListener(ev, (e) => {
-      const t = e.target;
-      if(isCategorySelect(t)){
-        e.stopPropagation();
-      }
-    }, true);
-  });
-
-  // ---- 3) Si cambias categoría, la guardamos como override y la reaplicamos
-  document.addEventListener("change", (e) => {
-    const t = e.target;
-    if(!isCategorySelect(t)) return;
-
-    // Intentar sacar el expense_id
-    let expenseId = t.getAttribute("data-expense-id") || "";
-    if(!expenseId){
-      const tr = t.closest("tr");
-      if(tr) expenseId = tr.getAttribute("data-expense-id") || tr.getAttribute("data-id") || "";
-    }
-    if(!expenseId) return;
-
-    overrides[String(expenseId)] = t.value;
-    saveOverrides();
-  }, true);
-
-  // ---- 4) Reaplicar overrides a selects (tras render)
-  function applyCategoryOverrides(){
-    const selects = Array.from(document.querySelectorAll("select"));
-    for(const sel of selects){
-      if(!isCategorySelect(sel)) continue;
-
-      let expenseId = sel.getAttribute("data-expense-id") || "";
-      if(!expenseId){
-        const tr = sel.closest("tr");
-        if(tr) expenseId = tr.getAttribute("data-expense-id") || tr.getAttribute("data-id") || "";
-      }
-      if(!expenseId) continue;
-
-      const v = overrides[String(expenseId)];
-      if(v && sel.value !== v){
-        sel.value = v;
-      }
-    }
-  }
-
-  // ---- 5) Inyectar botón Rule en cada fila (robusto)
-  function ensureRuleButtons(){
-    const tbody = document.querySelector("tbody");
-    if(!tbody) return;
-
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-    for(const tr of rows){
-      // si ya existe, skip
-      if(tr.querySelector('button[data-action="rule"]')) continue;
-
-      // intenta encontrar una celda de acciones: donde esté el botón delete, o última celda
-      let tdActions = null;
-      const delBtn = tr.querySelector('button[data-action="delete"], button[data-action="del"], button.delete, button.btn-delete');
-      if(delBtn) tdActions = delBtn.closest("td");
-
-      if(!tdActions){
-        const tds = tr.querySelectorAll("td");
-        if(tds.length) tdActions = tds[tds.length - 1];
-      }
-      if(!tdActions) continue;
-
-      const btn = document.createElement("button");
-      btn.className = "btn btn-sm";
-      btn.setAttribute("data-action","rule");
-      btn.textContent = "Rule";
-      btn.style.marginLeft = "6px";
-
-      tdActions.appendChild(btn);
-    }
-  }
-
-  // ---- 6) Hook: cada poco reaplicamos (simple y efectivo)
-  // Esto cubre re-render por fetch/filters sin que tengas que tocar tu renderTable().
-  setInterval(() => {
-    try{
-      ensureRuleButtons();
-      applyCategoryOverrides();
-    } catch {}
-  }, 700);
-
-})();
-</script>
-<!-- /UI_HOTFIX_CATEGORY_AND_RULE -->
-
-
-<!-- UX_RULE_HOVER_AND_AMOUNT_COLORS_V1 -->
-<style>
-  /* 1) Rule button: oculto por defecto, aparece al hover de la celda (o fila) */
-  button[data-action="rule"]{
-    opacity: 0;
-    transform: translateY(-1px);
-    pointer-events: none;
-    transition: opacity .12s ease, transform .12s ease;
-  }
-  td:hover button[data-action="rule"],
-  tr:hover button[data-action="rule"]{
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  /* 2) Amount coloring */
-  .amt-expense{ color: rgba(180,30,30,.95); font-weight: 700; }
-  .amt-income{ color: rgba(12,120,55,.95); font-weight: 700; }
-</style>
-
-<script>
-/**
- * Colorea importes según el tipo de SMS:
- * - expense: "debited", "purchase", "spent", "withdrawn"
- * - income:  "credited", "salary", "received", "transfer in"
- *
- * Si no encontramos el sms, de momento dejamos rojo si parece gasto (default),
- * y verde si el amount lleva signo negativo/positivo (si algún día lo usas).
- */
-(function(){
-  function detectTypeFromSms(sms){
-    const t = (sms || "").toLowerCase();
-    const isExpense = /(debited|purchase|spent|withdrawn|paid|card payment)/.test(t);
-    const isIncome  = /(credited|salary|received|transfer in|refund)/.test(t);
-    if(isIncome && !isExpense) return "income";
-    if(isExpense && !isIncome) return "expense";
-    return ""; // unknown
-  }
-
-  function findAmountColumnIndex(table){
-    const ths = Array.from(table.querySelectorAll("thead th")).map(th => (th.textContent||"").trim().toLowerCase());
-    // intenta "amount" / "importe"
-    let idx = ths.findIndex(t => t.includes("amount") || t.includes("importe"));
-    return idx;
-  }
-
-  function getRowCtxById(expenseId){
-    // intenta arrays globales comunes
-    const candidates = ["expenses", "currentExpenses", "__expenses", "__expensesData"];
-    for(const key of candidates){
-      const arr = window[key];
-      if(Array.isArray(arr)){
-        const hit = arr.find(x => String(x.id) === String(expenseId));
-        if(hit) return hit;
-      }
-    }
-    return null;
-  }
-
-  function colorizeAmounts(){
-    const table = document.querySelector("table");
-    if(!table) return;
-
-    const idxAmount = findAmountColumnIndex(table);
-    if(idxAmount < 0) return;
-
-    const trs = Array.from(table.querySelectorAll("tbody tr"));
-    for(const tr of trs){
-      const tds = tr.querySelectorAll("td");
-      if(idxAmount >= tds.length) continue;
-
-      const tdAmt = tds[idxAmount];
-      if(!tdAmt) continue;
-
-      // limpiar clases previas
-      tdAmt.classList.remove("amt-expense","amt-income");
-
-      // intentar sacar id y sms
-      const expenseId = tr.getAttribute("data-expense-id") || tr.getAttribute("data-id") || "";
-      let sms = tr.getAttribute("data-sms") || tr.getAttribute("data-sms-raw") || "";
-
-      if(!sms && expenseId){
-        const ctx = getRowCtxById(expenseId);
-        // depende de tu API: a veces viene "sms" o "sms_raw"
-        sms = (ctx && (ctx.sms_raw || ctx.sms)) ? (ctx.sms_raw || ctx.sms) : "";
-      }
-
-      // fallback: si algún día guardas amount negativo/positivo
-      const amtText = (tdAmt.textContent || "").trim();
-      const amtNum = parseFloat(amtText.replace(/[^\d\.\-]/g,"")) || 0;
-
-      let typ = detectTypeFromSms(sms);
-      if(!typ){
-        // hoy casi todo es gasto; por defecto rojo
-        // si en el futuro lo marcas con signo, lo respetamos:
-        if(amtNum < 0) typ = "expense";
-        else if(amtNum > 0 && /(^\+|income)/i.test(amtText)) typ = "income";
-        else typ = "expense";
-      }
-
-      if(typ === "expense") tdAmt.classList.add("amt-expense");
-      if(typ === "income")  tdAmt.classList.add("amt-income");
-    }
-  }
-
-  // Llamarlo periódicamente para cubrir re-render/filter sin tocar tu renderTable()
-  setInterval(() => { try{ colorizeAmounts(); } catch(e){} }, 700);
-
-})();
-</script>
-<!-- /UX_RULE_HOVER_AND_AMOUNT_COLORS_V1 -->
-
-
-<!-- DEBUG_FETCH_BANNER_V1 -->
-<div id="dbgFetch" style="position:fixed;bottom:10px;left:10px;z-index:9999;background:rgba(0,0,0,.78);color:#fff;padding:8px 10px;border-radius:10px;font:12px/1.25 ui-monospace,Menlo,Monaco,monospace;max-width:520px;display:none;"></div>
-<script>
-(function(){
-  const el = document.getElementById("dbgFetch");
-  if(!el) return;
-
-  function show(msg){
-    el.style.display = "block";
-    el.textContent = msg;
-  }
-
-  // Hook fetch to inspect /expenses
-  const _fetch = window.fetch;
-  window.fetch = async function(input, init){
-    const url = (typeof input === "string") ? input : (input && input.url) || "";
-    try{
-      const res = await _fetch(input, init);
-      if(url.includes("/expenses")){
-        const clone = res.clone();
-        clone.json().then(j => {
-          const c = j && typeof j.count === "number" ? j.count : "n/a";
-          show(`FETCH OK: ${url}\ncount=${c}`);
-        }).catch(() => {
-          show(`FETCH OK: ${url}\n(non-json)`);
-        });
-      }
-      return res;
-    } catch(err){
-      if(url.includes("/expenses")) show(`FETCH FAIL: ${url}\n${err}`);
-      throw err;
-    }
-  };
-
-  // Show on load: try direct call
-  window.addEventListener("DOMContentLoaded", () => {
-    fetch("/expenses?user_id=pedro&limit=200").then(()=>{}).catch(()=>{});
-  });
-})();
-</script>
-
-
-<!-- FORCE_RENDER_EXPENSES_V1 -->
-<script>
-(function(){
-  async function forceLoadAndRender(){
-    try{
-      const res = await fetch("/expenses?user_id=pedro&limit=200");
-      const data = await res.json();
-      if(!data || !Array.isArray(data.expenses)){
-        console.warn("forceRender: respuesta inesperada", data);
-        return;
-      }
-
-      // Guardar donde casi cualquier render lo va a leer
-      window.expenses = data.expenses;
-      window.currentExpenses = data.expenses;
-      window.__expenses = data.expenses;
-      window.__expensesData = data.expenses;
-
-      // Si existe tu render, úsalo
-      if(typeof window.renderTable === "function"){
-        window.renderTable(data.expenses);
-        return;
-      }
-      if(typeof window.render === "function"){
-        window.render(data.expenses);
-        return;
-      }
-
-      // Fallback: pintar tabla mínima
-      let table = document.querySelector("table");
-      if(!table){
-        table = document.createElement("table");
-        table.style.width = "100%";
-        table.style.borderCollapse = "collapse";
-        table.innerHTML = `
+      <div style="overflow:auto; max-height:70vh;">
+        <table>
           <thead>
             <tr>
-              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Created</th>
-              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Merchant</th>
-              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Category</th>
-              <th style="text-align:right;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Amount</th>
-              <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.1);">Currency</th>
+              <th>Created</th>
+              <th>Merchant</th>
+              <th>Category</th>
+              <th class="amt">Amount</th>
+              <th>Cur</th>
+              <th class="actions">Actions</th>
             </tr>
           </thead>
-          <tbody></tbody>
-        `;
-        // meterla en el body cerca del top
-        const anchor = document.querySelector("#app") || document.body;
-        anchor.appendChild(table);
-      }
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-      const tb = table.querySelector("tbody");
-      tb.innerHTML = "";
-      for(const e of data.expenses){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);white-space:nowrap;">${(e.created_at||"").replace("T"," ").replace("+00:00","")}</td>
-          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);">${e.merchant_clean||""}</td>
-          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);text-transform:capitalize;">${e.category||"other"}</td>
-          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);text-align:right;">${(Number(e.amount)||0).toFixed(3)}</td>
-          <td style="padding:8px;border-bottom:1px solid rgba(0,0,0,.06);">${(e.currency||"KWD")}</td>
-        `;
-        tb.appendChild(tr);
-      }
-      console.log("forceRender OK rows=", data.expenses.length);
-    } catch(err){
-      console.error("forceRender FAIL", err);
-    }
-  }
-
-  // ejecuta al cargar
-  document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(forceLoadAndRender, 200);
-  });
-})();
-</script>
-<!-- /FORCE_RENDER_EXPENSES_V1 -->
-
-
-<!-- FIX_UI_DISAPPEAR_V1 -->
 <script>
-(function(){
-  // 1) Limpia filtros nuestros (solo keys típicas)
-  function clearOurFilters(){
-    const keys = Object.keys(localStorage);
-    for(const k of keys){
-      const kl = k.toLowerCase();
-      if(kl.includes("rg_") || kl.includes("filter") || kl.includes("date_range") || kl.includes("preset")){
-        localStorage.removeItem(k);
-      }
-    }
-  }
+(() => {
+  // --- SINGLE SOURCE OF TRUTH ---
+  let lastGood = [];
+  let view = [];
 
-  // SOLO una vez por carga
-  if(!window.__rg_filters_cleared){
-    window.__rg_filters_cleared = true;
-    clearOurFilters();
-  }
-
-  // 2) Mantén una copia "buena" de los datos
-  window.__rg_last_good_expenses = window.__rg_last_good_expenses || null;
-
-  // 3) Hook fetch: si es /expenses, guarda el resultado
-  const _fetch = window.fetch;
-  window.fetch = async function(input, init){
-    const url = (typeof input === "string") ? input : (input && input.url) || "";
-    const res = await _fetch(input, init);
-
-    if(url.includes("/expenses")){
-      try{
-        const clone = res.clone();
-        const j = await clone.json();
-        if(j && Array.isArray(j.expenses) && j.expenses.length){
-          window.__rg_last_good_expenses = j.expenses;
-          window.expenses = j.expenses;
-          window.currentExpenses = j.expenses;
-        }
-      } catch(e){}
-    }
-    return res;
+  // Filters
+  const filters = {
+    q: "",
+    cur: "",
+    cat: "",
+    from: null, // Date
+    to: null
   };
 
-  // 4) Bloquea re-render vacío: si detectamos que alguien intenta renderizar []
-  function protectRenderFns(){
-    const candidates = ["renderTable","render","updateTable","drawTable","renderExpenses"];
-    for(const name of candidates){
-      if(typeof window[name] === "function" && !window[name].__rg_protected){
-        const original = window[name];
-        const wrapped = function(arg){
-          // si nos pasan [] o null pero tenemos datos buenos, usamos los buenos
-          if((!arg || (Array.isArray(arg) && arg.length === 0)) && Array.isArray(window.__rg_last_good_expenses) && window.__rg_last_good_expenses.length){
-            return original.call(this, window.__rg_last_good_expenses);
-          }
-          // si nos pasan objeto {expenses:[...]}
-          if(arg && arg.expenses && Array.isArray(arg.expenses) && arg.expenses.length === 0 && window.__rg_last_good_expenses?.length){
-            arg.expenses = window.__rg_last_good_expenses;
-          }
-          return original.call(this, arg);
-        };
-        wrapped.__rg_protected = true;
-        window[name] = wrapped;
-      }
-    }
+  const $ = (id) => document.getElementById(id);
+
+  function parseIso(s){
+    if(!s) return null;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
   }
 
-  // 5) Ejecuta protección varias veces al inicio (por si scripts cargan tarde)
-  let n = 0;
-  const t = setInterval(() => {
-    protectRenderFns();
-    n++;
-    if(n > 10) clearInterval(t);
-  }, 300);
+  function setPreset(p){
+    const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
 
+    if(p === "today"){
+      start.setHours(0,0,0,0);
+      end.setHours(23,59,59,999);
+    } else if(p === "week"){
+      start.setDate(now.getDate()-7);
+    } else if(p === "month"){
+      start.setMonth(now.getMonth()-1);
+    } else if(p === "year"){
+      start.setMonth(0,1);
+      start.setHours(0,0,0,0);
+    }
+    filters.from = start;
+    filters.to = end;
+    applyAndRender();
+  }
+
+  function clearFilters(){
+    filters.q = "";
+    filters.cur = "";
+    filters.cat = "";
+    filters.from = null;
+    filters.to = null;
+    $("q").value = "";
+    $("cur").value = "";
+    $("cat").value = "";
+    applyAndRender();
+  }
+
+  async function loadExpenses(){
+    const url = `/expenses?user_id=pedro&limit=500`;
+    $("statusLine").textContent = "Loading…";
+    try{
+      const r = await fetch(url, { cache: "no-store" });
+      const j = await r.json();
+      if(j && Array.isArray(j.expenses)){
+        // IMPORTANT: never wipe lastGood on empty unless explicitly true empty
+        // If backend returns count=0 but we previously had data, keep lastGood.
+        if(j.expenses.length > 0){
+          lastGood = j.expenses;
+        } else if(lastGood.length === 0){
+          lastGood = j.expenses;
+        }
+        $("statusLine").textContent = `OK · ${new Date().toLocaleTimeString()} · rows=${lastGood.length}`;
+      } else {
+        $("statusLine").textContent = "Bad response";
+      }
+    } catch(e){
+      $("statusLine").textContent = "Fetch error (kept last data)";
+      console.error(e);
+    }
+    hydrateCategoryFilter();
+    applyAndRender();
+  }
+
+  function hydrateCategoryFilter(){
+    const set = new Set(lastGood.map(e => (e.category || "other").toLowerCase()));
+    const cats = Array.from(set).sort();
+    const sel = $("cat");
+    const current = sel.value;
+    sel.innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join("");
+    sel.value = current || "";
+  }
+
+  function applyAndRender(){
+    const q = filters.q.trim().toLowerCase();
+    const cur = filters.cur;
+    const cat = filters.cat;
+
+    view = lastGood.filter(e => {
+      const m = (e.merchant_clean || "").toLowerCase();
+      if(q && !m.includes(q)) return false;
+      if(cur && (e.currency || "") !== cur) return false;
+      if(cat && (e.category || "other").toLowerCase() !== cat.toLowerCase()) return false;
+
+      const d = parseIso(e.created_at);
+      if(filters.from && d && d < filters.from) return false;
+      if(filters.to && d && d > filters.to) return false;
+
+      return true;
+    });
+
+    renderTable();
+  }
+
+  function fmtDate(iso){
+    if(!iso) return "";
+    return iso.replace("T"," ").replace("+00:00","").replace("Z","");
+  }
+
+  function renderTable(){
+    const tb = $("tbody");
+    tb.innerHTML = "";
+
+    for(const e of view){
+      const tr = document.createElement("tr");
+      tr.setAttribute("data-id", e.id);
+
+      const catVal = (e.category || "other").toLowerCase();
+      const cur = (e.currency || "").toUpperCase();
+      const amt = Number(e.amount || 0);
+
+      // For now, treat everything as expense unless you add "type" later
+      const amtClass = "amt-expense";
+
+      tr.innerHTML = `
+        <td class="muted">${fmtDate(e.created_at)}</td>
+        <td>${e.merchant_clean || ""}</td>
+        <td class="category">
+          <select data-id="${e.id}">
+            ${["other","coffee","food","transport","shopping","rent","utilities","salary","income"].map(c =>
+              `<option value="${c}" ${c===catVal ? "selected":""}>${c}</option>`
+            ).join("")}
+          </select>
+        </td>
+        <td class="amt ${amtClass}">${amt.toFixed(3)}</td>
+        <td class="muted">${cur}</td>
+        <td class="actions">
+          <button class="btn-mini ruleBtn" data-action="rule" data-id="${e.id}">Rule</button>
+          <button class="btn-mini" data-action="del" data-id="${e.id}">Delete</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    }
+
+    $("chipCount").textContent = `${view.length} rows`;
+  }
+
+  // Actions
+  document.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("button");
+    if(!btn) return;
+
+    const action = btn.getAttribute("data-action");
+    const id = btn.getAttribute("data-id");
+    if(!action || !id) return;
+
+    if(action === "del"){
+      if(!confirm(`Delete expense #${id}?`)) return;
+      try{
+        const r = await fetch(`/expense/${id}?user_id=pedro`, { method:"DELETE" });
+        const j = await r.json();
+        if(j && j.deleted){
+          lastGood = lastGood.filter(x => String(x.id) !== String(id));
+          applyAndRender();
+        }
+      } catch(e){ console.error(e); }
+    }
+
+    if(action === "rule"){
+      // Minimal placeholder: later we open modal
+      alert("Rule UI next. (Backend endpoint /rules is ready)");
+    }
+  });
+
+  // Category change (visual-only for now)
+  document.addEventListener("change", (ev) => {
+    const sel = ev.target.closest("select[data-id]");
+    if(!sel) return;
+    const id = sel.getAttribute("data-id");
+    const val = sel.value;
+
+    // Update local view so it doesn't jump back
+    const row = lastGood.find(x => String(x.id) === String(id));
+    if(row) row.category = val;
+
+    applyAndRender();
+  });
+
+  // Inputs
+  $("q").addEventListener("input", () => { filters.q = $("q").value; applyAndRender(); });
+  $("cur").addEventListener("change", () => { filters.cur = $("cur").value; applyAndRender(); });
+  $("cat").addEventListener("change", () => { filters.cat = $("cat").value; applyAndRender(); });
+
+  document.querySelectorAll("button[data-preset]").forEach(b => {
+    b.addEventListener("click", () => setPreset(b.getAttribute("data-preset")));
+  });
+
+  $("btnClear").addEventListener("click", clearFilters);
+  $("btnRefresh").addEventListener("click", loadExpenses);
+
+  $("btnCsv").addEventListener("click", () => {
+    const rows = view;
+    const header = ["created_at","merchant_clean","category","amount","currency"];
+    const csv = [
+      header.join(","),
+      ...rows.map(e => header.map(k => {
+        const v = (e[k] ?? "");
+        const s = String(v).replaceAll('"','""');
+        return `"${s}"`;
+      }).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // Boot
+  clearFilters();
+  loadExpenses();
 })();
 </script>
-<!-- /FIX_UI_DISAPPEAR_V1 -->
-
 </body>
 </html>
