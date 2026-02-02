@@ -1590,5 +1590,47 @@ document.addEventListener("click", handleRuleButtonClick);
 </script>
 <!-- /UX_RULE_HOVER_AND_AMOUNT_COLORS_V1 -->
 
+
+<!-- DEBUG_FETCH_BANNER_V1 -->
+<div id="dbgFetch" style="position:fixed;bottom:10px;left:10px;z-index:9999;background:rgba(0,0,0,.78);color:#fff;padding:8px 10px;border-radius:10px;font:12px/1.25 ui-monospace,Menlo,Monaco,monospace;max-width:520px;display:none;"></div>
+<script>
+(function(){
+  const el = document.getElementById("dbgFetch");
+  if(!el) return;
+
+  function show(msg){
+    el.style.display = "block";
+    el.textContent = msg;
+  }
+
+  // Hook fetch to inspect /expenses
+  const _fetch = window.fetch;
+  window.fetch = async function(input, init){
+    const url = (typeof input === "string") ? input : (input && input.url) || "";
+    try{
+      const res = await _fetch(input, init);
+      if(url.includes("/expenses")){
+        const clone = res.clone();
+        clone.json().then(j => {
+          const c = j && typeof j.count === "number" ? j.count : "n/a";
+          show(`FETCH OK: ${url}\ncount=${c}`);
+        }).catch(() => {
+          show(`FETCH OK: ${url}\n(non-json)`);
+        });
+      }
+      return res;
+    } catch(err){
+      if(url.includes("/expenses")) show(`FETCH FAIL: ${url}\n${err}`);
+      throw err;
+    }
+  };
+
+  // Show on load: try direct call
+  window.addEventListener("DOMContentLoaded", () => {
+    fetch("/expenses?user_id=pedro&limit=200").then(()=>{}).catch(()=>{});
+  });
+})();
+</script>
+
 </body>
 </html>
