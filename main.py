@@ -4,7 +4,7 @@ import sqlite3
 import hashlib
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Optional, List, Any, Dict
+from typing import Optional, Any, Dict, List
 
 from fastapi import FastAPI, Query, Header, HTTPException
 from fastapi.responses import FileResponse
@@ -45,16 +45,11 @@ def require_key(x_api_key: Optional[str], api_key: Optional[str]):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 def init_db():
-    """
-    Schema compatible con tu DB real:
-    - sms TEXT NOT NULL
-    - sms_hash UNIQUE (dedupe)
-    Mantiene columnas legacy.
-    """
     with db_lock:
         c = conn()
         cur = c.cursor()
 
+        # Schema compatible con tu DB actual
         cur.execute("""
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,13 +69,11 @@ def init_db():
         )
         """)
 
-        # Indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
 
-        # Unique (dedupe)
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
 
@@ -95,9 +88,26 @@ init_db()
 class IngestRequest(BaseModel):
     user_id: str = Field(..., alias="userid")
     sms: str
-
     class Config:
         populate_by_name = True
+
+class PatchCategoryRequest(BaseModel):
+    category: str
+
+class PatchMerchantRequest(BaseModel):
+    merchant_clean: str
+
+class RestoreRequest(BaseModel):
+    user_id: str
+    sms: str
+    amount: Optional[float] = None
+    currency: Optional[str] = None
+    merchant_raw: Optional[str] = None
+    merchant_clean: Optional[str] = None
+    category: Optional[str] = None
+    created_at: Optional[str] = None
+    date_raw: Optional[str] = None
+    date_iso: Optional[str] = None
 
 # ======================================================
 # PARSING
@@ -108,8 +118,15 @@ AMOUNT_RE = r"(\d+(?:[.,]\d{1,3})?)"
 def to_float(s: str) -> float:
     return float(s.replace(",", "."))
 
+def normalize_spaces(s: str) -> str:
+    return re.sub(r"\s+", " ", (s or "").strip())
+
+def normalize_merchant(s: str) -> str:
+    s = normalize_spaces(s)
+    return s.strip(" ,.-")
+
 def parse_sms(sms: str) -> Dict[str, Any]:
-    sms_norm = re.sub(r"\s+", " ", sms.strip())
+    sms_norm = normalize_spaces(sms)
 
     # Currency + Amount
     currency = "KWD"
@@ -133,8 +150,8 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         if mm:
             merchant = mm.group(1)
 
-    merchant_raw = merchant.strip()
-    merchant_clean = merchant_raw.strip(" ,.-")
+    merchant_raw = normalize_spaces(merchant)
+    merchant_clean = normalize_merchant(merchant_raw)
 
     # Date (optional)
     created_at = datetime.now(timezone.utc).isoformat()
@@ -162,9 +179,8 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         "date_iso": date_iso,
     }
 
-def compute_hash(user_id: str, p: Dict[str, Any]) -> str:
-    # Hash lógico (dedupe “semántico” básico)
-    base = f"{user_id}|{p['amount']}|{p['currency']}|{p['merchant_clean']}|{p['created_at']}"
+def compute_hash(user_id: str, amount: Any, currency: Any, merchant_clean: Any, created_at: Any) -> str:
+    base = f"{user_id}|{amount}|{currency}|{merchant_clean}|{created_at}"
     return sha256_hex(base)
 
 # ======================================================
@@ -187,13 +203,12 @@ def ingest(
     require_key(x_api_key, api_key)
 
     p = parse_sms(req.sms)
-    h = compute_hash(req.user_id, p)
-    sms_hash = sha256_hex(p["sms_norm"])  # dedupe por SMS exacto (normalizado)
+    sms_hash = sha256_hex(p["sms_norm"])
+    h = compute_hash(req.user_id, p["amount"], p["currency"], p["merchant_clean"], p["created_at"])
 
     with db_lock:
         c = conn()
         cur = c.cursor()
-
         try:
             cur.execute(
                 """
@@ -203,7 +218,7 @@ def ingest(
                 """,
                 (
                     req.user_id,
-                    p["sms_norm"],   # sms NOT NULL
+                    p["sms_norm"],
                     p["amount"],
                     p["currency"],
                     p["merchant_raw"],
@@ -214,16 +229,14 @@ def ingest(
                     p["date_raw"],
                     p["date_iso"],
                     sms_hash,
-                    p["sms_norm"],   # sms_raw (igual)
+                    p["sms_norm"],
                 ),
             )
             c.commit()
             new_id = cur.lastrowid
             c.close()
             return {"inserted": True, "id": new_id}
-
         except sqlite3.IntegrityError:
-            # Duplicado: devuelve el id existente (por sms_hash y si no, por hash)
             cur.execute("SELECT id FROM expenses WHERE sms_hash = ?", (sms_hash,))
             row = cur.fetchone()
             if not row:
@@ -237,7 +250,10 @@ def expenses(
     user_id: Optional[str] = Query(default=None),
     limit: int = Query(default=200, ge=1, le=2000),
 ):
-    q = "SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses"
+    q = """
+    SELECT id, user_id, amount, currency, merchant_clean, category, created_at
+    FROM expenses
+    """
     params: List[Any] = []
     if user_id:
         q += " WHERE user_id = ?"
@@ -265,6 +281,50 @@ def expenses(
         })
     return {"count": len(out), "expenses": out}
 
+# --------- Inline edit endpoints ---------
+
+@app.patch("/expenses/{expense_id}/category")
+def patch_category(
+    expense_id: int,
+    body: PatchCategoryRequest,
+    x_api_key: Optional[str] = Header(default=None),
+    api_key: Optional[str] = Query(default=None),
+):
+    require_key(x_api_key, api_key)
+    cat = normalize_spaces(body.category).lower() or "other"
+
+    with db_lock:
+        c = conn()
+        cur = c.cursor()
+        cur.execute("UPDATE expenses SET category = ? WHERE id = ?", (cat, expense_id))
+        c.commit()
+        updated = cur.rowcount
+        c.close()
+
+    return {"updated": updated, "id": expense_id, "category": cat}
+
+@app.patch("/expenses/{expense_id}/merchant")
+def patch_merchant(
+    expense_id: int,
+    body: PatchMerchantRequest,
+    x_api_key: Optional[str] = Header(default=None),
+    api_key: Optional[str] = Query(default=None),
+):
+    require_key(x_api_key, api_key)
+    m = normalize_merchant(body.merchant_clean)
+
+    with db_lock:
+        c = conn()
+        cur = c.cursor()
+        cur.execute("UPDATE expenses SET merchant_clean = ? WHERE id = ?", (m, expense_id))
+        c.commit()
+        updated = cur.rowcount
+        c.close()
+
+    return {"updated": updated, "id": expense_id, "merchant_clean": m}
+
+# --------- Delete returns deleted row (for Undo) ---------
+
 @app.delete("/expenses/{expense_id}")
 def delete_expense(
     expense_id: int,
@@ -276,9 +336,75 @@ def delete_expense(
     with db_lock:
         c = conn()
         cur = c.cursor()
+
+        cur.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
+        row = cur.fetchone()
+        if not row:
+            c.close()
+            return {"deleted": 0, "deleted_row": None}
+
         cur.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
         c.commit()
         deleted = cur.rowcount
+
+        deleted_row = dict(row) if row else None
         c.close()
 
-    return {"deleted": deleted}
+    return {"deleted": deleted, "deleted_row": deleted_row}
+
+# --------- Restore for Undo ---------
+
+@app.post("/expenses/restore")
+def restore_expense(
+    body: RestoreRequest,
+    x_api_key: Optional[str] = Header(default=None),
+    api_key: Optional[str] = Query(default=None),
+):
+    require_key(x_api_key, api_key)
+
+    user_id = normalize_spaces(body.user_id)
+    sms_norm = normalize_spaces(body.sms)
+
+    amount = body.amount
+    currency = (body.currency or "KWD").upper()
+    merchant_raw = normalize_spaces(body.merchant_raw or (body.merchant_clean or ""))
+    merchant_clean = normalize_merchant(body.merchant_clean or merchant_raw)
+    category = normalize_spaces(body.category or "other").lower() or "other"
+
+    created_at = body.created_at or datetime.now(timezone.utc).isoformat()
+    date_raw = body.date_raw
+    date_iso = body.date_iso
+
+    sms_hash = sha256_hex(sms_norm)
+    h = compute_hash(user_id, amount, currency, merchant_clean, created_at)
+
+    with db_lock:
+        c = conn()
+        cur = c.cursor()
+        cur.execute(
+            """
+            INSERT INTO expenses
+            (user_id, sms, amount, currency, merchant_raw, merchant_clean, category, hash, created_at, date_raw, date_iso, sms_hash, sms_raw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                sms_norm,
+                amount,
+                currency,
+                merchant_raw,
+                merchant_clean,
+                category,
+                h,
+                created_at,
+                date_raw,
+                date_iso,
+                sms_hash,
+                sms_norm,
+            ),
+        )
+        c.commit()
+        new_id = cur.lastrowid
+        c.close()
+
+    return {"restored": True, "id": new_id}
