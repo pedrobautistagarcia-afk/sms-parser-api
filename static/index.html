@@ -1352,5 +1352,129 @@ document.addEventListener("click", handleRuleButtonClick);
 </div>
 <!-- ===== /Rule Modal ===== -->
 
+
+<!-- UI_HOTFIX_CATEGORY_AND_RULE -->
+<script>
+/**
+ * Hotfix UI:
+ * - Category <select> no se cierra al click (stopPropagation en captura)
+ * - Mantiene selección aunque haya re-render (overrides por id)
+ * - Inyecta botón Rule en cada fila aunque el render no lo añada
+ */
+
+(function(){
+  // ---- 1) Overrides de categoría (en memoria + localStorage)
+  const OV_KEY = "rg_category_overrides_v1";
+  const overrides = (() => {
+    try { return JSON.parse(localStorage.getItem(OV_KEY) || "{}"); } catch { return {}; }
+  })();
+
+  function saveOverrides(){
+    try { localStorage.setItem(OV_KEY, JSON.stringify(overrides)); } catch {}
+  }
+
+  // ---- 2) Evitar que el select se cierre por handlers globales
+  function isCategorySelect(el){
+    if(!el) return false;
+    if(el.tagName !== "SELECT") return false;
+    const id = (el.id || "").toLowerCase();
+    const cls = (el.className || "").toLowerCase();
+    const name = (el.name || "").toLowerCase();
+    // cubre varios nombres típicos
+    return id.includes("cat") || cls.includes("cat") || name.includes("cat") ||
+           el.getAttribute("data-field") === "category";
+  }
+
+  // Captura en mousedown/click para que nada "arriba" lo cierre
+  ["mousedown","click"].forEach(ev => {
+    document.addEventListener(ev, (e) => {
+      const t = e.target;
+      if(isCategorySelect(t)){
+        e.stopPropagation();
+      }
+    }, true);
+  });
+
+  // ---- 3) Si cambias categoría, la guardamos como override y la reaplicamos
+  document.addEventListener("change", (e) => {
+    const t = e.target;
+    if(!isCategorySelect(t)) return;
+
+    // Intentar sacar el expense_id
+    let expenseId = t.getAttribute("data-expense-id") || "";
+    if(!expenseId){
+      const tr = t.closest("tr");
+      if(tr) expenseId = tr.getAttribute("data-expense-id") || tr.getAttribute("data-id") || "";
+    }
+    if(!expenseId) return;
+
+    overrides[String(expenseId)] = t.value;
+    saveOverrides();
+  }, true);
+
+  // ---- 4) Reaplicar overrides a selects (tras render)
+  function applyCategoryOverrides(){
+    const selects = Array.from(document.querySelectorAll("select"));
+    for(const sel of selects){
+      if(!isCategorySelect(sel)) continue;
+
+      let expenseId = sel.getAttribute("data-expense-id") || "";
+      if(!expenseId){
+        const tr = sel.closest("tr");
+        if(tr) expenseId = tr.getAttribute("data-expense-id") || tr.getAttribute("data-id") || "";
+      }
+      if(!expenseId) continue;
+
+      const v = overrides[String(expenseId)];
+      if(v && sel.value !== v){
+        sel.value = v;
+      }
+    }
+  }
+
+  // ---- 5) Inyectar botón Rule en cada fila (robusto)
+  function ensureRuleButtons(){
+    const tbody = document.querySelector("tbody");
+    if(!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    for(const tr of rows){
+      // si ya existe, skip
+      if(tr.querySelector('button[data-action="rule"]')) continue;
+
+      // intenta encontrar una celda de acciones: donde esté el botón delete, o última celda
+      let tdActions = null;
+      const delBtn = tr.querySelector('button[data-action="delete"], button[data-action="del"], button.delete, button.btn-delete');
+      if(delBtn) tdActions = delBtn.closest("td");
+
+      if(!tdActions){
+        const tds = tr.querySelectorAll("td");
+        if(tds.length) tdActions = tds[tds.length - 1];
+      }
+      if(!tdActions) continue;
+
+      const btn = document.createElement("button");
+      btn.className = "btn btn-sm";
+      btn.setAttribute("data-action","rule");
+      btn.textContent = "Rule";
+      btn.style.marginLeft = "6px";
+
+      tdActions.appendChild(btn);
+    }
+  }
+
+  // ---- 6) Hook: cada poco reaplicamos (simple y efectivo)
+  // Esto cubre re-render por fetch/filters sin que tengas que tocar tu renderTable().
+  setInterval(() => {
+    try{
+      ensureRuleButtons();
+      applyCategoryOverrides();
+    } catch {}
+  }, 700);
+
+})();
+</script>
+<!-- /UI_HOTFIX_CATEGORY_AND_RULE -->
+
 </body>
 </html>
