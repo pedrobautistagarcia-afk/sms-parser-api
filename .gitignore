@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 gastos.db
 transactions.db
+
+# backups
+*.bak.*
