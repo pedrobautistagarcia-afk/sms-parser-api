@@ -95,12 +95,12 @@ def init_db():
     # sms_hash puede existir pero sin índice aún
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
 
-    # rules table (igual que antes)
+    # rules table (crear + migrar)
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS rules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
+            user_id TEXT,
             enabled INTEGER NOT NULL DEFAULT 1,
             priority INTEGER NOT NULL DEFAULT 100,
             match_field TEXT NOT NULL DEFAULT 'merchant',
@@ -112,9 +112,35 @@ def init_db():
         )
         """
     )
+
+    # Migraciones para rules (si la tabla ya existía con otro schema)
+    cur.execute("PRAGMA table_info(rules)")
+    rcols = {row[1] for row in cur.fetchall()}
+
+    def add_rule_col(name: str, coltype: str):
+        nonlocal rcols
+        if name not in rcols:
+            cur.execute(f"ALTER TABLE rules ADD COLUMN {name} {coltype}")
+            rcols.add(name)
+
+    add_rule_col("user_id", "TEXT")
+    add_rule_col("enabled", "INTEGER")
+    add_rule_col("priority", "INTEGER")
+    add_rule_col("match_field", "TEXT")
+    add_rule_col("match_type", "TEXT")
+    add_rule_col("pattern", "TEXT")
+    add_rule_col("set_category", "TEXT")
+    add_rule_col("set_merchant_clean", "TEXT")
+    add_rule_col("created_at", "TEXT")
+
+    # Rellenar user_id nulo para reglas antiguas (por defecto pedro)
+    cur.execute("UPDATE rules SET user_id = 'pedro' WHERE user_id IS NULL OR TRIM(user_id) = ''")
+
+    # Índices rules
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_user ON rules(user_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_priority ON rules(priority)")
+
 
     conn.commit()
     conn.close()
