@@ -5,39 +5,46 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Registro Gastos</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
-    input,button,select{padding:8px;font-size:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:18px}
+    input,button,select{padding:7px 9px;font-size:14px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;max-width:1200px}
     .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .card{border:1px solid #ddd;border-radius:12px;padding:14px;max-width:1200px;margin-top:12px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:12px;max-width:1200px;margin-top:10px}
     .muted{color:#666;font-size:13px}
     .ok{color:#0a7a2f;font-size:13px}
     .warn{color:#a15600;font-size:13px}
     .err{color:#b00020;font-size:13px}
-    table{border-collapse:collapse;width:100%;margin-top:16px;max-width:1200px}
-    th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}
+
+    table{border-collapse:collapse;width:100%;margin-top:14px;max-width:1200px}
+    th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:middle}
     thead th{background:#f5f5f5;position:sticky;top:0;z-index:2}
-    thead tr.filters th{background:#fafafa;top:41px;z-index:1}
-    .num{text-align:right; font-variant-numeric: tabular-nums;}
+    thead tr.filters th{background:#fafafa;top:37px;z-index:1}
+    .num{text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap}
     .click{cursor:pointer; user-select:none}
     tr.duplicate{background:#ffe5e5}
     tr.newrow{background:#e9f7ff}
-    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#f2f2f2}
-    .totals{margin-top:12px;border:1px solid #ddd;border-radius:12px;padding:12px;max-width:1200px}
-    .totals b{font-size:16px}
+    .badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:12px;background:#f2f2f2}
+    .totals{margin-top:10px;border:1px solid #ddd;border-radius:12px;padding:10px;max-width:1200px}
+    .totals b{font-size:15px}
     .danger{background:#fff0f0;border:1px solid #ffd2d2}
     .thin{padding:6px;font-size:13px;width:100%;box-sizing:border-box}
-    .w-id{width:80px}
-    .w-date{width:210px}
-    .w-amt{width:140px}
-    .w-cur{width:110px}
-    .w-cat{width:160px}
+    .w-date{width:170px}
+    .w-amt{width:120px}
+    .w-cur{width:78px}
+    .w-cat{width:140px}
+
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
-    .btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:8px 10px}
+    .btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:7px 10px}
     .btn:hover{background:#f7f7f7}
     .btn.active{border-color:#111}
     details summary{cursor:pointer}
+
+    /* Jerarquía visual */
+    .merchant{font-weight:600}
+    .date{color:#444}
+    .cat{text-transform:lowercase}
+
     /* colores suaves por categoría */
     .cat-coffee{background:#fff3e6}
     .cat-food{background:#eaffea}
@@ -45,6 +52,12 @@
     .cat-groceries{background:#f0fff5}
     .cat-shopping{background:#f7efff}
     .cat-other{background:#f5f5f5}
+
+    /* selección */
+    tr.selected{
+      outline:2px solid #111;
+      outline-offset:-2px;
+    }
   </style>
 </head>
 <body>
@@ -52,7 +65,7 @@
   <div class="topbar">
     <div>
       <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
-      <div class="muted">Filtros en cabecera. Click en el título para ordenar. Intervalo de fechas arriba.</div>
+      <div class="muted">Click en el título para ordenar. Intervalo de fechas arriba. Exporta CSV de lo filtrado.</div>
     </div>
 
     <div class="right">
@@ -67,7 +80,9 @@
     <div class="row" style="justify-content:space-between">
       <div class="row">
         <button onclick="refreshAll()">Recargar</button>
+        <button class="btn" onclick="exportCSV()">Export CSV</button>
         <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
+
         <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
         <span id="status" class="muted">Listo.</span>
       </div>
@@ -88,7 +103,7 @@
         <input id="user" placeholder="userid" value="pedro"/>
         <label><b>API key</b></label>
         <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
-        <span class="muted">Solo necesario para borrar (y endpoints protegidos).</span>
+        <span class="muted">Solo necesario para borrar.</span>
       </div>
     </details>
   </div>
@@ -105,7 +120,6 @@
   <table>
     <thead>
       <tr>
-        <th class="w-id click" onclick="toggleSort('id')">ID <span id="sort_id"></span></th>
         <th class="w-date click" onclick="toggleSort('date')">Fecha <span id="sort_date"></span></th>
         <th class="w-amt click" onclick="toggleSort('amount')">Importe <span id="sort_amount"></span></th>
         <th class="w-cur">Moneda</th>
@@ -113,13 +127,8 @@
         <th class="w-cat">Categoría</th>
       </tr>
 
-      <!-- filtros dentro de la tabla (sin fecha, sin min/max) -->
       <tr class="filters">
-        <th class="w-id">
-          <input id="fId" class="thin" placeholder="id..." oninput="render()"/>
-        </th>
         <th class="w-date">
-          <!-- eliminado filtro fecha aquí -->
           <span class="muted" style="font-size:12px">Usa “Desde/Hasta” arriba</span>
         </th>
         <th class="w-amt">
@@ -146,7 +155,7 @@
 
 <script>
 let ALL = [];
-let SORT = { field: "date", dir: "desc" }; // date desc default
+let SORT = { field: "date", dir: "desc" }; // default
 
 function setStatus(text, cls){
   const el = document.getElementById('status');
@@ -190,7 +199,7 @@ function setSelectedId(id){
 
 function updateSelectedUI(){
   const id = getSelectedId();
-  document.getElementById("selLabel").textContent = id ? id : "ninguno";
+  document.getElementById("selLabel").textContent = id ? "sí" : "ninguno";
   document.getElementById("btnDelete").disabled = !id;
 }
 
@@ -214,14 +223,13 @@ function populateCategorySelect(){
 }
 
 function parseISODateOnly(isoStr){
-  // isoStr: "2026-02-02T06:31:00+00:00" -> "2026-02-02"
   if(!isoStr) return "";
   return String(isoStr).slice(0,10);
 }
 
 function withinDateRange(e){
-  const from = document.getElementById("dateFrom").value; // yyyy-mm-dd
-  const to = document.getElementById("dateTo").value;     // yyyy-mm-dd
+  const from = document.getElementById("dateFrom").value;
+  const to = document.getElementById("dateTo").value;
   if(!from && !to) return true;
 
   const d = parseISODateOnly(e.created_at);
@@ -233,15 +241,11 @@ function withinDateRange(e){
 }
 
 function applyFilters(){
-  const fId = document.getElementById("fId").value.trim();
   const fCur = document.getElementById("fCur").value;
   const fMerchant = document.getElementById("fMerchant").value.trim().toLowerCase();
   const fCat = document.getElementById("fCat").value;
 
   return ALL.filter(e => {
-    if(fId){
-      if(String(e.id) !== fId) return false;
-    }
     if(fCur && (e.currency || "") !== fCur) return false;
     if(fCat && (e.category || "other") !== fCat) return false;
 
@@ -266,8 +270,7 @@ function sortRows(rows){
 
   copy.sort((ra, rb) => {
     let v = 0;
-    if(field === "id") v = cmpNum(ra.id, rb.id);
-    else if(field === "amount") v = cmpNum(ra.amount, rb.amount);
+    if(field === "amount") v = cmpNum(ra.amount, rb.amount);
     else v = cmpText(ra.created_at, rb.created_at); // date
     return dir === "asc" ? v : -v;
   });
@@ -276,7 +279,6 @@ function sortRows(rows){
 }
 
 function updateSortIndicators(){
-  document.getElementById("sort_id").textContent = SORT.field==="id" ? (SORT.dir==="asc"?"↑":"↓") : "";
   document.getElementById("sort_date").textContent = SORT.field==="date" ? (SORT.dir==="asc"?"↑":"↓") : "";
   document.getElementById("sort_amount").textContent = SORT.field==="amount" ? (SORT.dir==="asc"?"↑":"↓") : "";
 }
@@ -327,10 +329,10 @@ function setQuickRange(kind){
     fromEl.value = t;
     toEl.value = t;
   }else if(kind === "week"){
-    fromEl.value = addDaysISO(t, -6); // últimos 7 días (incluye hoy)
+    fromEl.value = addDaysISO(t, -6);
     toEl.value = t;
   }else if(kind === "month"){
-    fromEl.value = addDaysISO(t, -29); // últimos 30 días (incluye hoy)
+    fromEl.value = addDaysISO(t, -29);
     toEl.value = t;
   }else if(kind === "ytd"){
     fromEl.value = `${new Date().getFullYear()}-01-01`;
@@ -348,7 +350,6 @@ function clearDateRange(){
 }
 
 function clearFilters(){
-  document.getElementById("fId").value = "";
   document.getElementById("fCur").value = "KWD";
   document.getElementById("fMerchant").value = "";
   document.getElementById("fCat").value = "";
@@ -358,6 +359,10 @@ function clearFilters(){
   render();
 }
 
+function getFilteredRows(){
+  return sortRows(applyFilters());
+}
+
 function render(){
   updateSortIndicators();
 
@@ -365,7 +370,7 @@ function render(){
   const newId = getNewId();
   const selectedId = getSelectedId();
 
-  const filtered = sortRows(applyFilters());
+  const filtered = getFilteredRows();
 
   // Totales (solo KWD)
   let sumKwd = 0;
@@ -381,22 +386,18 @@ function render(){
   for(const e of filtered){
     const tr = document.createElement('tr');
     tr.classList.add(catClass(e.category));
+    tr.dataset.id = String(e.id); // id interno, no visible
 
     if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
     if(newId && String(e.id) === newId) tr.classList.add("newrow");
-
-    if(selectedId && String(e.id) === selectedId){
-      tr.style.outline = "2px solid #111";
-      tr.style.outlineOffset = "-2px";
-    }
+    if(selectedId && String(e.id) === selectedId) tr.classList.add("selected");
 
     tr.innerHTML = `
-      <td class="click" title="Click para seleccionar">${e.id}</td>
-      <td>${fmtDate(e.created_at)}</td>
-      <td class="num">${fmtAmt(e.amount)}</td>
+      <td class="date">${fmtDate(e.created_at)}</td>
+      <td class="num"><b>${fmtAmt(e.amount)}</b></td>
       <td>${e.currency || ""}</td>
-      <td>${e.merchant_clean || ""}</td>
-      <td><span class="badge">${e.category || "other"}</span></td>
+      <td class="merchant">${e.merchant_clean || ""}</td>
+      <td><span class="badge cat">${(e.category || "other")}</span></td>
     `;
 
     tr.addEventListener("click", () => {
@@ -409,6 +410,46 @@ function render(){
 
   setTimeout(() => setNewId(null), 600);
   updateSelectedUI();
+}
+
+function exportCSV(){
+  const rows = getFilteredRows();
+
+  // Cabecera CSV
+  const header = ["created_at","amount","currency","merchant_clean","category"];
+  const lines = [header.join(",")];
+
+  for(const e of rows){
+    const vals = [
+      e.created_at || "",
+      (e.amount ?? ""),
+      e.currency || "",
+      e.merchant_clean || "",
+      e.category || "other"
+    ].map(v => {
+      const s = String(v);
+      // escapar comillas y comas
+      const escaped = s.replace(/"/g,'""');
+      return `"${escaped}"`;
+    });
+    lines.push(vals.join(","));
+  }
+
+  const csv = lines.join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+  a.href = url;
+  a.download = `gastos-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  setStatus(`CSV exportado (${rows.length} filas)`, "ok");
+  setTimeout(()=>setStatus("Listo.","muted"), 1200);
 }
 
 async function refreshAll(){
@@ -429,10 +470,10 @@ async function deleteSelected(){
     return;
   }
 
-  const ok = confirm(`¿Seguro que quieres borrar el gasto con id ${id}?`);
+  const ok = confirm(`¿Seguro que quieres borrar este gasto?`);
   if(!ok) return;
 
-  setStatus(`Borrando id ${id}...`, "muted");
+  setStatus(`Borrando...`, "muted");
 
   try{
     const res = await fetch(`/expenses/${encodeURIComponent(id)}?api_key=${encodeURIComponent(apiKey)}`, {
@@ -441,11 +482,11 @@ async function deleteSelected(){
     const data = await res.json();
 
     if(data.deleted === 1){
-      setStatus(`Borrado ✅ (id ${id})`, "ok");
+      setStatus(`Borrado ✅`, "ok");
       setSelectedId(null);
       await refreshAll();
     }else{
-      setStatus(`No se ha borrado (id ${id}).`, "warn");
+      setStatus(`No se ha borrado.`, "warn");
     }
   }catch(e){
     setStatus("Error borrando.", "err");
