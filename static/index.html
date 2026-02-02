@@ -6,38 +6,46 @@
   <title>Registro Gastos</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
-    input,button,textarea,select{padding:10px;font-size:14px}
-    textarea{width:100%;max-width:1100px}
+    input,button,select{padding:8px;font-size:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .card{border:1px solid #ddd;border-radius:12px;padding:14px;max-width:1100px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:14px;max-width:1200px}
     .muted{color:#666;font-size:13px}
     .ok{color:#0a7a2f;font-size:13px}
     .warn{color:#a15600;font-size:13px}
     .err{color:#b00020;font-size:13px}
-    table{border-collapse:collapse;width:100%;margin-top:16px}
+    table{border-collapse:collapse;width:100%;margin-top:16px;max-width:1200px}
     th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}
-    th{background:#f5f5f5;position:sticky;top:0;z-index:1}
+    thead th{background:#f5f5f5;position:sticky;top:0;z-index:2}
+    thead tr.filters th{background:#fafafa;top:41px;z-index:1}
+    .num{text-align:right; font-variant-numeric: tabular-nums;}
+    .click{cursor:pointer; user-select:none}
     tr.duplicate{background:#ffe5e5}
     tr.newrow{background:#e9f7ff}
     .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#f2f2f2}
-    .totals{margin-top:12px;border:1px solid #ddd;border-radius:12px;padding:12px;max-width:1100px}
+    .totals{margin-top:12px;border:1px solid #ddd;border-radius:12px;padding:12px;max-width:1200px}
     .totals b{font-size:16px}
-    .num{text-align:right; font-variant-numeric: tabular-nums;}
-    .click{cursor:pointer}
+    .danger{background:#fff0f0;border:1px solid #ffd2d2}
+    .thin{padding:6px;font-size:13px;width:100%;box-sizing:border-box}
+    .w-id{width:80px}
+    .w-date{width:200px}
+    .w-amt{width:140px}
+    .w-cur{width:110px}
+    .w-cat{width:160px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
+    /* colores suaves por categoría */
     .cat-coffee{background:#fff3e6}
     .cat-food{background:#eaffea}
     .cat-transport{background:#eaf2ff}
     .cat-groceries{background:#f0fff5}
     .cat-shopping{background:#f7efff}
     .cat-other{background:#f5f5f5}
-    .danger{background:#fff0f0;border:1px solid #ffd2d2}
   </style>
 </head>
 <body>
   <h1>Registro Gastos</h1>
 
   <div class="card">
-    <div class="row" style="margin-bottom:10px">
+    <div class="row" style="margin-bottom:8px">
       <label><b>User</b></label>
       <input id="user" placeholder="userid" value="pedro"/>
 
@@ -45,78 +53,71 @@
       <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
 
       <button onclick="refreshAll()">Recargar</button>
+      <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
+
+      <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
       <span id="status" class="muted">Listo.</span>
     </div>
 
-    <div style="margin-bottom:8px"><b>Pegar SMS</b> <span class="muted">(temporal)</span></div>
-    <textarea id="sms" rows="3" placeholder="Pega aquí el SMS del banco..."></textarea>
-
-    <div class="row" style="margin-top:10px">
-      <button id="btnSend" onclick="sendSms()">Enviar a /ingest</button>
-      <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
-      <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
-    </div>
-
-    <hr style="margin:14px 0;border:none;border-top:1px solid #eee"/>
-
-    <div class="row">
-      <label><b>Categoría</b></label>
-      <select id="fCat" onchange="render()">
-        <option value="">Todas</option>
-      </select>
-
-      <label><b>Moneda</b></label>
-      <select id="fCur" onchange="render()">
-        <option value="KWD">KWD</option>
-      </select>
-
-      <label><b>Buscar comercio</b></label>
-      <input id="fSearch" placeholder="ej: talabat, lulu..." oninput="render()" style="min-width:240px"/>
-
-      <label><b>Importe</b></label>
-      <input id="fMin" placeholder="min" oninput="render()" style="width:100px"/>
-      <input id="fMax" placeholder="max" oninput="render()" style="width:100px"/>
-
-      <label><b>Orden</b></label>
-      <select id="fSort" onchange="render()">
-        <option value="date_desc">Fecha ↓</option>
-        <option value="date_asc">Fecha ↑</option>
-        <option value="amt_desc">Importe ↓</option>
-        <option value="amt_asc">Importe ↑</option>
-      </select>
-
-      <button onclick="clearFilters()">Limpiar filtros</button>
-    </div>
-
-    <div class="muted" style="margin-top:10px">
-      Duplicados: rojo suave. Inserción nueva: azul suave. Totales calculados sobre lo filtrado.
+    <div class="muted">
+      Filtros en la cabecera. Click en el título para ordenar. Totales calculados sobre lo filtrado.
     </div>
   </div>
 
   <div class="totals">
     <b>Resumen (filtrado)</b>
     <div class="row" style="margin-top:8px">
-      <span class="badge">Filas: <span id="sumCount">0</span></span>
-      <span class="badge">Total KWD: <span id="sumKwd">0.000</span></span>
+      <span class="pill">Filas: <span id="sumCount">0</span></span>
+      <span class="pill">Total KWD: <span id="sumKwd">0.000</span></span>
+      <button onclick="clearFilters()">Limpiar filtros</button>
     </div>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th style="width:80px">ID</th>
-        <th style="width:200px">Fecha</th>
-        <th style="width:120px">Importe</th>
-        <th style="width:90px">Moneda</th>
+        <th class="w-id click" onclick="toggleSort('id')">ID <span id="sort_id"></span></th>
+        <th class="w-date click" onclick="toggleSort('date')">Fecha <span id="sort_date"></span></th>
+        <th class="w-amt click" onclick="toggleSort('amount')">Importe <span id="sort_amount"></span></th>
+        <th class="w-cur">Moneda</th>
         <th>Comercio</th>
-        <th style="width:120px">Categoría</th>
+        <th class="w-cat">Categoría</th>
+      </tr>
+      <tr class="filters">
+        <th class="w-id">
+          <input id="fId" class="thin" placeholder="id..." oninput="render()"/>
+        </th>
+        <th class="w-date">
+          <input id="fDate" class="thin" placeholder="yyyy-mm-dd o texto" oninput="render()"/>
+        </th>
+        <th class="w-amt">
+          <div class="row" style="gap:6px">
+            <input id="fMin" class="thin" placeholder="min" oninput="render()" style="width:65px"/>
+            <input id="fMax" class="thin" placeholder="max" oninput="render()" style="width:65px"/>
+          </div>
+        </th>
+        <th class="w-cur">
+          <select id="fCur" class="thin" onchange="render()">
+            <option value="KWD">KWD</option>
+          </select>
+        </th>
+        <th>
+          <input id="fMerchant" class="thin" placeholder="buscar comercio..." oninput="render()"/>
+        </th>
+        <th class="w-cat">
+          <select id="fCat" class="thin" onchange="render()">
+            <option value="">Todas</option>
+          </select>
+        </th>
       </tr>
     </thead>
+
     <tbody id="tbody"></tbody>
   </table>
 
 <script>
 let ALL = [];
+let SORT = { field: "date", dir: "desc" }; // date desc default
 
 function setStatus(text, cls){
   const el = document.getElementById('status');
@@ -131,8 +132,6 @@ function fmtAmt(a){
 
 function fmtDate(s){
   if(!s) return "";
-  // si viene ISO, lo dejamos más corto y legible
-  // 2026-02-02T06:31:00+00:00 -> 2026-02-02 06:31
   return String(s).replace("T"," ").replace("+00:00","").slice(0,16);
 }
 
@@ -147,10 +146,6 @@ function catClass(cat){
 }
 
 function getDupId(){ return localStorage.getItem("last_duplicate_id"); }
-function setDupId(id){
-  if(id === null || id === undefined) localStorage.removeItem("last_duplicate_id");
-  else localStorage.setItem("last_duplicate_id", String(id));
-}
 function getNewId(){ return localStorage.getItem("last_new_id"); }
 function setNewId(id){
   if(id === null || id === undefined) localStorage.removeItem("last_new_id");
@@ -190,22 +185,35 @@ function populateCategorySelect(){
 }
 
 function applyFilters(){
+  const fId = document.getElementById("fId").value.trim();
+  const fDate = document.getElementById("fDate").value.trim().toLowerCase();
+  const fMin = document.getElementById("fMin").value.trim();
+  const fMax = document.getElementById("fMax").value.trim();
+  const fCur = document.getElementById("fCur").value;
+  const fMerchant = document.getElementById("fMerchant").value.trim().toLowerCase();
   const fCat = document.getElementById("fCat").value;
-  const fCur = document.getElementById("fCur").value; // KWD fijo ahora
-  const q = document.getElementById("fSearch").value.trim().toLowerCase();
-  const min = document.getElementById("fMin").value.trim();
-  const max = document.getElementById("fMax").value.trim();
-  const minVal = min === "" ? null : Number(min);
-  const maxVal = max === "" ? null : Number(max);
+
+  const minVal = fMin === "" ? null : Number(fMin);
+  const maxVal = fMax === "" ? null : Number(fMax);
 
   return ALL.filter(e => {
-    if(fCat && (e.category || "other") !== fCat) return false;
+    if(fId){
+      if(String(e.id) !== fId) return false; // exacto (más simple)
+    }
     if(fCur && (e.currency || "") !== fCur) return false;
+    if(fCat && (e.category || "other") !== fCat) return false;
 
-    const m = (e.merchant_clean || "").toLowerCase();
-    if(q && !m.includes(q)) return false;
+    if(fMerchant){
+      const m = (e.merchant_clean || "").toLowerCase();
+      if(!m.includes(fMerchant)) return false;
+    }
 
-    const a = Number(e.amount);
+    if(fDate){
+      const d = (e.created_at || "").toLowerCase();
+      if(!d.includes(fDate)) return false;
+    }
+
+    const a = Number(e.amount || 0);
     if(minVal !== null && !Number.isNaN(minVal) && a < minVal) return false;
     if(maxVal !== null && !Number.isNaN(maxVal) && a > maxVal) return false;
 
@@ -214,28 +222,51 @@ function applyFilters(){
 }
 
 function sortRows(rows){
-  const mode = document.getElementById("fSort").value;
   const copy = [...rows];
+  const field = SORT.field;
+  const dir = SORT.dir;
 
-  const byDate = (a,b) => (String(a.created_at||"")).localeCompare(String(b.created_at||""));
-  const byAmt  = (a,b) => Number(a.amount||0) - Number(b.amount||0);
+  const cmpText = (a,b) => String(a||"").localeCompare(String(b||""));
+  const cmpNum  = (a,b) => (Number(a||0) - Number(b||0));
 
-  if(mode === "date_desc") copy.sort((a,b)=> byDate(b,a));
-  else if(mode === "date_asc") copy.sort((a,b)=> byDate(a,b));
-  else if(mode === "amt_desc") copy.sort((a,b)=> byAmt(b,a));
-  else if(mode === "amt_asc") copy.sort((a,b)=> byAmt(a,b));
+  copy.sort((ra, rb) => {
+    let v = 0;
+    if(field === "id") v = cmpNum(ra.id, rb.id);
+    else if(field === "amount") v = cmpNum(ra.amount, rb.amount);
+    else v = cmpText(ra.created_at, rb.created_at); // date
+    return dir === "asc" ? v : -v;
+  });
 
   return copy;
 }
 
+function updateSortIndicators(){
+  document.getElementById("sort_id").textContent = SORT.field==="id" ? (SORT.dir==="asc"?"↑":"↓") : "";
+  document.getElementById("sort_date").textContent = SORT.field==="date" ? (SORT.dir==="asc"?"↑":"↓") : "";
+  document.getElementById("sort_amount").textContent = SORT.field==="amount" ? (SORT.dir==="asc"?"↑":"↓") : "";
+}
+
+function toggleSort(field){
+  if(SORT.field === field){
+    SORT.dir = (SORT.dir === "asc") ? "desc" : "asc";
+  }else{
+    SORT.field = field;
+    SORT.dir = (field === "date") ? "desc" : "asc";
+  }
+  updateSortIndicators();
+  render();
+}
+
 function render(){
+  updateSortIndicators();
+
   const dupId = getDupId();
   const newId = getNewId();
   const selectedId = getSelectedId();
 
   const filtered = sortRows(applyFilters());
 
-  // Totales (solo KWD ahora)
+  // Totales (solo KWD)
   let sumKwd = 0;
   for(const e of filtered){
     if(e.currency === "KWD") sumKwd += Number(e.amount || 0);
@@ -253,7 +284,6 @@ function render(){
     if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
     if(newId && String(e.id) === newId) tr.classList.add("newrow");
 
-    // borde visual si está seleccionada
     if(selectedId && String(e.id) === selectedId){
       tr.style.outline = "2px solid #111";
       tr.style.outlineOffset = "-2px";
@@ -276,18 +306,18 @@ function render(){
     tb.appendChild(tr);
   }
 
-  // Quitamos el “nuevo” después de render para que no quede azul para siempre
   setTimeout(() => setNewId(null), 600);
   updateSelectedUI();
 }
 
 function clearFilters(){
-  document.getElementById("fCat").value = "";
-  document.getElementById("fCur").value = "KWD";
-  document.getElementById("fSearch").value = "";
+  document.getElementById("fId").value = "";
+  document.getElementById("fDate").value = "";
   document.getElementById("fMin").value = "";
   document.getElementById("fMax").value = "";
-  document.getElementById("fSort").value = "date_desc";
+  document.getElementById("fCur").value = "KWD";
+  document.getElementById("fMerchant").value = "";
+  document.getElementById("fCat").value = "";
   render();
 }
 
@@ -297,50 +327,6 @@ async function refreshAll(){
   populateCategorySelect();
   render();
   setStatus("Listo.", "muted");
-}
-
-async function sendSms(){
-  const user = document.getElementById('user').value.trim();
-  const apiKey = document.getElementById('key').value.trim();
-  const sms = document.getElementById('sms').value.trim();
-
-  if(!user){ setStatus("Falta userid.", "err"); return; }
-  if(!apiKey){ setStatus("Falta api_key.", "err"); return; }
-  if(!sms){ setStatus("Pega un SMS primero.", "err"); return; }
-
-  setStatus("Enviando...", "muted");
-  document.getElementById('btnSend').disabled = true;
-
-  try{
-    const res = await fetch(`/ingest?api_key=${encodeURIComponent(apiKey)}`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({userid: user, sms})
-    });
-
-    const data = await res.json();
-
-    if(data.inserted === true){
-      setDupId(null);
-      setNewId(data.id);
-      setStatus(`Insertado ✅ (id ${data.id})`, "ok");
-    }else{
-      setNewId(null);
-      if(data.id !== null && data.id !== undefined){
-        setDupId(data.id);
-        setStatus(`Duplicado 🟧 (ya existía id ${data.id})`, "warn");
-      }else{
-        setDupId(null);
-        setStatus("Duplicado (sin id).", "warn");
-      }
-    }
-
-    await refreshAll();
-  }catch(e){
-    setStatus("Error enviando el SMS.", "err");
-  }finally{
-    document.getElementById('btnSend').disabled = false;
-  }
 }
 
 async function deleteSelected(){
