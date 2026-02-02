@@ -169,7 +169,47 @@ let SORT = { field: "date", dir: "desc" };
 let undoPayload = null;
 let undoTimer = null;
 
-const CATEGORY_OPTIONS = ["coffee","food","transport","groceries","shopping","other"];
+
+const BASE_CATEGORIES = ["coffee","food","transport","groceries","shopping","other"];
+const CAT_STORAGE = "rg_categories";
+
+function getStoredCategories(){
+  try{
+    const raw = localStorage.getItem(CAT_STORAGE);
+    const arr = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(arr)) return [];
+    return arr.map(x => String(x||"").trim().toLowerCase()).filter(Boolean);
+  }catch(e){
+    return [];
+  }
+}
+function saveStoredCategories(arr){
+  const clean = Array.from(new Set(arr.map(x => String(x||"").trim().toLowerCase()).filter(Boolean))).sort();
+  localStorage.setItem(CAT_STORAGE, JSON.stringify(clean));
+  return clean;
+}
+function addStoredCategory(cat){
+  const c = String(cat||"").trim().toLowerCase();
+  if(!c) return null;
+  const current = getStoredCategories();
+  if(!current.includes(c)){
+    current.push(c);
+    saveStoredCategories(current);
+  }
+  return c;
+}
+function getCategoryOptions(){
+  // Combina: base + categorías guardadas + las que existan en ALL
+  const fromAll = Array.isArray(ALL) ? ALL.map(e => (e.category || "other")) : [];
+  const merged = BASE_CATEGORIES
+    .concat(getStoredCategories())
+    .concat(fromAll)
+    .map(x => String(x||"").trim().toLowerCase())
+    .filter(Boolean);
+
+  return Array.from(new Set(merged)).sort();
+}
+
 const KEY_STORAGE = "rg_api_key";
 
 function setStatus(text, cls){
@@ -247,7 +287,7 @@ async function fetchAll(){
 function populateCategorySelect(){
   const sel = document.getElementById("fCat");
   const current = sel.value;
-  const cats = Array.from(new Set(ALL.map(e => (e.category || "other")))).sort();
+  const cats = getCategoryOptions();
   sel.innerHTML = `<option value="">Todas</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join("");
   sel.value = cats.includes(current) ? current : "";
 }
@@ -598,7 +638,7 @@ function render(){
 
       const sel = document.createElement("select");
       sel.className = "cell-edit";
-      for(const c of CATEGORY_OPTIONS){
+      for(const c of getCategoryOptions()){
         const opt = document.createElement("option");
         opt.value = c;
         opt.textContent = c;
@@ -606,11 +646,57 @@ function render(){
         sel.appendChild(opt);
       }
       tdCat.innerHTML = "";
+      // Opción para crear categoría nueva
+      const optAdd = document.createElement("option");
+      optAdd.value = "__add__";
+      optAdd.textContent = "+ Añadir categoría…";
+      sel.appendChild(optAdd);
+
       tdCat.appendChild(sel);
       sel.focus();
 
       const commit = async () => {
-        const val = sel.value;
+        const val = (tdCat.querySelector("select")||sel).value;
+        // Si el usuario quiere añadir una categoría nueva
+        if(val === "__add__"){
+          const typed = prompt("Nueva categoría (ej: gym, rent, fuel):");
+          const newCat = addStoredCategory(typed);
+          if(!newCat){
+            render();
+            return;
+          }
+          // Repintar filtro categorías y volver a abrir selector ya con la nueva categoría
+          populateCategorySelect();
+
+          // Re-crear selector con la nueva lista y seleccionarla
+          tdCat.innerHTML = "";
+          const sel2 = document.createElement("select");
+          sel2.className = "cell-edit";
+          for(const c of getCategoryOptions()){
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            if(c === newCat) opt.selected = true;
+            sel2.appendChild(opt);
+          }
+          const optAdd2 = document.createElement("option");
+          optAdd2.value = "__add__";
+          optAdd2.textContent = "+ Añadir categoría…";
+          sel2.appendChild(optAdd2);
+
+          tdCat.appendChild(sel2);
+          sel2.focus();
+
+          // Reasignar eventos para confirmar
+          sel2.addEventListener("change", commit);
+          sel2.addEventListener("blur", commit);
+          sel2.addEventListener("keydown", (k) => { if(k.key === "Escape") { render(); } });
+
+          // Cambiamos sel por sel2 en el cierre: hack simple -> actualizamos referencia
+          // (commit leerá el valor actual del select visible)
+          return;
+        }
+
         tdCat.innerHTML = "";
         const span = document.createElement("span");
         span.className = "badge cat";
