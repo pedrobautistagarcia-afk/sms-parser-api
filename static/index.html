@@ -37,14 +37,11 @@
     .btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:7px 10px}
     .btn:hover{background:#f7f7f7}
     .btn.active{border-color:#111}
-    details summary{cursor:pointer}
 
-    /* Jerarquía visual */
     .merchant{font-weight:600}
     .date{color:#444}
     .cat{text-transform:lowercase}
 
-    /* colores suaves por categoría */
     .cat-coffee{background:#fff3e6}
     .cat-food{background:#eaffea}
     .cat-transport{background:#eaf2ff}
@@ -52,44 +49,19 @@
     .cat-shopping{background:#f7efff}
     .cat-other{background:#f5f5f5}
 
-    tr.selected{
-      outline:2px solid #111;
-      outline-offset:-2px;
-    }
+    tr.selected{outline:2px solid #111;outline-offset:-2px;}
 
-    /* inline editor */
-    .cell-edit{
-      width:100%;
-      box-sizing:border-box;
-      padding:6px;
-      font-size:13px;
-    }
+    .cell-edit{width:100%;box-sizing:border-box;padding:6px;font-size:13px;}
     .cell-click{cursor:pointer}
 
-    /* snackbar undo */
     .snackbar{
-      position:fixed;
-      left:50%;
-      bottom:16px;
-      transform:translateX(-50%);
-      background:#111;
-      color:#fff;
-      border-radius:12px;
-      padding:10px 12px;
-      display:none;
-      align-items:center;
-      gap:10px;
-      max-width:95vw;
-      z-index:9999;
+      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+      background:#111;color:#fff;border-radius:12px;padding:10px 12px;
+      display:none;align-items:center;gap:10px;max-width:95vw;z-index:9999;
     }
     .snackbar button{
-      background:#fff;
-      color:#111;
-      border:0;
-      border-radius:10px;
-      padding:7px 10px;
-      cursor:pointer;
-      font-weight:600;
+      background:#fff;color:#111;border:0;border-radius:10px;padding:7px 10px;
+      cursor:pointer;font-weight:600;
     }
     .snackbar .mut{opacity:.85;font-size:13px}
   </style>
@@ -99,7 +71,7 @@
   <div class="topbar">
     <div>
       <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
-      <div class="muted">Click en categoría o comercio para editar. Borrar tiene Undo. Moneda soporta KWD/USD/EUR (y lo que venga).</div>
+      <div class="muted">Ver es libre. Editar/borrar pide clave una vez. Reglas auto aplican al ingerir.</div>
     </div>
 
     <div class="right">
@@ -127,19 +99,15 @@
         <label class="muted"><b>Hasta</b></label>
         <input id="dateTo" type="date" onchange="render()"/>
         <button class="btn" onclick="clearDateRange()">Quitar fechas</button>
+        <button class="btn" onclick="setOrChangeKey()">🔒 Key</button>
       </div>
     </div>
 
-    <details style="margin-top:10px">
-      <summary class="muted"><b>Settings</b> (api key)</summary>
-      <div class="row" style="margin-top:10px">
-        <label><b>User</b></label>
-        <input id="user" placeholder="userid" value="pedro"/>
-        <label><b>API key</b></label>
-        <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
-        <span class="muted">Necesaria para editar/borrar.</span>
-      </div>
-    </details>
+    <div class="row" style="margin-top:10px">
+      <label><b>User</b></label>
+      <input id="user" placeholder="userid" value="pedro"/>
+      <span class="muted">Puedes dejarlo vacío para ver todo.</span>
+    </div>
   </div>
 
   <div class="totals">
@@ -187,7 +155,6 @@
     <tbody id="tbody"></tbody>
   </table>
 
-  <!-- snackbar -->
   <div id="snack" class="snackbar">
     <div>
       <div id="snackText" style="font-weight:700"></div>
@@ -203,6 +170,7 @@ let undoPayload = null;
 let undoTimer = null;
 
 const CATEGORY_OPTIONS = ["coffee","food","transport","groceries","shopping","other"];
+const KEY_STORAGE = "rg_api_key";
 
 function setStatus(text, cls){
   const el = document.getElementById('status');
@@ -214,12 +182,10 @@ function fmtAmt(a){
   if(a === null || a === undefined || Number.isNaN(Number(a))) return "";
   return Number(a).toFixed(3);
 }
-
 function fmtDate(s){
   if(!s) return "";
   return String(s).replace("T"," ").replace("+00:00","").slice(0,16);
 }
-
 function catClass(cat){
   const c = (cat || "other").toLowerCase();
   if(c === "coffee") return "cat-coffee";
@@ -230,32 +196,45 @@ function catClass(cat){
   return "cat-other";
 }
 
-function getDupId(){ return localStorage.getItem("last_duplicate_id"); }
-function getNewId(){ return localStorage.getItem("last_new_id"); }
-function setNewId(id){
-  if(id === null || id === undefined) localStorage.removeItem("last_new_id");
-  else localStorage.setItem("last_new_id", String(id));
-}
-
 function getSelectedId(){ return localStorage.getItem("selected_row_id"); }
 function setSelectedId(id){
   if(id === null || id === undefined) localStorage.removeItem("selected_row_id");
   else localStorage.setItem("selected_row_id", String(id));
   updateSelectedUI();
 }
-
 function updateSelectedUI(){
   const id = getSelectedId();
   document.getElementById("selLabel").textContent = id ? "sí" : "ninguno";
   document.getElementById("btnDelete").disabled = !id;
 }
 
-function getApiKey(){
-  return (document.getElementById('key')?.value || "").trim();
+/* ---------- KEY: prompt only when needed ---------- */
+function getApiKey(passive=false){
+  const k = (localStorage.getItem(KEY_STORAGE) || "").trim();
+  if(k) return k;
+  if(passive) return "";
+  const entered = prompt("Introduce API key para editar/borrar:");
+  if(!entered) return "";
+  localStorage.setItem(KEY_STORAGE, entered.trim());
+  return entered.trim();
+}
+function setOrChangeKey(){
+  const current = localStorage.getItem(KEY_STORAGE) || "";
+  const entered = prompt("API key (se guarda en este navegador):", current);
+  if(entered === null) return; // cancel
+  const v = entered.trim();
+  if(!v){
+    localStorage.removeItem(KEY_STORAGE);
+    setStatus("Key borrada de este navegador.", "warn");
+  }else{
+    localStorage.setItem(KEY_STORAGE, v);
+    setStatus("Key guardada ✅", "ok");
+    setTimeout(()=>setStatus("Listo.","muted"), 900);
+  }
 }
 
 async function fetchAll(){
-  const user = (document.getElementById('user')?.value || "pedro").trim();
+  const user = (document.getElementById('user')?.value || "").trim();
   const url = user
     ? `/expenses?user_id=${encodeURIComponent(user)}&limit=2000`
     : `/expenses?limit=2000`;
@@ -278,8 +257,6 @@ function populateCurrencySelect(){
   const current = sel.value;
 
   const currencies = Array.from(new Set(ALL.map(e => (e.currency || "KWD")))).sort();
-
-  // Asegura KWD/USD/EUR aunque aún no existan en ALL
   ["KWD","USD","EUR"].forEach(c => { if(!currencies.includes(c)) currencies.push(c); });
   currencies.sort();
 
@@ -341,7 +318,6 @@ function sortRows(rows){
     else v = cmpText(ra.created_at, rb.created_at);
     return dir === "asc" ? v : -v;
   });
-
   return copy;
 }
 
@@ -377,7 +353,6 @@ function todayISO(){
   const dd = String(d.getDate()).padStart(2,"0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
 function addDaysISO(baseISO, delta){
   const d = new Date(baseISO + "T00:00:00");
   d.setDate(d.getDate() + delta);
@@ -386,7 +361,6 @@ function addDaysISO(baseISO, delta){
   const dd = String(d.getDate()).padStart(2,"0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
 function setQuickRange(kind){
   const t = todayISO();
   const fromEl = document.getElementById("dateFrom");
@@ -404,14 +378,12 @@ function setQuickRange(kind){
   setActiveQuickButton(kind);
   render();
 }
-
 function clearDateRange(){
   document.getElementById("dateFrom").value = "";
   document.getElementById("dateTo").value = "";
   setActiveQuickButton(null);
   render();
 }
-
 function clearFilters(){
   document.getElementById("fCur").value = "";
   document.getElementById("fMerchant").value = "";
@@ -459,60 +431,49 @@ function exportCSV(){
   setTimeout(()=>setStatus("Listo.","muted"), 1200);
 }
 
-/* ---------------- Inline edit ---------------- */
-
+/* ---------------- Inline edit (requires key) ---------------- */
 async function saveCategory(id, newCat){
-  const apiKey = getApiKey();
-  if(!apiKey){
-    setStatus("Falta API key (Settings).", "err");
-    return false;
-  }
+  const apiKey = getApiKey(false);
+  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return false; }
+
   const res = await fetch(`/expenses/${encodeURIComponent(id)}/category?api_key=${encodeURIComponent(apiKey)}`,{
     method:"PATCH",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({category:newCat})
   });
+  if(res.status === 401){ setStatus("Key incorrecta.", "err"); return false; }
   const data = await res.json();
   return data.updated === 1;
 }
 
 async function saveMerchant(id, newMerchant){
-  const apiKey = getApiKey();
-  if(!apiKey){
-    setStatus("Falta API key (Settings).", "err");
-    return false;
-  }
+  const apiKey = getApiKey(false);
+  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return false; }
+
   const res = await fetch(`/expenses/${encodeURIComponent(id)}/merchant?api_key=${encodeURIComponent(apiKey)}`,{
     method:"PATCH",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({merchant_clean:newMerchant})
   });
+  if(res.status === 401){ setStatus("Key incorrecta.", "err"); return false; }
   const data = await res.json();
   return data.updated === 1;
 }
 
 /* ---------------- Undo Snackbar ---------------- */
-
 function showSnack(title, subtitle){
   document.getElementById("snackText").textContent = title;
   document.getElementById("snackSub").textContent = subtitle || "";
-  const el = document.getElementById("snack");
-  el.style.display = "flex";
+  document.getElementById("snack").style.display = "flex";
 }
-
 function hideSnack(){
-  const el = document.getElementById("snack");
-  el.style.display = "none";
+  document.getElementById("snack").style.display = "none";
 }
-
 async function undoDelete(){
   if(!undoPayload) return;
 
-  const apiKey = getApiKey();
-  if(!apiKey){
-    setStatus("Falta API key (Settings).", "err");
-    return;
-  }
+  const apiKey = getApiKey(false);
+  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return; }
 
   try{
     const res = await fetch(`/expenses/restore?api_key=${encodeURIComponent(apiKey)}`,{
@@ -520,6 +481,7 @@ async function undoDelete(){
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify(undoPayload)
     });
+    if(res.status === 401){ setStatus("Key incorrecta.", "err"); return; }
     const data = await res.json();
     if(data.restored){
       setStatus("Deshecho ✅", "ok");
@@ -536,14 +498,10 @@ async function undoDelete(){
 }
 
 /* ---------------- Render table ---------------- */
-
 function render(){
   updateSortIndicators();
 
-  const dupId = getDupId();
-  const newId = getNewId();
   const selectedId = getSelectedId();
-
   const filtered = getFilteredRows();
 
   let sumKwd = 0;
@@ -561,8 +519,6 @@ function render(){
     tr.classList.add(catClass(e.category));
     tr.dataset.id = String(e.id);
 
-    if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
-    if(newId && String(e.id) === newId) tr.classList.add("newrow");
     if(selectedId && String(e.id) === selectedId) tr.classList.add("selected");
 
     const tdDate = document.createElement("td");
@@ -579,11 +535,11 @@ function render(){
     const tdMer = document.createElement("td");
     tdMer.className = "merchant cell-click";
     tdMer.textContent = e.merchant_clean || "";
-    tdMer.title = "Click para editar";
+    tdMer.title = "Click para editar (pedirá key)";
 
     const tdCat = document.createElement("td");
     tdCat.className = "cell-click";
-    tdCat.title = "Click para editar";
+    tdCat.title = "Click para editar (pedirá key)";
 
     const catSpan = document.createElement("span");
     catSpan.className = "badge cat";
@@ -597,6 +553,7 @@ function render(){
       render();
     });
 
+    // Merchant inline edit
     tdMer.addEventListener("click", async (ev) => {
       ev.stopPropagation();
 
@@ -623,7 +580,7 @@ function render(){
           e.merchant_clean = val;
           setTimeout(()=>setStatus("Listo.","muted"), 900);
         }else{
-          setStatus("Error guardando comercio.", "err");
+          setStatus("No guardado.", "warn");
           tdMer.textContent = e.merchant_clean || "";
         }
       };
@@ -635,6 +592,7 @@ function render(){
       input.addEventListener("blur", () => finish(true));
     });
 
+    // Category inline edit
     tdCat.addEventListener("click", async (ev) => {
       ev.stopPropagation();
 
@@ -669,7 +627,7 @@ function render(){
           setTimeout(()=>setStatus("Listo.","muted"), 900);
           render();
         }else{
-          setStatus("Error guardando categoría.", "err");
+          setStatus("No guardado.", "warn");
           render();
         }
       };
@@ -690,7 +648,6 @@ function render(){
     tb.appendChild(tr);
   }
 
-  setTimeout(() => setNewId(null), 600);
   updateSelectedUI();
 }
 
@@ -703,17 +660,13 @@ async function refreshAll(){
   setStatus("Listo.", "muted");
 }
 
-/* ---------------- Delete + Undo ---------------- */
-
+/* ---------------- Delete + Undo (requires key) ---------------- */
 async function deleteSelected(){
   const id = getSelectedId();
-  const apiKey = getApiKey();
   if(!id) return;
 
-  if(!apiKey){
-    setStatus("Falta API key (Settings).", "err");
-    return;
-  }
+  const apiKey = getApiKey(false);
+  if(!apiKey){ setStatus("Acción cancelada (sin key).", "warn"); return; }
 
   const ok = confirm(`¿Seguro que quieres borrar este gasto?`);
   if(!ok) return;
@@ -724,6 +677,7 @@ async function deleteSelected(){
     const res = await fetch(`/expenses/${encodeURIComponent(id)}?api_key=${encodeURIComponent(apiKey)}`, {
       method: "DELETE"
     });
+    if(res.status === 401){ setStatus("Key incorrecta.", "err"); return; }
     const data = await res.json();
 
     if(data.deleted === 1 && data.deleted_row){
