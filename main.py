@@ -48,7 +48,7 @@ def init_db():
         conn = get_conn()
         cur = conn.cursor()
 
-        # 1) Create table if not exists (fresh installs)
+        # Base table (old schema)
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS expenses (
@@ -60,31 +60,23 @@ def init_db():
                 merchant_clean TEXT,
                 category TEXT,
                 created_at TEXT NOT NULL,
-                hash TEXT NOT NULL UNIQUE
+                hash TEXT NOT NULL
             )
             """
         )
 
-        # 2) MIGRATIONS for existing DBs (add missing columns safely)
+        # MIGRATIONS: add missing columns safely
         cols = set(table_columns(cur, "expenses"))
 
-        # Columns that newer versions expect
         expected_additions = {
             "sms_raw": "TEXT",
-            # these might already exist; we keep it safe
-            "merchant_raw": "TEXT",
-            "merchant_clean": "TEXT",
-            "category": "TEXT",
-            "created_at": "TEXT",
-            "hash": "TEXT",
         }
 
         for col, coltype in expected_additions.items():
             if col not in cols:
                 cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} {coltype}")
 
-        # If hash existed as column but not unique constraint in old DB,
-        # enforce uniqueness via unique index (safe even if already unique)
+        # Enforce uniqueness of hash via unique index (safe)
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
 
         # Helpful indexes
@@ -156,6 +148,7 @@ def guess_category(merchant: str, sms: str) -> str:
 def parse_sms(sms: str) -> Dict[str, Any]:
     sms_norm = re.sub(r"\s+", " ", sms.strip())
 
+    # Amount + currency: prefer "KWD 3.750" then "3.750 KWD"
     m1 = re.search(rf"\b{CURRENCY_RE}\s*{AMOUNT_RE}\b", sms_norm, re.IGNORECASE)
     m2 = re.search(rf"\b{AMOUNT_RE}\s*{CURRENCY_RE}\b", sms_norm, re.IGNORECASE)
 
@@ -168,6 +161,7 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         amount = _to_float(m2.group(1))
         currency = m2.group(2).upper()
 
+    # Merchant candidates: "for X on DATE" / "from X" / "at X"
     merchant = ""
     mm = re.search(r"\bfor\s+(.+?)\s+\bon\b", sms_norm, re.IGNORECASE)
     if mm:
@@ -183,6 +177,7 @@ def parse_sms(sms: str) -> Dict[str, Any]:
 
     merchant_raw = merchant.strip() if merchant else ""
 
+    # Date: try YYYY-MM-DD HH:MM:SS
     date_iso = None
     dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
     if dm:
@@ -207,6 +202,7 @@ def parse_sms(sms: str) -> Dict[str, Any]:
     }
 
 def compute_hash(user_id: str, payload: Dict[str, Any]) -> str:
+    # Deduplicate by stable elements (including sms_raw)
     base = (
         f"{user_id}|{payload.get('amount')}|{payload.get('currency')}|"
         f"{payload.get('merchant_clean')}|{payload.get('created_at')}|{payload.get('sms_raw')}"
@@ -237,6 +233,10 @@ async def ingest(
     payload = parse_sms(req.sms)
     h = compute_hash(req.user_id, payload)
 
+    inserted = False
+    expense_id = None
+    existing_payload = None
+
     with db_lock:
         conn = get_conn()
         cur = conn.cursor()
@@ -263,9 +263,30 @@ async def ingest(
             conn.commit()
             inserted = True
             expense_id = cur.lastrowid
+
         except sqlite3.IntegrityError:
+            # If hash already exists, return the existing row so we can see what collided
             inserted = False
-            expense_id = None
+            cur.execute(
+                "SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses WHERE hash = ?",
+                (h,),
+            )
+            existing = cur.fetchone()
+            if existing:
+                expense_id = existing["id"]
+                existing_payload = {
+                    "id": existing["id"],
+                    "user_id": existing["user_id"],
+                    "amount": existing["amount"],
+                    "currency": existing["currency"],
+                    "merchant_clean": existing["merchant_clean"] or "",
+                    "category": existing["category"] or "other",
+                    "created_at": existing["created_at"],
+                }
+            else:
+                expense_id = None
+                existing_payload = None
+
         finally:
             conn.close()
 
@@ -280,6 +301,7 @@ async def ingest(
             "category": payload["category"],
             "created_at": payload["created_at"],
         },
+        "existing": existing_payload,
     }
 
 @app.get("/expenses")
