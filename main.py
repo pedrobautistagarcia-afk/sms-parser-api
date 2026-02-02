@@ -4,10 +4,10 @@ import sqlite3
 import hashlib
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any, Dict
 
 from fastapi import FastAPI, Request, Query, Header, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -15,14 +15,10 @@ from pydantic import BaseModel, Field
 # CONFIG
 # ======================================================
 API_KEY = os.getenv("API_KEY", "CHANGE_ME")
-
-# Render persistent disk usually mounted at /var/data
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
-
 APP_TITLE = os.getenv("APP_TITLE", "Registro Gastos API")
 
 db_lock = Lock()
-
 app = FastAPI(title=APP_TITLE)
 
 # Static dashboard
@@ -43,12 +39,16 @@ def get_conn() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     return conn
 
+def table_columns(cur: sqlite3.Cursor, table: str) -> List[str]:
+    cur.execute(f"PRAGMA table_info({table})")
+    return [row[1] for row in cur.fetchall()]  # name is index 1
+
 def init_db():
     with db_lock:
         conn = get_conn()
         cur = conn.cursor()
 
-        # Base table
+        # 1) Create table if not exists (fresh installs)
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS expenses (
@@ -59,12 +59,33 @@ def init_db():
                 merchant_raw TEXT,
                 merchant_clean TEXT,
                 category TEXT,
-                sms_raw TEXT,
                 created_at TEXT NOT NULL,
                 hash TEXT NOT NULL UNIQUE
             )
             """
         )
+
+        # 2) MIGRATIONS for existing DBs (add missing columns safely)
+        cols = set(table_columns(cur, "expenses"))
+
+        # Columns that newer versions expect
+        expected_additions = {
+            "sms_raw": "TEXT",
+            # these might already exist; we keep it safe
+            "merchant_raw": "TEXT",
+            "merchant_clean": "TEXT",
+            "category": "TEXT",
+            "created_at": "TEXT",
+            "hash": "TEXT",
+        }
+
+        for col, coltype in expected_additions.items():
+            if col not in cols:
+                cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} {coltype}")
+
+        # If hash existed as column but not unique constraint in old DB,
+        # enforce uniqueness via unique index (safe even if already unique)
+        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
 
         # Helpful indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
@@ -98,13 +119,12 @@ def require_api_key(x_api_key: Optional[str], api_key_q: Optional[str]):
 
 
 # ======================================================
-# PARSING (simple + robust enough)
+# PARSING
 # ======================================================
 CURRENCY_RE = r"(KWD|EUR|USD|GBP|AED|SAR|QAR|BHD|OMR)"
 AMOUNT_RE = r"(\d+(?:[.,]\d{1,3})?)"
 
 def _to_float(s: str) -> float:
-    # Accept "3.750" or "3,750"
     s = s.strip().replace(",", ".")
     try:
         return float(s)
@@ -114,45 +134,28 @@ def _to_float(s: str) -> float:
 def clean_merchant(text: str) -> str:
     if not text:
         return ""
-    t = text.strip()
-    t = re.sub(r"\s+", " ", t)
-    t = t.strip(" ,.-")
-    return t
+    t = re.sub(r"\s+", " ", text.strip())
+    return t.strip(" ,.-")
 
 def guess_category(merchant: str, sms: str) -> str:
-    m = (merchant or "").lower()
-    s = (sms or "").lower()
-    blob = f"{m} {s}"
-
+    blob = f"{merchant or ''} {sms or ''}".lower()
     rules = [
         ("coffee", ["cafe", "coffee", "starbucks", "caribou", "tim hortons", "espresso"]),
         ("groceries", ["market", "supermarket", "grocery", "lulu", "carrefour", "sultan", "co-op", "coop"]),
         ("food", ["restaurant", "burger", "pizza", "kebab", "shawarma", "talabat", "deliveroo"]),
-        ("transport", ["uber", "careem", "taxi", "fuel", "petrol", "gas", "knpc", "oda", "parking"]),
+        ("transport", ["uber", "careem", "taxi", "fuel", "petrol", "gas", "knpc", "parking"]),
         ("shopping", ["store", "mall", "zara", "hm", "h&m", "nike", "adidas", "amazon", "noon"]),
         ("subscriptions", ["netflix", "spotify", "apple", "google", "subscription"]),
         ("bank_fee", ["fee", "charge", "commission"]),
-        ("Rental", ["Upayments"]),
     ]
-
     for cat, kws in rules:
         if any(k in blob for k in kws):
             return cat
     return "other"
 
 def parse_sms(sms: str) -> Dict[str, Any]:
-    """
-    Tries to parse:
-    - amount + currency
-    - merchant
-    - date (optional)
-    Supports patterns like:
-      "debited with KWD 3.000 for WAMD Service on 2026-01-15 23:34:13"
-      "debited with KWD 3.750 from PICK DAILY PICKS , ALSALMIYA"
-    """
     sms_norm = re.sub(r"\s+", " ", sms.strip())
 
-    # Amount + currency: prefer "KWD 3.750" then "3.750 KWD"
     m1 = re.search(rf"\b{CURRENCY_RE}\s*{AMOUNT_RE}\b", sms_norm, re.IGNORECASE)
     m2 = re.search(rf"\b{AMOUNT_RE}\s*{CURRENCY_RE}\b", sms_norm, re.IGNORECASE)
 
@@ -165,8 +168,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         amount = _to_float(m2.group(1))
         currency = m2.group(2).upper()
 
-    # Merchant candidates
-    # Try "for X on DATE" / "from X" / "at X"
     merchant = ""
     mm = re.search(r"\bfor\s+(.+?)\s+\bon\b", sms_norm, re.IGNORECASE)
     if mm:
@@ -182,7 +183,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
 
     merchant_raw = merchant.strip() if merchant else ""
 
-    # Date: try YYYY-MM-DD HH:MM:SS
     date_iso = None
     dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
     if dm:
@@ -193,7 +193,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
             date_iso = None
 
     created_at = date_iso or datetime.now(timezone.utc).isoformat()
-
     merchant_clean = clean_merchant(merchant_raw)
     category = guess_category(merchant_clean, sms_norm)
 
@@ -208,8 +207,10 @@ def parse_sms(sms: str) -> Dict[str, Any]:
     }
 
 def compute_hash(user_id: str, payload: Dict[str, Any]) -> str:
-    # Deduplicate by stable elements (user + amount + currency + merchant + created_at + sms)
-    base = f"{user_id}|{payload.get('amount')}|{payload.get('currency')}|{payload.get('merchant_clean')}|{payload.get('created_at')}|{payload.get('sms_raw')}"
+    base = (
+        f"{user_id}|{payload.get('amount')}|{payload.get('currency')}|"
+        f"{payload.get('merchant_clean')}|{payload.get('created_at')}|{payload.get('sms_raw')}"
+    )
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 
@@ -263,7 +264,6 @@ async def ingest(
             inserted = True
             expense_id = cur.lastrowid
         except sqlite3.IntegrityError:
-            # Duplicate hash
             inserted = False
             expense_id = None
         finally:
