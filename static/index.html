@@ -1711,5 +1711,84 @@ document.addEventListener("click", handleRuleButtonClick);
 </script>
 <!-- /FORCE_RENDER_EXPENSES_V1 -->
 
+
+<!-- FIX_UI_DISAPPEAR_V1 -->
+<script>
+(function(){
+  // 1) Limpia filtros nuestros (solo keys típicas)
+  function clearOurFilters(){
+    const keys = Object.keys(localStorage);
+    for(const k of keys){
+      const kl = k.toLowerCase();
+      if(kl.includes("rg_") || kl.includes("filter") || kl.includes("date_range") || kl.includes("preset")){
+        localStorage.removeItem(k);
+      }
+    }
+  }
+
+  // SOLO una vez por carga
+  if(!window.__rg_filters_cleared){
+    window.__rg_filters_cleared = true;
+    clearOurFilters();
+  }
+
+  // 2) Mantén una copia "buena" de los datos
+  window.__rg_last_good_expenses = window.__rg_last_good_expenses || null;
+
+  // 3) Hook fetch: si es /expenses, guarda el resultado
+  const _fetch = window.fetch;
+  window.fetch = async function(input, init){
+    const url = (typeof input === "string") ? input : (input && input.url) || "";
+    const res = await _fetch(input, init);
+
+    if(url.includes("/expenses")){
+      try{
+        const clone = res.clone();
+        const j = await clone.json();
+        if(j && Array.isArray(j.expenses) && j.expenses.length){
+          window.__rg_last_good_expenses = j.expenses;
+          window.expenses = j.expenses;
+          window.currentExpenses = j.expenses;
+        }
+      } catch(e){}
+    }
+    return res;
+  };
+
+  // 4) Bloquea re-render vacío: si detectamos que alguien intenta renderizar []
+  function protectRenderFns(){
+    const candidates = ["renderTable","render","updateTable","drawTable","renderExpenses"];
+    for(const name of candidates){
+      if(typeof window[name] === "function" && !window[name].__rg_protected){
+        const original = window[name];
+        const wrapped = function(arg){
+          // si nos pasan [] o null pero tenemos datos buenos, usamos los buenos
+          if((!arg || (Array.isArray(arg) && arg.length === 0)) && Array.isArray(window.__rg_last_good_expenses) && window.__rg_last_good_expenses.length){
+            return original.call(this, window.__rg_last_good_expenses);
+          }
+          // si nos pasan objeto {expenses:[...]}
+          if(arg && arg.expenses && Array.isArray(arg.expenses) && arg.expenses.length === 0 && window.__rg_last_good_expenses?.length){
+            arg.expenses = window.__rg_last_good_expenses;
+          }
+          return original.call(this, arg);
+        };
+        wrapped.__rg_protected = true;
+        window[name] = wrapped;
+      }
+    }
+  }
+
+  // 5) Ejecuta protección varias veces al inicio (por si scripts cargan tarde)
+  let n = 0;
+  const t = setInterval(() => {
+    protectRenderFns();
+    n++;
+    if(n > 10) clearInterval(t);
+  }, 300);
+
+})();
+</script>
+<!-- /FIX_UI_DISAPPEAR_V1 -->
+
 </body>
 </html>
