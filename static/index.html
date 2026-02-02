@@ -1476,5 +1476,119 @@ document.addEventListener("click", handleRuleButtonClick);
 </script>
 <!-- /UI_HOTFIX_CATEGORY_AND_RULE -->
 
+
+<!-- UX_RULE_HOVER_AND_AMOUNT_COLORS_V1 -->
+<style>
+  /* 1) Rule button: oculto por defecto, aparece al hover de la celda (o fila) */
+  button[data-action="rule"]{
+    opacity: 0;
+    transform: translateY(-1px);
+    pointer-events: none;
+    transition: opacity .12s ease, transform .12s ease;
+  }
+  td:hover button[data-action="rule"],
+  tr:hover button[data-action="rule"]{
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* 2) Amount coloring */
+  .amt-expense{ color: rgba(180,30,30,.95); font-weight: 700; }
+  .amt-income{ color: rgba(12,120,55,.95); font-weight: 700; }
+</style>
+
+<script>
+/**
+ * Colorea importes según el tipo de SMS:
+ * - expense: "debited", "purchase", "spent", "withdrawn"
+ * - income:  "credited", "salary", "received", "transfer in"
+ *
+ * Si no encontramos el sms, de momento dejamos rojo si parece gasto (default),
+ * y verde si el amount lleva signo negativo/positivo (si algún día lo usas).
+ */
+(function(){
+  function detectTypeFromSms(sms){
+    const t = (sms || "").toLowerCase();
+    const isExpense = /(debited|purchase|spent|withdrawn|paid|card payment)/.test(t);
+    const isIncome  = /(credited|salary|received|transfer in|refund)/.test(t);
+    if(isIncome && !isExpense) return "income";
+    if(isExpense && !isIncome) return "expense";
+    return ""; // unknown
+  }
+
+  function findAmountColumnIndex(table){
+    const ths = Array.from(table.querySelectorAll("thead th")).map(th => (th.textContent||"").trim().toLowerCase());
+    // intenta "amount" / "importe"
+    let idx = ths.findIndex(t => t.includes("amount") || t.includes("importe"));
+    return idx;
+  }
+
+  function getRowCtxById(expenseId){
+    // intenta arrays globales comunes
+    const candidates = ["expenses", "currentExpenses", "__expenses", "__expensesData"];
+    for(const key of candidates){
+      const arr = window[key];
+      if(Array.isArray(arr)){
+        const hit = arr.find(x => String(x.id) === String(expenseId));
+        if(hit) return hit;
+      }
+    }
+    return null;
+  }
+
+  function colorizeAmounts(){
+    const table = document.querySelector("table");
+    if(!table) return;
+
+    const idxAmount = findAmountColumnIndex(table);
+    if(idxAmount < 0) return;
+
+    const trs = Array.from(table.querySelectorAll("tbody tr"));
+    for(const tr of trs){
+      const tds = tr.querySelectorAll("td");
+      if(idxAmount >= tds.length) continue;
+
+      const tdAmt = tds[idxAmount];
+      if(!tdAmt) continue;
+
+      // limpiar clases previas
+      tdAmt.classList.remove("amt-expense","amt-income");
+
+      // intentar sacar id y sms
+      const expenseId = tr.getAttribute("data-expense-id") || tr.getAttribute("data-id") || "";
+      let sms = tr.getAttribute("data-sms") || tr.getAttribute("data-sms-raw") || "";
+
+      if(!sms && expenseId){
+        const ctx = getRowCtxById(expenseId);
+        // depende de tu API: a veces viene "sms" o "sms_raw"
+        sms = (ctx && (ctx.sms_raw || ctx.sms)) ? (ctx.sms_raw || ctx.sms) : "";
+      }
+
+      // fallback: si algún día guardas amount negativo/positivo
+      const amtText = (tdAmt.textContent || "").trim();
+      const amtNum = parseFloat(amtText.replace(/[^\d\.\-]/g,"")) || 0;
+
+      let typ = detectTypeFromSms(sms);
+      if(!typ){
+        // hoy casi todo es gasto; por defecto rojo
+        // si en el futuro lo marcas con signo, lo respetamos:
+        if(amtNum < 0) typ = "expense";
+        else if(amtNum > 0 && /(^\+|income)/i.test(amtText)) typ = "income";
+        else typ = "expense";
+      }
+
+      if(typ === "expense") tdAmt.classList.add("amt-expense");
+      if(typ === "income")  tdAmt.classList.add("amt-income");
+    }
+  }
+
+  // Llamarlo periódicamente para cubrir re-render/filter sin tocar tu renderTable()
+  setInterval(() => { try{ colorizeAmounts(); } catch(e){} }, 700);
+
+})();
+</script>
+<!-- /UX_RULE_HOVER_AND_AMOUNT_COLORS_V1 -->
+
 </body>
 </html>
