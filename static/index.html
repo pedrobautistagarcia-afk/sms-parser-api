@@ -6,20 +6,31 @@
   <title>Registro Gastos</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
-    input,button,textarea{padding:10px;font-size:14px}
-    textarea{width:100%;max-width:900px}
+    input,button,textarea,select{padding:10px;font-size:14px}
+    textarea{width:100%;max-width:1100px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .card{border:1px solid #ddd;border-radius:10px;padding:14px;max-width:900px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:14px;max-width:1100px}
     .muted{color:#666;font-size:13px}
     .ok{color:#0a7a2f;font-size:13px}
     .warn{color:#a15600;font-size:13px}
     .err{color:#b00020;font-size:13px}
     table{border-collapse:collapse;width:100%;margin-top:16px}
-    th,td{border:1px solid #ddd;padding:8px;text-align:left}
-    th{background:#f5f5f5}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}
+    th{background:#f5f5f5;position:sticky;top:0;z-index:1}
     tr.duplicate{background:#ffe5e5}
     tr.newrow{background:#e9f7ff}
-    code{background:#f6f6f6;padding:2px 6px;border-radius:6px}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#f2f2f2}
+    .totals{margin-top:12px;border:1px solid #ddd;border-radius:12px;padding:12px;max-width:1100px}
+    .totals b{font-size:16px}
+    .num{text-align:right; font-variant-numeric: tabular-nums;}
+    .click{cursor:pointer}
+    .cat-coffee{background:#fff3e6}
+    .cat-food{background:#eaffea}
+    .cat-transport{background:#eaf2ff}
+    .cat-groceries{background:#f0fff5}
+    .cat-shopping{background:#f7efff}
+    .cat-other{background:#f5f5f5}
+    .danger{background:#fff0f0;border:1px solid #ffd2d2}
   </style>
 </head>
 <body>
@@ -27,41 +38,112 @@
 
   <div class="card">
     <div class="row" style="margin-bottom:10px">
-      <label for="user"><b>User</b></label>
+      <label><b>User</b></label>
       <input id="user" placeholder="userid" value="pedro"/>
-      <label for="key"><b>API key</b></label>
+
+      <label><b>API key</b></label>
       <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
-      <button id="btnLoad" onclick="load()">Recargar tabla</button>
+
+      <button onclick="refreshAll()">Recargar</button>
+      <span id="status" class="muted">Listo.</span>
     </div>
 
-    <div style="margin-bottom:8px"><b>Pegar SMS</b></div>
+    <div style="margin-bottom:8px"><b>Pegar SMS</b> <span class="muted">(temporal)</span></div>
     <textarea id="sms" rows="3" placeholder="Pega aquí el SMS del banco..."></textarea>
 
     <div class="row" style="margin-top:10px">
       <button id="btnSend" onclick="sendSms()">Enviar a /ingest</button>
-      <span id="status" class="muted">Listo.</span>
+      <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
+      <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
+    </div>
+
+    <hr style="margin:14px 0;border:none;border-top:1px solid #eee"/>
+
+    <div class="row">
+      <label><b>Categoría</b></label>
+      <select id="fCat" onchange="render()">
+        <option value="">Todas</option>
+      </select>
+
+      <label><b>Moneda</b></label>
+      <select id="fCur" onchange="render()">
+        <option value="KWD">KWD</option>
+      </select>
+
+      <label><b>Buscar comercio</b></label>
+      <input id="fSearch" placeholder="ej: talabat, lulu..." oninput="render()" style="min-width:240px"/>
+
+      <label><b>Importe</b></label>
+      <input id="fMin" placeholder="min" oninput="render()" style="width:100px"/>
+      <input id="fMax" placeholder="max" oninput="render()" style="width:100px"/>
+
+      <label><b>Orden</b></label>
+      <select id="fSort" onchange="render()">
+        <option value="date_desc">Fecha ↓</option>
+        <option value="date_asc">Fecha ↑</option>
+        <option value="amt_desc">Importe ↓</option>
+        <option value="amt_asc">Importe ↑</option>
+      </select>
+
+      <button onclick="clearFilters()">Limpiar filtros</button>
     </div>
 
     <div class="muted" style="margin-top:10px">
-      Si el backend responde <code>{"inserted":false,"id":X}</code>, la fila <code>X</code> se marca en rojo automáticamente.
-      Si responde <code>{"inserted":true,"id":X}</code>, la fila nueva se marca en azul suave.
+      Duplicados: rojo suave. Inserción nueva: azul suave. Totales calculados sobre lo filtrado.
+    </div>
+  </div>
+
+  <div class="totals">
+    <b>Resumen (filtrado)</b>
+    <div class="row" style="margin-top:8px">
+      <span class="badge">Filas: <span id="sumCount">0</span></span>
+      <span class="badge">Total KWD: <span id="sumKwd">0.000</span></span>
     </div>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>Fecha</th><th>Importe</th><th>Moneda</th><th>Comercio</th><th>Categoría</th>
+        <th style="width:80px">ID</th>
+        <th style="width:200px">Fecha</th>
+        <th style="width:120px">Importe</th>
+        <th style="width:90px">Moneda</th>
+        <th>Comercio</th>
+        <th style="width:120px">Categoría</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
 
 <script>
+let ALL = [];
+
 function setStatus(text, cls){
   const el = document.getElementById('status');
   el.className = cls || "muted";
   el.textContent = text;
+}
+
+function fmtAmt(a){
+  if(a === null || a === undefined || Number.isNaN(Number(a))) return "";
+  return Number(a).toFixed(3);
+}
+
+function fmtDate(s){
+  if(!s) return "";
+  // si viene ISO, lo dejamos más corto y legible
+  // 2026-02-02T06:31:00+00:00 -> 2026-02-02 06:31
+  return String(s).replace("T"," ").replace("+00:00","").slice(0,16);
+}
+
+function catClass(cat){
+  const c = (cat || "other").toLowerCase();
+  if(c === "coffee") return "cat-coffee";
+  if(c === "food") return "cat-food";
+  if(c === "transport") return "cat-transport";
+  if(c === "groceries") return "cat-groceries";
+  if(c === "shopping") return "cat-shopping";
+  return "cat-other";
 }
 
 function getDupId(){ return localStorage.getItem("last_duplicate_id"); }
@@ -75,40 +157,146 @@ function setNewId(id){
   else localStorage.setItem("last_new_id", String(id));
 }
 
-async function load(){
+function getSelectedId(){ return localStorage.getItem("selected_row_id"); }
+function setSelectedId(id){
+  if(id === null || id === undefined) localStorage.removeItem("selected_row_id");
+  else localStorage.setItem("selected_row_id", String(id));
+  updateSelectedUI();
+}
+
+function updateSelectedUI(){
+  const id = getSelectedId();
+  document.getElementById("selLabel").textContent = id ? id : "ninguno";
+  document.getElementById("btnDelete").disabled = !id;
+}
+
+async function fetchAll(){
   const user = document.getElementById('user').value.trim();
   const url = user
-    ? `/expenses?user_id=${encodeURIComponent(user)}&limit=200`
-    : `/expenses?limit=200`;
+    ? `/expenses?user_id=${encodeURIComponent(user)}&limit=2000`
+    : `/expenses?limit=2000`;
 
   const res = await fetch(url);
   const data = await res.json();
+  ALL = data.expenses || [];
+}
 
+function populateCategorySelect(){
+  const sel = document.getElementById("fCat");
+  const current = sel.value;
+  const cats = Array.from(new Set(ALL.map(e => (e.category || "other")))).sort();
+  sel.innerHTML = `<option value="">Todas</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join("");
+  sel.value = cats.includes(current) ? current : "";
+}
+
+function applyFilters(){
+  const fCat = document.getElementById("fCat").value;
+  const fCur = document.getElementById("fCur").value; // KWD fijo ahora
+  const q = document.getElementById("fSearch").value.trim().toLowerCase();
+  const min = document.getElementById("fMin").value.trim();
+  const max = document.getElementById("fMax").value.trim();
+  const minVal = min === "" ? null : Number(min);
+  const maxVal = max === "" ? null : Number(max);
+
+  return ALL.filter(e => {
+    if(fCat && (e.category || "other") !== fCat) return false;
+    if(fCur && (e.currency || "") !== fCur) return false;
+
+    const m = (e.merchant_clean || "").toLowerCase();
+    if(q && !m.includes(q)) return false;
+
+    const a = Number(e.amount);
+    if(minVal !== null && !Number.isNaN(minVal) && a < minVal) return false;
+    if(maxVal !== null && !Number.isNaN(maxVal) && a > maxVal) return false;
+
+    return true;
+  });
+}
+
+function sortRows(rows){
+  const mode = document.getElementById("fSort").value;
+  const copy = [...rows];
+
+  const byDate = (a,b) => (String(a.created_at||"")).localeCompare(String(b.created_at||""));
+  const byAmt  = (a,b) => Number(a.amount||0) - Number(b.amount||0);
+
+  if(mode === "date_desc") copy.sort((a,b)=> byDate(b,a));
+  else if(mode === "date_asc") copy.sort((a,b)=> byDate(a,b));
+  else if(mode === "amt_desc") copy.sort((a,b)=> byAmt(b,a));
+  else if(mode === "amt_asc") copy.sort((a,b)=> byAmt(a,b));
+
+  return copy;
+}
+
+function render(){
   const dupId = getDupId();
   const newId = getNewId();
+  const selectedId = getSelectedId();
+
+  const filtered = sortRows(applyFilters());
+
+  // Totales (solo KWD ahora)
+  let sumKwd = 0;
+  for(const e of filtered){
+    if(e.currency === "KWD") sumKwd += Number(e.amount || 0);
+  }
+  document.getElementById("sumCount").textContent = String(filtered.length);
+  document.getElementById("sumKwd").textContent = sumKwd.toFixed(3);
 
   const tb = document.getElementById('tbody');
   tb.innerHTML = "";
 
-  for(const e of data.expenses){
+  for(const e of filtered){
     const tr = document.createElement('tr');
+    tr.classList.add(catClass(e.category));
 
     if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
     if(newId && String(e.id) === newId) tr.classList.add("newrow");
 
+    // borde visual si está seleccionada
+    if(selectedId && String(e.id) === selectedId){
+      tr.style.outline = "2px solid #111";
+      tr.style.outlineOffset = "-2px";
+    }
+
     tr.innerHTML = `
-      <td>${e.id}</td>
-      <td>${e.created_at || ""}</td>
-      <td>${e.amount ?? ""}</td>
+      <td class="click" title="Click para seleccionar">${e.id}</td>
+      <td>${fmtDate(e.created_at)}</td>
+      <td class="num">${fmtAmt(e.amount)}</td>
       <td>${e.currency || ""}</td>
       <td>${e.merchant_clean || ""}</td>
-      <td>${e.category || ""}</td>
+      <td><span class="badge">${e.category || "other"}</span></td>
     `;
+
+    tr.addEventListener("click", () => {
+      setSelectedId(e.id);
+      render();
+    });
+
     tb.appendChild(tr);
   }
 
-  // Quitamos el "nuevo" tras una recarga para que no quede azul para siempre
-  setTimeout(() => setNewId(null), 500);
+  // Quitamos el “nuevo” después de render para que no quede azul para siempre
+  setTimeout(() => setNewId(null), 600);
+  updateSelectedUI();
+}
+
+function clearFilters(){
+  document.getElementById("fCat").value = "";
+  document.getElementById("fCur").value = "KWD";
+  document.getElementById("fSearch").value = "";
+  document.getElementById("fMin").value = "";
+  document.getElementById("fMax").value = "";
+  document.getElementById("fSort").value = "date_desc";
+  render();
+}
+
+async function refreshAll(){
+  setStatus("Cargando...", "muted");
+  await fetchAll();
+  populateCategorySelect();
+  render();
+  setStatus("Listo.", "muted");
 }
 
 async function sendSms(){
@@ -137,7 +325,6 @@ async function sendSms(){
       setNewId(data.id);
       setStatus(`Insertado ✅ (id ${data.id})`, "ok");
     }else{
-      // duplicado
       setNewId(null);
       if(data.id !== null && data.id !== undefined){
         setDupId(data.id);
@@ -148,7 +335,7 @@ async function sendSms(){
       }
     }
 
-    await load();
+    await refreshAll();
   }catch(e){
     setStatus("Error enviando el SMS.", "err");
   }finally{
@@ -156,7 +343,36 @@ async function sendSms(){
   }
 }
 
-load();
+async function deleteSelected(){
+  const id = getSelectedId();
+  const apiKey = document.getElementById('key').value.trim();
+  if(!id) return;
+
+  const ok = confirm(`¿Seguro que quieres borrar el gasto con id ${id}?`);
+  if(!ok) return;
+
+  setStatus(`Borrando id ${id}...`, "muted");
+
+  try{
+    const res = await fetch(`/expenses/${encodeURIComponent(id)}?api_key=${encodeURIComponent(apiKey)}`, {
+      method: "DELETE"
+    });
+    const data = await res.json();
+
+    if(data.deleted === 1){
+      setStatus(`Borrado ✅ (id ${id})`, "ok");
+      setSelectedId(null);
+      await refreshAll();
+    }else{
+      setStatus(`No se ha borrado (id ${id}).`, "warn");
+    }
+  }catch(e){
+    setStatus("Error borrando.", "err");
+  }
+}
+
+updateSelectedUI();
+refreshAll();
 </script>
 </body>
 </html>
