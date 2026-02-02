@@ -8,7 +8,9 @@
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
     input,button,select{padding:8px;font-size:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .card{border:1px solid #ddd;border-radius:12px;padding:14px;max-width:1200px}
+    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;max-width:1200px}
+    .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .card{border:1px solid #ddd;border-radius:12px;padding:14px;max-width:1200px;margin-top:12px}
     .muted{color:#666;font-size:13px}
     .ok{color:#0a7a2f;font-size:13px}
     .warn{color:#a15600;font-size:13px}
@@ -27,11 +29,15 @@
     .danger{background:#fff0f0;border:1px solid #ffd2d2}
     .thin{padding:6px;font-size:13px;width:100%;box-sizing:border-box}
     .w-id{width:80px}
-    .w-date{width:200px}
+    .w-date{width:210px}
     .w-amt{width:140px}
     .w-cur{width:110px}
     .w-cat{width:160px}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
+    .btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:8px 10px}
+    .btn:hover{background:#f7f7f7}
+    .btn.active{border-color:#111}
+    details summary{cursor:pointer}
     /* colores suaves por categoría */
     .cat-coffee{background:#fff3e6}
     .cat-food{background:#eaffea}
@@ -42,26 +48,49 @@
   </style>
 </head>
 <body>
-  <h1>Registro Gastos</h1>
+
+  <div class="topbar">
+    <div>
+      <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
+      <div class="muted">Filtros en cabecera. Click en el título para ordenar. Intervalo de fechas arriba.</div>
+    </div>
+
+    <div class="right">
+      <button class="btn" id="btnToday" onclick="setQuickRange('today')">Today</button>
+      <button class="btn" id="btnWeek" onclick="setQuickRange('week')">Last week</button>
+      <button class="btn" id="btnMonth" onclick="setQuickRange('month')">Last month</button>
+      <button class="btn" id="btnYtd" onclick="setQuickRange('ytd')">This year</button>
+    </div>
+  </div>
 
   <div class="card">
-    <div class="row" style="margin-bottom:8px">
-      <label><b>User</b></label>
-      <input id="user" placeholder="userid" value="pedro"/>
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <button onclick="refreshAll()">Recargar</button>
+        <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
+        <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
+        <span id="status" class="muted">Listo.</span>
+      </div>
 
-      <label><b>API key</b></label>
-      <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
-
-      <button onclick="refreshAll()">Recargar</button>
-      <button class="danger" id="btnDelete" onclick="deleteSelected()" disabled>Borrar seleccionado</button>
-
-      <span class="muted">Seleccionado: <span id="selLabel">ninguno</span></span>
-      <span id="status" class="muted">Listo.</span>
+      <div class="row">
+        <label class="muted"><b>Desde</b></label>
+        <input id="dateFrom" type="date" onchange="render()"/>
+        <label class="muted"><b>Hasta</b></label>
+        <input id="dateTo" type="date" onchange="render()"/>
+        <button class="btn" onclick="clearDateRange()">Quitar fechas</button>
+      </div>
     </div>
 
-    <div class="muted">
-      Filtros en la cabecera. Click en el título para ordenar. Totales calculados sobre lo filtrado.
-    </div>
+    <details style="margin-top:10px">
+      <summary class="muted"><b>Settings</b> (user / api key)</summary>
+      <div class="row" style="margin-top:10px">
+        <label><b>User</b></label>
+        <input id="user" placeholder="userid" value="pedro"/>
+        <label><b>API key</b></label>
+        <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
+        <span class="muted">Solo necesario para borrar (y endpoints protegidos).</span>
+      </div>
+    </details>
   </div>
 
   <div class="totals">
@@ -83,18 +112,18 @@
         <th>Comercio</th>
         <th class="w-cat">Categoría</th>
       </tr>
+
+      <!-- filtros dentro de la tabla (sin fecha, sin min/max) -->
       <tr class="filters">
         <th class="w-id">
           <input id="fId" class="thin" placeholder="id..." oninput="render()"/>
         </th>
         <th class="w-date">
-          <input id="fDate" class="thin" placeholder="yyyy-mm-dd o texto" oninput="render()"/>
+          <!-- eliminado filtro fecha aquí -->
+          <span class="muted" style="font-size:12px">Usa “Desde/Hasta” arriba</span>
         </th>
         <th class="w-amt">
-          <div class="row" style="gap:6px">
-            <input id="fMin" class="thin" placeholder="min" oninput="render()" style="width:65px"/>
-            <input id="fMax" class="thin" placeholder="max" oninput="render()" style="width:65px"/>
-          </div>
+          <span class="muted" style="font-size:12px">—</span>
         </th>
         <th class="w-cur">
           <select id="fCur" class="thin" onchange="render()">
@@ -166,7 +195,7 @@ function updateSelectedUI(){
 }
 
 async function fetchAll(){
-  const user = document.getElementById('user').value.trim();
+  const user = (document.getElementById('user')?.value || "pedro").trim();
   const url = user
     ? `/expenses?user_id=${encodeURIComponent(user)}&limit=2000`
     : `/expenses?limit=2000`;
@@ -184,21 +213,34 @@ function populateCategorySelect(){
   sel.value = cats.includes(current) ? current : "";
 }
 
+function parseISODateOnly(isoStr){
+  // isoStr: "2026-02-02T06:31:00+00:00" -> "2026-02-02"
+  if(!isoStr) return "";
+  return String(isoStr).slice(0,10);
+}
+
+function withinDateRange(e){
+  const from = document.getElementById("dateFrom").value; // yyyy-mm-dd
+  const to = document.getElementById("dateTo").value;     // yyyy-mm-dd
+  if(!from && !to) return true;
+
+  const d = parseISODateOnly(e.created_at);
+  if(!d) return false;
+
+  if(from && d < from) return false;
+  if(to && d > to) return false;
+  return true;
+}
+
 function applyFilters(){
   const fId = document.getElementById("fId").value.trim();
-  const fDate = document.getElementById("fDate").value.trim().toLowerCase();
-  const fMin = document.getElementById("fMin").value.trim();
-  const fMax = document.getElementById("fMax").value.trim();
   const fCur = document.getElementById("fCur").value;
   const fMerchant = document.getElementById("fMerchant").value.trim().toLowerCase();
   const fCat = document.getElementById("fCat").value;
 
-  const minVal = fMin === "" ? null : Number(fMin);
-  const maxVal = fMax === "" ? null : Number(fMax);
-
   return ALL.filter(e => {
     if(fId){
-      if(String(e.id) !== fId) return false; // exacto (más simple)
+      if(String(e.id) !== fId) return false;
     }
     if(fCur && (e.currency || "") !== fCur) return false;
     if(fCat && (e.category || "other") !== fCat) return false;
@@ -208,14 +250,7 @@ function applyFilters(){
       if(!m.includes(fMerchant)) return false;
     }
 
-    if(fDate){
-      const d = (e.created_at || "").toLowerCase();
-      if(!d.includes(fDate)) return false;
-    }
-
-    const a = Number(e.amount || 0);
-    if(minVal !== null && !Number.isNaN(minVal) && a < minVal) return false;
-    if(maxVal !== null && !Number.isNaN(maxVal) && a > maxVal) return false;
+    if(!withinDateRange(e)) return false;
 
     return true;
   });
@@ -253,6 +288,72 @@ function toggleSort(field){
     SORT.field = field;
     SORT.dir = (field === "date") ? "desc" : "asc";
   }
+  updateSortIndicators();
+  render();
+}
+
+function setActiveQuickButton(kind){
+  const ids = ["btnToday","btnWeek","btnMonth","btnYtd"];
+  ids.forEach(id => document.getElementById(id).classList.remove("active"));
+  if(kind === "today") document.getElementById("btnToday").classList.add("active");
+  if(kind === "week") document.getElementById("btnWeek").classList.add("active");
+  if(kind === "month") document.getElementById("btnMonth").classList.add("active");
+  if(kind === "ytd") document.getElementById("btnYtd").classList.add("active");
+}
+
+function todayISO(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function addDaysISO(baseISO, delta){
+  const d = new Date(baseISO + "T00:00:00");
+  d.setDate(d.getDate() + delta);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function setQuickRange(kind){
+  const t = todayISO();
+  const fromEl = document.getElementById("dateFrom");
+  const toEl = document.getElementById("dateTo");
+
+  if(kind === "today"){
+    fromEl.value = t;
+    toEl.value = t;
+  }else if(kind === "week"){
+    fromEl.value = addDaysISO(t, -6); // últimos 7 días (incluye hoy)
+    toEl.value = t;
+  }else if(kind === "month"){
+    fromEl.value = addDaysISO(t, -29); // últimos 30 días (incluye hoy)
+    toEl.value = t;
+  }else if(kind === "ytd"){
+    fromEl.value = `${new Date().getFullYear()}-01-01`;
+    toEl.value = t;
+  }
+  setActiveQuickButton(kind);
+  render();
+}
+
+function clearDateRange(){
+  document.getElementById("dateFrom").value = "";
+  document.getElementById("dateTo").value = "";
+  setActiveQuickButton(null);
+  render();
+}
+
+function clearFilters(){
+  document.getElementById("fId").value = "";
+  document.getElementById("fCur").value = "KWD";
+  document.getElementById("fMerchant").value = "";
+  document.getElementById("fCat").value = "";
+  clearDateRange();
+  SORT = { field: "date", dir: "desc" };
   updateSortIndicators();
   render();
 }
@@ -310,17 +411,6 @@ function render(){
   updateSelectedUI();
 }
 
-function clearFilters(){
-  document.getElementById("fId").value = "";
-  document.getElementById("fDate").value = "";
-  document.getElementById("fMin").value = "";
-  document.getElementById("fMax").value = "";
-  document.getElementById("fCur").value = "KWD";
-  document.getElementById("fMerchant").value = "";
-  document.getElementById("fCat").value = "";
-  render();
-}
-
 async function refreshAll(){
   setStatus("Cargando...", "muted");
   await fetchAll();
@@ -331,8 +421,13 @@ async function refreshAll(){
 
 async function deleteSelected(){
   const id = getSelectedId();
-  const apiKey = document.getElementById('key').value.trim();
+  const apiKey = (document.getElementById('key')?.value || "").trim();
   if(!id) return;
+
+  if(!apiKey){
+    setStatus("Falta API key (Settings).", "err");
+    return;
+  }
 
   const ok = confirm(`¿Seguro que quieres borrar el gasto con id ${id}?`);
   if(!ok) return;
