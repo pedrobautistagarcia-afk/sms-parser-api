@@ -5,69 +5,76 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Registro Gastos</title>
   <style>
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      margin:20px
-    }
-    input,button{
-      padding:10px;
-      font-size:14px
-    }
-    table{
-      border-collapse:collapse;
-      width:100%;
-      margin-top:16px
-    }
-    th,td{
-      border:1px solid #ddd;
-      padding:8px;
-      text-align:left
-    }
-    th{
-      background:#f5f5f5
-    }
-    tr.duplicate{
-      background:#ffe5e5; /* rojo clarito */
-    }
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap
-    }
-    .hint{
-      margin-top:10px;
-      font-size:13px;
-      color:#666
-    }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px}
+    input,button,textarea{padding:10px;font-size:14px}
+    textarea{width:100%;max-width:900px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .card{border:1px solid #ddd;border-radius:10px;padding:14px;max-width:900px}
+    .muted{color:#666;font-size:13px}
+    .ok{color:#0a7a2f;font-size:13px}
+    .warn{color:#a15600;font-size:13px}
+    .err{color:#b00020;font-size:13px}
+    table{border-collapse:collapse;width:100%;margin-top:16px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f5f5f5}
+    tr.duplicate{background:#ffe5e5}
+    tr.newrow{background:#e9f7ff}
+    code{background:#f6f6f6;padding:2px 6px;border-radius:6px}
   </style>
 </head>
 <body>
   <h1>Registro Gastos</h1>
 
-  <div class="row">
-    <input id="user" placeholder="user_id" value="pedro"/>
-    <button onclick="load()">Cargar</button>
-  </div>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <label for="user"><b>User</b></label>
+      <input id="user" placeholder="userid" value="pedro"/>
+      <label for="key"><b>API key</b></label>
+      <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
+      <button id="btnLoad" onclick="load()">Recargar tabla</button>
+    </div>
 
-  <div class="hint">
-    Las filas en rojo indican un gasto duplicado detectado en la última inserción.
+    <div style="margin-bottom:8px"><b>Pegar SMS</b></div>
+    <textarea id="sms" rows="3" placeholder="Pega aquí el SMS del banco..."></textarea>
+
+    <div class="row" style="margin-top:10px">
+      <button id="btnSend" onclick="sendSms()">Enviar a /ingest</button>
+      <span id="status" class="muted">Listo.</span>
+    </div>
+
+    <div class="muted" style="margin-top:10px">
+      Si el backend responde <code>{"inserted":false,"id":X}</code>, la fila <code>X</code> se marca en rojo automáticamente.
+      Si responde <code>{"inserted":true,"id":X}</code>, la fila nueva se marca en azul suave.
+    </div>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Fecha</th>
-        <th>Importe</th>
-        <th>Moneda</th>
-        <th>Comercio</th>
-        <th>Categoría</th>
+        <th>ID</th><th>Fecha</th><th>Importe</th><th>Moneda</th><th>Comercio</th><th>Categoría</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
 
 <script>
+function setStatus(text, cls){
+  const el = document.getElementById('status');
+  el.className = cls || "muted";
+  el.textContent = text;
+}
+
+function getDupId(){ return localStorage.getItem("last_duplicate_id"); }
+function setDupId(id){
+  if(id === null || id === undefined) localStorage.removeItem("last_duplicate_id");
+  else localStorage.setItem("last_duplicate_id", String(id));
+}
+function getNewId(){ return localStorage.getItem("last_new_id"); }
+function setNewId(id){
+  if(id === null || id === undefined) localStorage.removeItem("last_new_id");
+  else localStorage.setItem("last_new_id", String(id));
+}
+
 async function load(){
   const user = document.getElementById('user').value.trim();
   const url = user
@@ -77,33 +84,76 @@ async function load(){
   const res = await fetch(url);
   const data = await res.json();
 
-  const duplicatedId = localStorage.getItem("last_duplicate_id");
+  const dupId = getDupId();
+  const newId = getNewId();
+
   const tb = document.getElementById('tbody');
   tb.innerHTML = "";
 
   for(const e of data.expenses){
     const tr = document.createElement('tr');
 
-    if(duplicatedId && String(e.id) === duplicatedId){
-      tr.classList.add("duplicate");
-    }
+    if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
+    if(newId && String(e.id) === newId) tr.classList.add("newrow");
 
     tr.innerHTML = `
       <td>${e.id}</td>
-      <td>${e.created_at}</td>
-      <td>${e.amount}</td>
-      <td>${e.currency}</td>
-      <td>${e.merchant_clean}</td>
-      <td>${e.category}</td>
+      <td>${e.created_at || ""}</td>
+      <td>${e.amount ?? ""}</td>
+      <td>${e.currency || ""}</td>
+      <td>${e.merchant_clean || ""}</td>
+      <td>${e.category || ""}</td>
     `;
     tb.appendChild(tr);
   }
+
+  // Quitamos el "nuevo" tras una recarga para que no quede azul para siempre
+  setTimeout(() => setNewId(null), 500);
 }
 
-// Helper para marcar duplicado desde consola (o futuro POST)
-window.markDuplicate = function(id){
-  localStorage.setItem("last_duplicate_id", String(id));
-  load();
+async function sendSms(){
+  const user = document.getElementById('user').value.trim();
+  const apiKey = document.getElementById('key').value.trim();
+  const sms = document.getElementById('sms').value.trim();
+
+  if(!user){ setStatus("Falta userid.", "err"); return; }
+  if(!apiKey){ setStatus("Falta api_key.", "err"); return; }
+  if(!sms){ setStatus("Pega un SMS primero.", "err"); return; }
+
+  setStatus("Enviando...", "muted");
+  document.getElementById('btnSend').disabled = true;
+
+  try{
+    const res = await fetch(`/ingest?api_key=${encodeURIComponent(apiKey)}`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({userid: user, sms})
+    });
+
+    const data = await res.json();
+
+    if(data.inserted === true){
+      setDupId(null);
+      setNewId(data.id);
+      setStatus(`Insertado ✅ (id ${data.id})`, "ok");
+    }else{
+      // duplicado
+      setNewId(null);
+      if(data.id !== null && data.id !== undefined){
+        setDupId(data.id);
+        setStatus(`Duplicado 🟧 (ya existía id ${data.id})`, "warn");
+      }else{
+        setDupId(null);
+        setStatus("Duplicado (sin id).", "warn");
+      }
+    }
+
+    await load();
+  }catch(e){
+    setStatus("Error enviando el SMS.", "err");
+  }finally{
+    document.getElementById('btnSend').disabled = false;
+  }
 }
 
 load();
