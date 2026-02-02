@@ -30,7 +30,7 @@
     .thin{padding:6px;font-size:13px;width:100%;box-sizing:border-box}
     .w-date{width:170px}
     .w-amt{width:120px}
-    .w-cur{width:78px}
+    .w-cur{width:95px}
     .w-cat{width:160px}
 
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
@@ -99,7 +99,7 @@
   <div class="topbar">
     <div>
       <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
-      <div class="muted">Click en categoría o comercio para editar. Borrar tiene Undo.</div>
+      <div class="muted">Click en categoría o comercio para editar. Borrar tiene Undo. Moneda soporta KWD/USD/EUR (y lo que venga).</div>
     </div>
 
     <div class="right">
@@ -170,7 +170,7 @@
         </th>
         <th class="w-cur">
           <select id="fCur" class="thin" onchange="render()">
-            <option value="KWD">KWD</option>
+            <option value="">Todas</option>
           </select>
         </th>
         <th>
@@ -273,6 +273,23 @@ function populateCategorySelect(){
   sel.value = cats.includes(current) ? current : "";
 }
 
+function populateCurrencySelect(){
+  const sel = document.getElementById("fCur");
+  const current = sel.value;
+
+  const currencies = Array.from(new Set(ALL.map(e => (e.currency || "KWD")))).sort();
+
+  // Asegura KWD/USD/EUR aunque aún no existan en ALL
+  ["KWD","USD","EUR"].forEach(c => { if(!currencies.includes(c)) currencies.push(c); });
+  currencies.sort();
+
+  sel.innerHTML =
+    `<option value="">Todas</option>` +
+    currencies.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  sel.value = (current === "" || currencies.includes(current)) ? current : "";
+}
+
 function parseISODateOnly(isoStr){
   if(!isoStr) return "";
   return String(isoStr).slice(0,10);
@@ -292,7 +309,7 @@ function withinDateRange(e){
 }
 
 function applyFilters(){
-  const fCur = document.getElementById("fCur").value;
+  const fCur = document.getElementById("fCur").value; // "" => todas
   const fMerchant = document.getElementById("fMerchant").value.trim().toLowerCase();
   const fCat = document.getElementById("fCat").value;
 
@@ -396,7 +413,7 @@ function clearDateRange(){
 }
 
 function clearFilters(){
-  document.getElementById("fCur").value = "KWD";
+  document.getElementById("fCur").value = "";
   document.getElementById("fMerchant").value = "";
   document.getElementById("fCat").value = "";
   clearDateRange();
@@ -548,7 +565,6 @@ function render(){
     if(newId && String(e.id) === newId) tr.classList.add("newrow");
     if(selectedId && String(e.id) === selectedId) tr.classList.add("selected");
 
-    // Cells
     const tdDate = document.createElement("td");
     tdDate.className = "date";
     tdDate.textContent = fmtDate(e.created_at);
@@ -574,7 +590,6 @@ function render(){
     catSpan.textContent = (e.category || "other");
     tdCat.appendChild(catSpan);
 
-    // Row select (click en cualquier parte excepto cuando estás editando)
     tr.addEventListener("click", (ev) => {
       const tag = (ev.target && ev.target.tagName) ? ev.target.tagName.toLowerCase() : "";
       if(tag === "input" || tag === "select" || tag === "option") return;
@@ -582,7 +597,6 @@ function render(){
       render();
     });
 
-    // Inline edit: merchant
     tdMer.addEventListener("click", async (ev) => {
       ev.stopPropagation();
 
@@ -600,19 +614,16 @@ function render(){
         tdMer.textContent = val;
 
         if(!commit) return;
-
         if(val === (e.merchant_clean || "")) return;
 
         setStatus("Guardando comercio...", "muted");
         const ok = await saveMerchant(e.id, val);
         if(ok){
           setStatus("Guardado ✅", "ok");
-          // actualiza en memoria
           e.merchant_clean = val;
           setTimeout(()=>setStatus("Listo.","muted"), 900);
         }else{
           setStatus("Error guardando comercio.", "err");
-          // vuelve al valor anterior
           tdMer.textContent = e.merchant_clean || "";
         }
       };
@@ -624,7 +635,6 @@ function render(){
       input.addEventListener("blur", () => finish(true));
     });
 
-    // Inline edit: category
     tdCat.addEventListener("click", async (ev) => {
       ev.stopPropagation();
 
@@ -657,12 +667,9 @@ function render(){
           setStatus("Guardado ✅", "ok");
           e.category = val;
           setTimeout(()=>setStatus("Listo.","muted"), 900);
-          // repinta para el color de fila
           render();
         }else{
           setStatus("Error guardando categoría.", "err");
-          // vuelve al valor anterior
-          e.category = e.category || "other";
           render();
         }
       };
@@ -691,6 +698,7 @@ async function refreshAll(){
   setStatus("Cargando...", "muted");
   await fetchAll();
   populateCategorySelect();
+  populateCurrencySelect();
   render();
   setStatus("Listo.", "muted");
 }
@@ -719,7 +727,6 @@ async function deleteSelected(){
     const data = await res.json();
 
     if(data.deleted === 1 && data.deleted_row){
-      // prepara undo payload
       const r = data.deleted_row;
       undoPayload = {
         user_id: r.user_id,
@@ -734,7 +741,6 @@ async function deleteSelected(){
         date_iso: r.date_iso
       };
 
-      // snackbar 5s
       showSnack("Gasto eliminado", `${(undoPayload.merchant_clean||"").slice(0,40)} · ${undoPayload.amount ?? ""} ${undoPayload.currency||""}`);
       if(undoTimer) clearTimeout(undoTimer);
       undoTimer = setTimeout(() => {
