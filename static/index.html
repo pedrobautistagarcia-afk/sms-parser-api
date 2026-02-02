@@ -102,6 +102,14 @@
     /* Keep cell size stable on click */
     td:focus, td:active, td *:focus, td *:active{ outline:none !important; box-shadow:none !important; }
   </style>
+
+<style>
+/* SORT_HEADERS_V1 */
+.th-sort{ cursor:pointer; user-select:none; }
+.th-sort:hover{ background: rgba(255,255,255,.06); }
+.sort-ind{ display:inline-block; min-width:14px; opacity:.85; }
+</style>
+
 </head>
 <body>
   <div class="wrap">
@@ -145,10 +153,10 @@
         <table>
           <thead>
             <tr>
-              <th>Created</th>
+              <th data-sort="created_at" class="th-sort">Created <span class="sort-ind" data-ind="created_at"></span></th>
               <th>Merchant</th>
               <th>Category</th>
-              <th class="amt">Amount</th>
+              <th class="amt th-sort" data-sort="amount">Amount <span class="sort-ind" data-ind="amount"></span></th>
               <th>Cur</th>
               <th class="actions">Actions</th>
             </tr>
@@ -164,6 +172,9 @@
   // --- SINGLE SOURCE OF TRUTH ---
   let lastGood = [];
   let view = [];
+
+  // Sorting (default: newest first)
+  const sortState = { key: "created_at", dir: "desc" }; // dir: "asc" | "desc"
 
   // Filters
   const filters = {
@@ -214,6 +225,45 @@
     $("cat").value = "";
     applyAndRender();
   }
+
+
+  function sortView(){
+    const k = sortState.key;
+    const dir = sortState.dir === "asc" ? 1 : -1;
+
+    view.sort((a,b) => {
+      let av = a?.[k];
+      let bv = b?.[k];
+
+      if(k === "amount"){
+        av = Number(av ?? 0);
+        bv = Number(bv ?? 0);
+        if(av === bv) return 0;
+        return (av > bv ? 1 : -1) * dir;
+      }
+
+      // created_at (ISO)
+      if(k === "created_at"){
+        const ad = new Date(av || 0).getTime();
+        const bd = new Date(bv || 0).getTime();
+        if(ad === bd) return 0;
+        return (ad > bd ? 1 : -1) * dir;
+      }
+
+      // fallback string
+      av = String(av ?? "").toLowerCase();
+      bv = String(bv ?? "").toLowerCase();
+      if(av === bv) return 0;
+      return (av > bv ? 1 : -1) * dir;
+    });
+  }
+
+  function updateSortIndicators(){
+    document.querySelectorAll(".sort-ind").forEach(el => el.textContent = "");
+    const ind = document.querySelector(`.sort-ind[data-ind="${sortState.key}"]`);
+    if(ind) ind.textContent = (sortState.dir === "asc") ? "↑" : "↓";
+  }
+
 
   async function loadExpenses(){
     const url = `/expenses?user_id=pedro&limit=500`;
@@ -268,6 +318,8 @@
       return true;
     });
 
+    sortView();
+    updateSortIndicators();
     renderTable();
   }
 
@@ -360,6 +412,24 @@
   $("cur").addEventListener("change", () => { filters.cur = $("cur").value; applyAndRender(); });
   $("cat").addEventListener("change", () => { filters.cat = $("cat").value; applyAndRender(); });
 
+
+  // Click-to-sort on table headers
+  document.addEventListener("click", (ev) => {
+    const th = ev.target.closest("th.th-sort");
+    if(!th) return;
+    const key = th.getAttribute("data-sort");
+    if(!key) return;
+
+    if(sortState.key === key){
+      sortState.dir = (sortState.dir === "asc") ? "desc" : "asc";
+    } else {
+      sortState.key = key;
+      // default direction: created desc, amount desc
+      sortState.dir = (key === "created_at" || key === "amount") ? "desc" : "asc";
+    }
+    applyAndRender();
+  });
+
   document.querySelectorAll("button[data-preset]").forEach(b => {
     b.addEventListener("click", () => setPreset(b.getAttribute("data-preset")));
   });
@@ -392,6 +462,7 @@
 
   // Boot
   clearFilters();
+  updateSortIndicators();
   loadExpenses();
 })();
 </script>
