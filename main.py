@@ -41,14 +41,14 @@ def get_conn() -> sqlite3.Connection:
 
 def table_columns(cur: sqlite3.Cursor, table: str) -> List[str]:
     cur.execute(f"PRAGMA table_info({table})")
-    return [row[1] for row in cur.fetchall()]  # name is index 1
+    return [row[1] for row in cur.fetchall()]
 
 def init_db():
     with db_lock:
         conn = get_conn()
         cur = conn.cursor()
 
-        # Base table (old schema)
+        # Base table (compatible)
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS expenses (
@@ -67,14 +67,8 @@ def init_db():
 
         # MIGRATIONS: add missing columns safely
         cols = set(table_columns(cur, "expenses"))
-
-        expected_additions = {
-            "sms_raw": "TEXT",
-        }
-
-        for col, coltype in expected_additions.items():
-            if col not in cols:
-                cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} {coltype}")
+        if "sms_raw" not in cols:
+            cur.execute("ALTER TABLE expenses ADD COLUMN sms_raw TEXT")
 
         # Enforce uniqueness of hash via unique index (safe)
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
@@ -148,7 +142,6 @@ def guess_category(merchant: str, sms: str) -> str:
 def parse_sms(sms: str) -> Dict[str, Any]:
     sms_norm = re.sub(r"\s+", " ", sms.strip())
 
-    # Amount + currency: prefer "KWD 3.750" then "3.750 KWD"
     m1 = re.search(rf"\b{CURRENCY_RE}\s*{AMOUNT_RE}\b", sms_norm, re.IGNORECASE)
     m2 = re.search(rf"\b{AMOUNT_RE}\s*{CURRENCY_RE}\b", sms_norm, re.IGNORECASE)
 
@@ -161,7 +154,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         amount = _to_float(m2.group(1))
         currency = m2.group(2).upper()
 
-    # Merchant candidates: "for X on DATE" / "from X" / "at X"
     merchant = ""
     mm = re.search(r"\bfor\s+(.+?)\s+\bon\b", sms_norm, re.IGNORECASE)
     if mm:
@@ -177,7 +169,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
 
     merchant_raw = merchant.strip() if merchant else ""
 
-    # Date: try YYYY-MM-DD HH:MM:SS
     date_iso = None
     dm = re.search(r"\b(20\d{2}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\b", sms_norm)
     if dm:
@@ -202,7 +193,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
     }
 
 def compute_hash(user_id: str, payload: Dict[str, Any]) -> str:
-    # Deduplicate by stable elements (including sms_raw)
     base = (
         f"{user_id}|{payload.get('amount')}|{payload.get('currency')}|"
         f"{payload.get('merchant_clean')}|{payload.get('created_at')}|{payload.get('sms_raw')}"
@@ -221,6 +211,36 @@ def root():
 def health():
     return {"ok": True, "db_path": DB_PATH}
 
+@app.get("/debug/schema")
+def debug_schema(
+    x_api_key: Optional[str] = Header(default=None),
+    api_key: Optional[str] = Query(default=None),
+):
+    require_api_key(x_api_key, api_key)
+
+    with db_lock:
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("PRAGMA table_info(expenses)")
+        cols = [
+            {"cid": r[0], "name": r[1], "type": r[2], "notnull": r[3], "dflt": r[4], "pk": r[5]}
+            for r in cur.fetchall()
+        ]
+
+        cur.execute("PRAGMA index_list(expenses)")
+        idxs = []
+        for r in cur.fetchall():
+            idx_name = r[1]
+            unique = bool(r[2])
+            cur.execute(f"PRAGMA index_info({idx_name})")
+            cols_idx = [x[2] for x in cur.fetchall()]
+            idxs.append({"name": idx_name, "unique": unique, "columns": cols_idx})
+
+        conn.close()
+
+    return {"db_path": DB_PATH, "columns": cols, "indexes": idxs}
+
 @app.post("/ingest")
 async def ingest(
     req: IngestRequest,
@@ -236,6 +256,7 @@ async def ingest(
     inserted = False
     expense_id = None
     existing_payload = None
+    integrity_error = None
 
     with db_lock:
         conn = get_conn()
@@ -264,9 +285,11 @@ async def ingest(
             inserted = True
             expense_id = cur.lastrowid
 
-        except sqlite3.IntegrityError:
-            # If hash already exists, return the existing row so we can see what collided
-            inserted = False
+        except sqlite3.IntegrityError as e:
+            # Capture the real SQLite integrity error
+            integrity_error = str(e)
+
+            # Try to fetch existing row by hash (if that was the failing constraint)
             cur.execute(
                 "SELECT id, user_id, amount, currency, merchant_clean, category, created_at FROM expenses WHERE hash = ?",
                 (h,),
@@ -283,9 +306,6 @@ async def ingest(
                     "category": existing["category"] or "other",
                     "created_at": existing["created_at"],
                 }
-            else:
-                expense_id = None
-                existing_payload = None
 
         finally:
             conn.close()
@@ -293,6 +313,8 @@ async def ingest(
     return {
         "inserted": inserted,
         "id": expense_id,
+        "hash": h,
+        "integrity_error": integrity_error,
         "expense": {
             "user_id": req.user_id,
             "amount": payload["amount"],
