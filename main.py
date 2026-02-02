@@ -51,7 +51,7 @@ def init_db():
     conn = db()
     cur = conn.cursor()
 
-    # expenses
+    # 1) Crear tabla base si no existe (mínimo viable)
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS expenses (
@@ -64,24 +64,38 @@ def init_db():
             merchant_clean TEXT,
             category TEXT,
             hash TEXT,
-            created_at TEXT,
-            date_raw TEXT,
-            date_iso TEXT,
-            sms_hash TEXT UNIQUE,
-            sms_raw TEXT
+            created_at TEXT
         )
         """
     )
 
-    # indexes (safe if already exist)
+    # 2) Migraciones: añadir columnas si faltan
+    cur.execute("PRAGMA table_info(expenses)")
+    cols = {row[1] for row in cur.fetchall()}
+
+    def add_col(name: str, coltype: str):
+        nonlocal cols
+        if name not in cols:
+            cur.execute(f"ALTER TABLE expenses ADD COLUMN {name} {coltype}")
+            cols.add(name)
+
+    # Columnas extendidas que tu app usa
+    add_col("date_raw", "TEXT")
+    add_col("date_iso", "TEXT")
+    add_col("sms_hash", "TEXT")   # UNIQUE index después
+    add_col("sms_raw", "TEXT")
+
+    # 3) Índices (después de asegurar columnas)
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
-    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
 
-    # rules table
+    # sms_hash puede existir pero sin índice aún
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
+
+    # rules table (igual que antes)
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS rules (
@@ -89,8 +103,8 @@ def init_db():
             user_id TEXT NOT NULL,
             enabled INTEGER NOT NULL DEFAULT 1,
             priority INTEGER NOT NULL DEFAULT 100,
-            match_field TEXT NOT NULL DEFAULT 'merchant',   -- 'merchant' | 'sms'
-            match_type TEXT NOT NULL DEFAULT 'contains',    -- 'contains' | 'regex'
+            match_field TEXT NOT NULL DEFAULT 'merchant',
+            match_type TEXT NOT NULL DEFAULT 'contains',
             pattern TEXT NOT NULL,
             set_category TEXT,
             set_merchant_clean TEXT,
@@ -106,6 +120,7 @@ def init_db():
     conn.close()
 
 init_db()
+
 
 # ======================================================
 # MODELS
