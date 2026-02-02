@@ -21,7 +21,6 @@
     thead th{background:#f5f5f5;position:sticky;top:0;z-index:2}
     thead tr.filters th{background:#fafafa;top:37px;z-index:1}
     .num{text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap}
-    .click{cursor:pointer; user-select:none}
     tr.duplicate{background:#ffe5e5}
     tr.newrow{background:#e9f7ff}
     .badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:12px;background:#f2f2f2}
@@ -32,7 +31,7 @@
     .w-date{width:170px}
     .w-amt{width:120px}
     .w-cur{width:78px}
-    .w-cat{width:140px}
+    .w-cat{width:160px}
 
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
     .btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:7px 10px}
@@ -53,11 +52,46 @@
     .cat-shopping{background:#f7efff}
     .cat-other{background:#f5f5f5}
 
-    /* selección */
     tr.selected{
       outline:2px solid #111;
       outline-offset:-2px;
     }
+
+    /* inline editor */
+    .cell-edit{
+      width:100%;
+      box-sizing:border-box;
+      padding:6px;
+      font-size:13px;
+    }
+    .cell-click{cursor:pointer}
+
+    /* snackbar undo */
+    .snackbar{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      background:#111;
+      color:#fff;
+      border-radius:12px;
+      padding:10px 12px;
+      display:none;
+      align-items:center;
+      gap:10px;
+      max-width:95vw;
+      z-index:9999;
+    }
+    .snackbar button{
+      background:#fff;
+      color:#111;
+      border:0;
+      border-radius:10px;
+      padding:7px 10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .snackbar .mut{opacity:.85;font-size:13px}
   </style>
 </head>
 <body>
@@ -65,7 +99,7 @@
   <div class="topbar">
     <div>
       <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
-      <div class="muted">Click en el título para ordenar. Intervalo de fechas arriba. Exporta CSV de lo filtrado.</div>
+      <div class="muted">Click en categoría o comercio para editar. Borrar tiene Undo.</div>
     </div>
 
     <div class="right">
@@ -97,13 +131,13 @@
     </div>
 
     <details style="margin-top:10px">
-      <summary class="muted"><b>Settings</b> (user / api key)</summary>
+      <summary class="muted"><b>Settings</b> (api key)</summary>
       <div class="row" style="margin-top:10px">
         <label><b>User</b></label>
         <input id="user" placeholder="userid" value="pedro"/>
         <label><b>API key</b></label>
         <input id="key" placeholder="api_key" value="ElPortichuelo99" style="min-width:220px"/>
-        <span class="muted">Solo necesario para borrar.</span>
+        <span class="muted">Necesaria para editar/borrar.</span>
       </div>
     </details>
   </div>
@@ -120,8 +154,8 @@
   <table>
     <thead>
       <tr>
-        <th class="w-date click" onclick="toggleSort('date')">Fecha <span id="sort_date"></span></th>
-        <th class="w-amt click" onclick="toggleSort('amount')">Importe <span id="sort_amount"></span></th>
+        <th class="w-date cell-click" onclick="toggleSort('date')">Fecha <span id="sort_date"></span></th>
+        <th class="w-amt cell-click" onclick="toggleSort('amount')">Importe <span id="sort_amount"></span></th>
         <th class="w-cur">Moneda</th>
         <th>Comercio</th>
         <th class="w-cat">Categoría</th>
@@ -153,9 +187,22 @@
     <tbody id="tbody"></tbody>
   </table>
 
+  <!-- snackbar -->
+  <div id="snack" class="snackbar">
+    <div>
+      <div id="snackText" style="font-weight:700"></div>
+      <div id="snackSub" class="mut"></div>
+    </div>
+    <button onclick="undoDelete()">Deshacer</button>
+  </div>
+
 <script>
 let ALL = [];
-let SORT = { field: "date", dir: "desc" }; // default
+let SORT = { field: "date", dir: "desc" };
+let undoPayload = null;
+let undoTimer = null;
+
+const CATEGORY_OPTIONS = ["coffee","food","transport","groceries","shopping","other"];
 
 function setStatus(text, cls){
   const el = document.getElementById('status');
@@ -201,6 +248,10 @@ function updateSelectedUI(){
   const id = getSelectedId();
   document.getElementById("selLabel").textContent = id ? "sí" : "ninguno";
   document.getElementById("btnDelete").disabled = !id;
+}
+
+function getApiKey(){
+  return (document.getElementById('key')?.value || "").trim();
 }
 
 async function fetchAll(){
@@ -255,7 +306,6 @@ function applyFilters(){
     }
 
     if(!withinDateRange(e)) return false;
-
     return true;
   });
 }
@@ -271,7 +321,7 @@ function sortRows(rows){
   copy.sort((ra, rb) => {
     let v = 0;
     if(field === "amount") v = cmpNum(ra.amount, rb.amount);
-    else v = cmpText(ra.created_at, rb.created_at); // date
+    else v = cmpText(ra.created_at, rb.created_at);
     return dir === "asc" ? v : -v;
   });
 
@@ -326,17 +376,13 @@ function setQuickRange(kind){
   const toEl = document.getElementById("dateTo");
 
   if(kind === "today"){
-    fromEl.value = t;
-    toEl.value = t;
+    fromEl.value = t; toEl.value = t;
   }else if(kind === "week"){
-    fromEl.value = addDaysISO(t, -6);
-    toEl.value = t;
+    fromEl.value = addDaysISO(t, -6); toEl.value = t;
   }else if(kind === "month"){
-    fromEl.value = addDaysISO(t, -29);
-    toEl.value = t;
+    fromEl.value = addDaysISO(t, -29); toEl.value = t;
   }else if(kind === "ytd"){
-    fromEl.value = `${new Date().getFullYear()}-01-01`;
-    toEl.value = t;
+    fromEl.value = `${new Date().getFullYear()}-01-01`; toEl.value = t;
   }
   setActiveQuickButton(kind);
   render();
@@ -363,59 +409,8 @@ function getFilteredRows(){
   return sortRows(applyFilters());
 }
 
-function render(){
-  updateSortIndicators();
-
-  const dupId = getDupId();
-  const newId = getNewId();
-  const selectedId = getSelectedId();
-
-  const filtered = getFilteredRows();
-
-  // Totales (solo KWD)
-  let sumKwd = 0;
-  for(const e of filtered){
-    if(e.currency === "KWD") sumKwd += Number(e.amount || 0);
-  }
-  document.getElementById("sumCount").textContent = String(filtered.length);
-  document.getElementById("sumKwd").textContent = sumKwd.toFixed(3);
-
-  const tb = document.getElementById('tbody');
-  tb.innerHTML = "";
-
-  for(const e of filtered){
-    const tr = document.createElement('tr');
-    tr.classList.add(catClass(e.category));
-    tr.dataset.id = String(e.id); // id interno, no visible
-
-    if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
-    if(newId && String(e.id) === newId) tr.classList.add("newrow");
-    if(selectedId && String(e.id) === selectedId) tr.classList.add("selected");
-
-    tr.innerHTML = `
-      <td class="date">${fmtDate(e.created_at)}</td>
-      <td class="num"><b>${fmtAmt(e.amount)}</b></td>
-      <td>${e.currency || ""}</td>
-      <td class="merchant">${e.merchant_clean || ""}</td>
-      <td><span class="badge cat">${(e.category || "other")}</span></td>
-    `;
-
-    tr.addEventListener("click", () => {
-      setSelectedId(e.id);
-      render();
-    });
-
-    tb.appendChild(tr);
-  }
-
-  setTimeout(() => setNewId(null), 600);
-  updateSelectedUI();
-}
-
 function exportCSV(){
   const rows = getFilteredRows();
-
-  // Cabecera CSV
   const header = ["created_at","amount","currency","merchant_clean","category"];
   const lines = [header.join(",")];
 
@@ -426,12 +421,7 @@ function exportCSV(){
       e.currency || "",
       e.merchant_clean || "",
       e.category || "other"
-    ].map(v => {
-      const s = String(v);
-      // escapar comillas y comas
-      const escaped = s.replace(/"/g,'""');
-      return `"${escaped}"`;
-    });
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`);
     lines.push(vals.join(","));
   }
 
@@ -452,6 +442,251 @@ function exportCSV(){
   setTimeout(()=>setStatus("Listo.","muted"), 1200);
 }
 
+/* ---------------- Inline edit ---------------- */
+
+async function saveCategory(id, newCat){
+  const apiKey = getApiKey();
+  if(!apiKey){
+    setStatus("Falta API key (Settings).", "err");
+    return false;
+  }
+  const res = await fetch(`/expenses/${encodeURIComponent(id)}/category?api_key=${encodeURIComponent(apiKey)}`,{
+    method:"PATCH",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({category:newCat})
+  });
+  const data = await res.json();
+  return data.updated === 1;
+}
+
+async function saveMerchant(id, newMerchant){
+  const apiKey = getApiKey();
+  if(!apiKey){
+    setStatus("Falta API key (Settings).", "err");
+    return false;
+  }
+  const res = await fetch(`/expenses/${encodeURIComponent(id)}/merchant?api_key=${encodeURIComponent(apiKey)}`,{
+    method:"PATCH",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({merchant_clean:newMerchant})
+  });
+  const data = await res.json();
+  return data.updated === 1;
+}
+
+/* ---------------- Undo Snackbar ---------------- */
+
+function showSnack(title, subtitle){
+  document.getElementById("snackText").textContent = title;
+  document.getElementById("snackSub").textContent = subtitle || "";
+  const el = document.getElementById("snack");
+  el.style.display = "flex";
+}
+
+function hideSnack(){
+  const el = document.getElementById("snack");
+  el.style.display = "none";
+}
+
+async function undoDelete(){
+  if(!undoPayload) return;
+
+  const apiKey = getApiKey();
+  if(!apiKey){
+    setStatus("Falta API key (Settings).", "err");
+    return;
+  }
+
+  try{
+    const res = await fetch(`/expenses/restore?api_key=${encodeURIComponent(apiKey)}`,{
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(undoPayload)
+    });
+    const data = await res.json();
+    if(data.restored){
+      setStatus("Deshecho ✅", "ok");
+      hideSnack();
+      undoPayload = null;
+      if(undoTimer) clearTimeout(undoTimer);
+      await refreshAll();
+    }else{
+      setStatus("No se pudo deshacer.", "warn");
+    }
+  }catch(e){
+    setStatus("Error en undo.", "err");
+  }
+}
+
+/* ---------------- Render table ---------------- */
+
+function render(){
+  updateSortIndicators();
+
+  const dupId = getDupId();
+  const newId = getNewId();
+  const selectedId = getSelectedId();
+
+  const filtered = getFilteredRows();
+
+  let sumKwd = 0;
+  for(const e of filtered){
+    if(e.currency === "KWD") sumKwd += Number(e.amount || 0);
+  }
+  document.getElementById("sumCount").textContent = String(filtered.length);
+  document.getElementById("sumKwd").textContent = sumKwd.toFixed(3);
+
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = "";
+
+  for(const e of filtered){
+    const tr = document.createElement('tr');
+    tr.classList.add(catClass(e.category));
+    tr.dataset.id = String(e.id);
+
+    if(dupId && String(e.id) === dupId) tr.classList.add("duplicate");
+    if(newId && String(e.id) === newId) tr.classList.add("newrow");
+    if(selectedId && String(e.id) === selectedId) tr.classList.add("selected");
+
+    // Cells
+    const tdDate = document.createElement("td");
+    tdDate.className = "date";
+    tdDate.textContent = fmtDate(e.created_at);
+
+    const tdAmt = document.createElement("td");
+    tdAmt.className = "num";
+    tdAmt.innerHTML = `<b>${fmtAmt(e.amount)}</b>`;
+
+    const tdCur = document.createElement("td");
+    tdCur.textContent = e.currency || "";
+
+    const tdMer = document.createElement("td");
+    tdMer.className = "merchant cell-click";
+    tdMer.textContent = e.merchant_clean || "";
+    tdMer.title = "Click para editar";
+
+    const tdCat = document.createElement("td");
+    tdCat.className = "cell-click";
+    tdCat.title = "Click para editar";
+
+    const catSpan = document.createElement("span");
+    catSpan.className = "badge cat";
+    catSpan.textContent = (e.category || "other");
+    tdCat.appendChild(catSpan);
+
+    // Row select (click en cualquier parte excepto cuando estás editando)
+    tr.addEventListener("click", (ev) => {
+      const tag = (ev.target && ev.target.tagName) ? ev.target.tagName.toLowerCase() : "";
+      if(tag === "input" || tag === "select" || tag === "option") return;
+      setSelectedId(e.id);
+      render();
+    });
+
+    // Inline edit: merchant
+    tdMer.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+
+      const input = document.createElement("input");
+      input.className = "cell-edit";
+      input.value = e.merchant_clean || "";
+      tdMer.innerHTML = "";
+      tdMer.appendChild(input);
+      input.focus();
+      input.select();
+
+      const finish = async (commit) => {
+        const val = input.value.trim();
+        tdMer.innerHTML = "";
+        tdMer.textContent = val;
+
+        if(!commit) return;
+
+        if(val === (e.merchant_clean || "")) return;
+
+        setStatus("Guardando comercio...", "muted");
+        const ok = await saveMerchant(e.id, val);
+        if(ok){
+          setStatus("Guardado ✅", "ok");
+          // actualiza en memoria
+          e.merchant_clean = val;
+          setTimeout(()=>setStatus("Listo.","muted"), 900);
+        }else{
+          setStatus("Error guardando comercio.", "err");
+          // vuelve al valor anterior
+          tdMer.textContent = e.merchant_clean || "";
+        }
+      };
+
+      input.addEventListener("keydown", (k) => {
+        if(k.key === "Enter") finish(true);
+        if(k.key === "Escape") finish(false);
+      });
+      input.addEventListener("blur", () => finish(true));
+    });
+
+    // Inline edit: category
+    tdCat.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+
+      const sel = document.createElement("select");
+      sel.className = "cell-edit";
+      for(const c of CATEGORY_OPTIONS){
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        if((e.category || "other").toLowerCase() === c) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      tdCat.innerHTML = "";
+      tdCat.appendChild(sel);
+      sel.focus();
+
+      const commit = async () => {
+        const val = sel.value;
+        tdCat.innerHTML = "";
+        const span = document.createElement("span");
+        span.className = "badge cat";
+        span.textContent = val;
+        tdCat.appendChild(span);
+
+        if(val === (e.category || "other")) return;
+
+        setStatus("Guardando categoría...", "muted");
+        const ok = await saveCategory(e.id, val);
+        if(ok){
+          setStatus("Guardado ✅", "ok");
+          e.category = val;
+          setTimeout(()=>setStatus("Listo.","muted"), 900);
+          // repinta para el color de fila
+          render();
+        }else{
+          setStatus("Error guardando categoría.", "err");
+          // vuelve al valor anterior
+          e.category = e.category || "other";
+          render();
+        }
+      };
+
+      sel.addEventListener("change", commit);
+      sel.addEventListener("blur", commit);
+      sel.addEventListener("keydown", (k) => {
+        if(k.key === "Escape") { render(); }
+      });
+    });
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdAmt);
+    tr.appendChild(tdCur);
+    tr.appendChild(tdMer);
+    tr.appendChild(tdCat);
+
+    tb.appendChild(tr);
+  }
+
+  setTimeout(() => setNewId(null), 600);
+  updateSelectedUI();
+}
+
 async function refreshAll(){
   setStatus("Cargando...", "muted");
   await fetchAll();
@@ -460,9 +695,11 @@ async function refreshAll(){
   setStatus("Listo.", "muted");
 }
 
+/* ---------------- Delete + Undo ---------------- */
+
 async function deleteSelected(){
   const id = getSelectedId();
-  const apiKey = (document.getElementById('key')?.value || "").trim();
+  const apiKey = getApiKey();
   if(!id) return;
 
   if(!apiKey){
@@ -473,7 +710,7 @@ async function deleteSelected(){
   const ok = confirm(`¿Seguro que quieres borrar este gasto?`);
   if(!ok) return;
 
-  setStatus(`Borrando...`, "muted");
+  setStatus("Borrando...", "muted");
 
   try{
     const res = await fetch(`/expenses/${encodeURIComponent(id)}?api_key=${encodeURIComponent(apiKey)}`, {
@@ -481,12 +718,36 @@ async function deleteSelected(){
     });
     const data = await res.json();
 
-    if(data.deleted === 1){
-      setStatus(`Borrado ✅`, "ok");
+    if(data.deleted === 1 && data.deleted_row){
+      // prepara undo payload
+      const r = data.deleted_row;
+      undoPayload = {
+        user_id: r.user_id,
+        sms: r.sms || r.sms_raw || "",
+        amount: r.amount,
+        currency: r.currency,
+        merchant_raw: r.merchant_raw,
+        merchant_clean: r.merchant_clean,
+        category: r.category,
+        created_at: r.created_at,
+        date_raw: r.date_raw,
+        date_iso: r.date_iso
+      };
+
+      // snackbar 5s
+      showSnack("Gasto eliminado", `${(undoPayload.merchant_clean||"").slice(0,40)} · ${undoPayload.amount ?? ""} ${undoPayload.currency||""}`);
+      if(undoTimer) clearTimeout(undoTimer);
+      undoTimer = setTimeout(() => {
+        hideSnack();
+        undoPayload = null;
+      }, 5000);
+
       setSelectedId(null);
       await refreshAll();
+      setStatus("Borrado (undo disponible).", "warn");
+      setTimeout(()=>setStatus("Listo.","muted"), 1200);
     }else{
-      setStatus(`No se ha borrado.`, "warn");
+      setStatus("No se ha borrado.", "warn");
     }
   }catch(e){
     setStatus("Error borrando.", "err");
