@@ -1133,6 +1133,147 @@ function kpiInit(){
 document.addEventListener("DOMContentLoaded", kpiInit);
 // =======================================================
 
+
+// ================== Rules UI (Create from row) ==================
+let __ruleRowCtx = null;
+
+function ruleToast(msg, ok=true){
+  const el = document.getElementById("ruleToast");
+  if(!el) return;
+  el.style.display = "block";
+  el.style.marginTop = "8px";
+  el.style.fontWeight = "700";
+  el.style.color = ok ? "rgba(12,120,55,.95)" : "rgba(180,30,30,.95)";
+  el.textContent = msg;
+  setTimeout(()=>{ el.style.display="none"; }, 2400);
+}
+
+function normalizePatternFromMerchant(merchant){
+  const m = (merchant || "").toLowerCase();
+  // keep letters/numbers/spaces only
+  const cleaned = m.replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  // pick first "word" of length >= 3
+  const parts = cleaned.split(" ").filter(x => x.length >= 3);
+  return (parts[0] || cleaned || "").slice(0, 32);
+}
+
+function openRuleModal(ctx){
+  __ruleRowCtx = ctx || {};
+  const modal = document.getElementById("ruleModal");
+  if(!modal) return;
+
+  const merchant = __ruleRowCtx.merchant_clean || __ruleRowCtx.merchant_raw || "";
+  const suggested = normalizePatternFromMerchant(merchant);
+
+  document.getElementById("rulePattern").value = suggested;
+  document.getElementById("ruleMerchantClean").value = (merchant || "").toUpperCase().slice(0, 64);
+
+  modal.style.display = "block";
+}
+
+function closeRuleModal(){
+  const modal = document.getElementById("ruleModal");
+  if(modal) modal.style.display = "none";
+  __ruleRowCtx = null;
+}
+
+async function createRuleFromModal(){
+  const pattern = (document.getElementById("rulePattern").value || "").trim();
+  const set_category = (document.getElementById("ruleCategory").value || "other").trim();
+  const set_merchant_clean = (document.getElementById("ruleMerchantClean").value || "").trim();
+
+  if(!pattern){
+    ruleToast("Pattern vacío.", false);
+    return;
+  }
+
+  // read user/api_key from existing inputs if you have them; otherwise fallback to 'pedro'
+  const userInput = document.querySelector('input[name="user_id"], input#userId, input#user_id, input#user');
+  const apiInput  = document.querySelector('input[name="api_key"], input#apiKey, input#api_key');
+  const user_id = (userInput && userInput.value) ? userInput.value.trim() : (__ruleRowCtx.user_id || "pedro");
+  const api_key = (apiInput && apiInput.value) ? apiInput.value.trim() : "";
+
+  const payload = {
+    user_id,
+    pattern,
+    match_field: "merchant",
+    match_type: "contains",
+    priority: 50,
+    enabled: True,
+    set_category,
+    set_merchant_clean: set_merchant_clean || null
+  };
+
+  // Build URL same-origin + /rules (your backend serves static + api)
+  const url = api_key ? `/rules?api_key=${encodeURIComponent(api_key)}` : `/rules`;
+
+  try{
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(()=> ({}));
+    if(!res.ok){
+      ruleToast(`Error: ${data.detail || res.status}`, false);
+      return;
+    }
+    ruleToast("Rule created ✅", true);
+    // Close modal after a moment
+    setTimeout(()=>closeRuleModal(), 700);
+  } catch(e){
+    ruleToast("Network error creating rule", false);
+  }
+}
+
+function bindRuleModal(){
+  const modal = document.getElementById("ruleModal");
+  if(!modal) return;
+  document.getElementById("ruleCloseBtn")?.addEventListener("click", closeRuleModal);
+  document.getElementById("ruleCancelBtn")?.addEventListener("click", closeRuleModal);
+  document.getElementById("ruleCreateBtn")?.addEventListener("click", createRuleFromModal);
+  modal.addEventListener("click", (e)=>{ if(e.target === modal) closeRuleModal(); });
+}
+
+document.addEventListener("DOMContentLoaded", bindRuleModal);
+// =======================================================
+
+
+// ===== delegated handler for Rule buttons =====
+function handleRuleButtonClick(e){
+  const btn = e.target.closest && e.target.closest('button[data-action="rule"]');
+  if(!btn) return;
+
+  // Find row context from dataset if present, else from row text
+  const tr = btn.closest("tr");
+  if(!tr) return;
+
+  // Try data attributes first
+  const ctx = {
+    user_id: tr.getAttribute("data-user-id") || "pedro",
+    merchant_clean: tr.getAttribute("data-merchant-clean") || "",
+    merchant_raw: tr.getAttribute("data-merchant-raw") || ""
+  };
+
+  // If not found, try to infer merchant from cells (best effort)
+  if(!ctx.merchant_clean){
+    const tds = Array.from(tr.querySelectorAll("td")).map(td => (td.textContent||"").trim());
+    // heuristic: merchant is usually the 2nd/3rd texty column; pick the longest non-numeric cell
+    let best = "";
+    for(const t of tds){
+      if(!t) continue;
+      if(/^\d+(\.\d+)?$/.test(t)) continue;
+      if(t.length > best.length) best = t;
+    }
+    ctx.merchant_clean = best;
+  }
+
+  openRuleModal(ctx);
+}
+
+document.addEventListener("click", handleRuleButtonClick);
+// ===============================================
+
 </script>
 
 <div id="rulesPanel" style="position:fixed;right:16px;bottom:16px;z-index:9999;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;max-width:360px;">
@@ -1160,6 +1301,56 @@ document.addEventListener("DOMContentLoaded", kpiInit);
     <div id="rulesList" style="margin-top:10px;max-height:260px;overflow:auto;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;"></div>
   </div>
 </div>
+
+
+<!-- ===== Rule Modal ===== -->
+<div id="ruleModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.35);">
+  <div style="max-width:520px;margin:8vh auto;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:800;">Create rule</div>
+      <button class="btn" id="ruleCloseBtn">✕</button>
+    </div>
+
+    <div style="padding:14px 16px;display:grid;gap:10px;">
+      <div class="muted" style="font-size:12px;line-height:1.35;">
+        Esto crea una regla para que futuros SMS se categoricen automáticamente.
+      </div>
+
+      <label style="display:grid;gap:6px;">
+        <div style="font-size:12px;font-weight:700;">Pattern (merchant contains)</div>
+        <input id="rulePattern" class="input" placeholder="e.g. starbucks" />
+      </label>
+
+      <label style="display:grid;gap:6px;">
+        <div style="font-size:12px;font-weight:700;">Set category</div>
+        <select id="ruleCategory" class="input">
+          <option value="coffee">coffee</option>
+          <option value="food">food</option>
+          <option value="groceries">groceries</option>
+          <option value="transport">transport</option>
+          <option value="shopping">shopping</option>
+          <option value="rent">rent</option>
+          <option value="utilities">utilities</option>
+          <option value="health">health</option>
+          <option value="other">other</option>
+        </select>
+      </label>
+
+      <label style="display:grid;gap:6px;">
+        <div style="font-size:12px;font-weight:700;">Normalize merchant (optional)</div>
+        <input id="ruleMerchantClean" class="input" placeholder="e.g. STARBUCKS" />
+      </label>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+        <button class="btn" id="ruleCancelBtn">Cancel</button>
+        <button class="btn" id="ruleCreateBtn" style="font-weight:800;">Create</button>
+      </div>
+
+      <div id="ruleToast" class="muted" style="display:none;font-size:12px;"></div>
+    </div>
+  </div>
+</div>
+<!-- ===== /Rule Modal ===== -->
 
 </body>
 </html>
