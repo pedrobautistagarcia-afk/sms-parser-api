@@ -68,6 +68,49 @@
 </head>
 <body>
 
+<!-- ===== Insights (KPIs) - collapsed by default ===== -->
+<div id="kpiWrap" style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid rgba(0,0,0,.08);">
+  <div style="max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="kpiToggleBtn" class="btn" style="font-weight:600;">▸ Insights</button>
+      <span class="muted" style="font-size:12px;">(KPIs sobre lo filtrado/visible)</span>
+    </div>
+    <button id="kpiRefreshBtn" class="btn" style="display:none;">Refresh</button>
+  </div>
+
+  <div id="kpiPanel" style="display:none;">
+    <div style="max-width:1100px;margin:0 auto;padding:0 16px 12px 16px;">
+      <div style="display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:10px;">
+        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
+          <div class="muted" style="font-size:11px;">Total mes</div>
+          <div id="kpiMonth" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
+        </div>
+        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
+          <div class="muted" style="font-size:11px;">Total hoy</div>
+          <div id="kpiToday" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
+        </div>
+        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
+          <div class="muted" style="font-size:11px;">Media diaria (mes)</div>
+          <div id="kpiAvg" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
+        </div>
+        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
+          <div class="muted" style="font-size:11px;">Mayor gasto (mes)</div>
+          <div id="kpiMax" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
+        </div>
+        <div style="border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:10px;">
+          <div class="muted" style="font-size:11px;">Top categoría (mes)</div>
+          <div id="kpiTopCat" style="font-size:16px;font-weight:700;margin-top:2px;">—</div>
+        </div>
+      </div>
+      <div class="muted" id="kpiNote" style="font-size:12px;margin-top:8px;line-height:1.35;">
+        Se calculan con las filas visibles. Si cambias filtros, vuelve a abrir/cerrar “Insights” o pulsa Refresh.
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ===== /Insights ===== -->
+
+
   <div class="topbar">
     <div>
       <h1 style="margin:0 0 6px 0">Registro Gastos</h1>
@@ -949,6 +992,146 @@ function rulesInit(){
 
 document.addEventListener("DOMContentLoaded", rulesInit);
 // ----------------------------------------------------------
+
+
+// ================== KPIs (Insights) ==================
+function kpiFormatMoneyMap(map){
+  const entries = Object.entries(map).filter(([k,v]) => Math.abs(v) > 1e-9);
+  if(!entries.length) return "—";
+  entries.sort((a,b) => (a[0]==="KWD"?-1:0) - (b[0]==="KWD"?-1:0) || a[0].localeCompare(b[0]));
+  return entries.map(([cur,val]) => `${cur} ${val.toFixed(3)}`).join(" | ");
+}
+
+function kpiGetVisibleRows(){
+  const candidates = ["expenses", "currentExpenses", "__expenses", "__expensesData"];
+  for(const key of candidates){
+    if(Array.isArray(window[key])) return window[key];
+  }
+
+  const table = document.querySelector("table");
+  if(!table) return [];
+
+  const ths = Array.from(table.querySelectorAll("thead th")).map(th => (th.textContent||"").trim().toLowerCase());
+  const idxAmount = ths.findIndex(t => t.includes("amount") || t.includes("importe"));
+  const idxCurr   = ths.findIndex(t => t.includes("currency") || t.includes("moneda"));
+  const idxCat    = ths.findIndex(t => t.includes("category") || t.includes("categor"));
+  const idxDate   = ths.findIndex(t => t.includes("created") || t.includes("date") || t.includes("fecha"));
+
+  const rows = [];
+  const trs = Array.from(table.querySelectorAll("tbody tr"));
+  for(const tr of trs){
+    const style = window.getComputedStyle(tr);
+    if(style.display === "none" || style.visibility === "hidden") continue;
+
+    const tds = Array.from(tr.querySelectorAll("td")).map(td => (td.textContent||"").trim());
+    const amountTxt = idxAmount >= 0 ? tds[idxAmount] : "";
+    const curTxt    = idxCurr   >= 0 ? tds[idxCurr]   : "KWD";
+    const catTxt    = idxCat    >= 0 ? tds[idxCat]    : "other";
+    const dateTxt   = idxDate   >= 0 ? tds[idxDate]   : "";
+
+    const amt = parseFloat((amountTxt||"").replace(/[^\d\.\-]/g,"")) || 0;
+    rows.push({
+      amount: amt,
+      currency: (curTxt || "KWD").toUpperCase(),
+      category: (catTxt || "other").toLowerCase(),
+      created_at: dateTxt
+    });
+  }
+  return rows;
+}
+
+function kpiCompute(){
+  const data = kpiGetVisibleRows();
+
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const startMonth = new Date(y, m, 1);
+  const startToday = new Date(y, now.getMonth(), now.getDate());
+
+  const inMonth = (d) => d >= startMonth && d <= now;
+  const isToday = (d) => d >= startToday && d <= now;
+
+  const sumMonth = {};
+  const sumToday = {};
+  const sumCatMonth = {};
+  let maxByCur = {};
+
+  for(const e of data){
+    const cur = (e.currency || "KWD").toUpperCase();
+    const amt = Number(e.amount) || 0;
+
+    const dt = e.created_at ? new Date(e.created_at) : null;
+    if(!dt || isNaN(dt.getTime())) continue;
+
+    if(inMonth(dt)){
+      sumMonth[cur] = (sumMonth[cur] || 0) + amt;
+
+      const cat = (e.category || "other").toLowerCase();
+      const ck = `${cur}|${cat}`;
+      sumCatMonth[ck] = (sumCatMonth[ck] || 0) + amt;
+
+      if(!maxByCur[cur] || amt > maxByCur[cur].amt){
+        maxByCur[cur] = {amt, label: `${cur} ${amt.toFixed(3)}`};
+      }
+    }
+    if(isToday(dt)){
+      sumToday[cur] = (sumToday[cur] || 0) + amt;
+    }
+  }
+
+  const dayOfMonth = now.getDate();
+  const avg = {};
+  for(const [cur, total] of Object.entries(sumMonth)){
+    avg[cur] = total / Math.max(1, dayOfMonth);
+  }
+
+  const topCatByCur = {};
+  for(const [ck, total] of Object.entries(sumCatMonth)){
+    const [cur, cat] = ck.split("|");
+    if(!topCatByCur[cur] || total > topCatByCur[cur].total){
+      topCatByCur[cur] = {cat, total};
+    }
+  }
+  const topCatText = Object.entries(topCatByCur)
+    .sort((a,b) => (a[0]==="KWD"?-1:0) - (b[0]==="KWD"?-1:0) || a[0].localeCompare(b[0]))
+    .map(([cur, v]) => `${cur} ${v.cat} (${v.total.toFixed(3)})`)
+    .join(" | ") || "—";
+
+  const maxText = Object.entries(maxByCur)
+    .sort((a,b) => (a[0]==="KWD"?-1:0) - (b[0]==="KWD"?-1:0) || a[0].localeCompare(b[0]))
+    .map(([cur, v]) => v.label)
+    .join(" | ") || "—";
+
+  document.getElementById("kpiMonth") && (document.getElementById("kpiMonth").textContent = kpiFormatMoneyMap(sumMonth));
+  document.getElementById("kpiToday") && (document.getElementById("kpiToday").textContent = kpiFormatMoneyMap(sumToday));
+  document.getElementById("kpiAvg") && (document.getElementById("kpiAvg").textContent = kpiFormatMoneyMap(avg));
+  document.getElementById("kpiMax") && (document.getElementById("kpiMax").textContent = maxText);
+  document.getElementById("kpiTopCat") && (document.getElementById("kpiTopCat").textContent = topCatText);
+}
+
+function kpiInit(){
+  const btn = document.getElementById("kpiToggleBtn");
+  const panel = document.getElementById("kpiPanel");
+  const refresh = document.getElementById("kpiRefreshBtn");
+  if(!btn || !panel) return;
+
+  btn.addEventListener("click", () => {
+    const open = panel.style.display === "block";
+    panel.style.display = open ? "none" : "block";
+    btn.textContent = open ? "▸ Insights" : "▾ Insights";
+    if(!open){
+      kpiCompute();
+      if(refresh) refresh.style.display = "inline-block";
+    } else {
+      if(refresh) refresh.style.display = "none";
+    }
+  });
+
+  refresh && refresh.addEventListener("click", () => kpiCompute());
+}
+
+document.addEventListener("DOMContentLoaded", kpiInit);
+// =======================================================
 
 </script>
 
