@@ -101,13 +101,51 @@
 
     /* Keep cell size stable on click */
     td:focus, td:active, td *:focus, td *:active{ outline:none !important; box-shadow:none !important; }
-  </style>
+  
+/* ---- Dark select (category) ---- */
+td select {
+  background: #111;
+  color: #e5e7eb;
+  border: 1px solid #333;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+td select option {
+  background: #111;
+  color: #e5e7eb;
+}
+td select:focus {
+  outline: none;
+  border-color: #555;
+}
+
+</style>
 
 <style>
 /* SORT_HEADERS_V1 */
 .th-sort{ cursor:pointer; user-select:none; }
 .th-sort:hover{ background: rgba(255,255,255,.06); }
 .sort-ind{ display:inline-block; min-width:14px; opacity:.85; }
+
+/* ---- Dark select (category) ---- */
+td select {
+  background: #111;
+  color: #e5e7eb;
+  border: 1px solid #333;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+td select option {
+  background: #111;
+  color: #e5e7eb;
+}
+td select:focus {
+  outline: none;
+  border-color: #555;
+}
+
 </style>
 
 </head>
@@ -457,7 +495,9 @@
         const s = String(v).replaceAll('"','""');
         return `"${s}"`;
       }).join(","))
-    ].join("\n");
+    ].join("<td class="merchant editable" data-id="${e.id}">
+        <span class="merchant-text">${e.merchant_clean || ""}</span>
+      </td>n");
 
     const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -475,6 +515,56 @@
   updateSortIndicators();
   loadExpenses();
 })();
+
+// ---- Inline edit merchant ----
+document.addEventListener("click", (e) => {
+  const cell = e.target.closest("td.merchant.editable");
+  if (!cell) return;
+
+  if (cell.querySelector("input")) return; // ya editando
+
+  const span = cell.querySelector(".merchant-text");
+  const oldValue = span.textContent;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = oldValue;
+  input.style.width = "100%";
+  input.style.background = "#111";
+  input.style.color = "#e5e7eb";
+  input.style.border = "1px solid #333";
+  input.style.borderRadius = "6px";
+  input.style.fontSize = "12px";
+  input.style.padding = "4px 6px";
+
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const finish = async (save) => {
+    const value = input.value.trim();
+    const newSpan = document.createElement("span");
+    newSpan.className = "merchant-text";
+    newSpan.textContent = save ? value : oldValue;
+    input.replaceWith(newSpan);
+
+    if (save && value !== oldValue) {
+      await fetch(`/update/merchant`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ id: cell.dataset.id, merchant: value })
+      });
+      loadExpenses();
+    }
+  };
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") finish(true);
+    if (ev.key === "Escape") finish(false);
+  });
+  input.addEventListener("blur", () => finish(true));
+});
+
 </script>
 </body>
 </html>
