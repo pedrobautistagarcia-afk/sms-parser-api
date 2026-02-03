@@ -213,6 +213,29 @@ tbody tr:hover .ellipsis { display: none !important; }
 /* Si el "circulito" es un botón pequeño vacío al final (muy común), lo escondemos */
 tbody tr:hover td:last-child button:empty { display: none !important; }
 
+
+/* --- RG patch: fix amount/currency + remove right hover dot --- */
+
+/* El "circulito" suele ser un botón pequeño en la última celda que aparece en hover */
+tbody tr:hover td:last-child button,
+tbody tr td:last-child button {
+  display: none !important;
+}
+
+/* Si no es button sino un div/span tipo dot/icon */
+tbody tr:hover td:last-child .dot,
+tbody tr td:last-child .dot,
+tbody tr:hover td:last-child .hover-dot,
+tbody tr td:last-child .hover-dot,
+tbody tr:hover td:last-child .row-dot,
+tbody tr td:last-child .row-dot,
+tbody tr:hover td:last-child .action-dot,
+tbody tr td:last-child .action-dot,
+tbody tr:hover td:last-child .menu-dot,
+tbody tr td:last-child .menu-dot {
+  display: none !important;
+}
+
 </style>
 </head>
 <body>
@@ -1025,6 +1048,111 @@ document.addEventListener("DOMContentLoaded", () => {
   const obs = new MutationObserver(() => {
     try { rgMoveCurrencyAfterAmount(); } catch(e){}
   });
+  obs.observe(tbody, {childList:true, subtree:true});
+})();
+
+
+/* --- RG patch: normalize Amount/Currency columns --- */
+function rgNorm(t){ return (t||"").trim().toLowerCase(); }
+function rgIsNumberText(t){
+  const x = (t||"").trim().replace(/,/g,"");
+  return /^-?\d+(\.\d+)?$/.test(x);
+}
+function rgExtractAmountFromCell(td){
+  if (!td) return null;
+
+  // Busca un elemento hijo cuyo texto sea un número (p.ej. span rojo/verde)
+  const kids = Array.from(td.querySelectorAll("*"));
+  for (const el of kids){
+    const txt = (el.textContent||"").trim();
+    if (rgIsNumberText(txt)) return el; // devolvemos el elemento para moverlo
+  }
+
+  // Fallback: intenta extraer del textContent
+  const txt = (td.textContent||"").trim();
+  const m = txt.match(/-?\d+(?:\.\d+)?/);
+  if (m) {
+    const span = document.createElement("span");
+    span.textContent = m[0];
+    return span;
+  }
+  return null;
+}
+
+function rgFixAmountCurrency(){
+  const table = document.querySelector("table");
+  if (!table) return;
+
+  const ths = Array.from(table.querySelectorAll("thead th"));
+  if (!ths.length) return;
+
+  const iAmount = ths.findIndex(th => ["amount","importe"].includes(rgNorm(th.textContent)));
+  const iCurr   = ths.findIndex(th => ["currency","cur","moneda"].includes(rgNorm(th.textContent)));
+  if (iAmount < 0 || iCurr < 0) return;
+
+  // 1) Asegura que Currency está justo después de Amount (solo headers; celdas las tratamos por fila)
+  const theadRow = table.querySelector("thead tr");
+  if (theadRow){
+    const thAmount = ths[iAmount];
+    const thCurr = ths[iCurr];
+    // recalcula por si ya movimos algo antes
+    if (thAmount && thCurr) {
+      // si no está justo después, muévela
+      const now = Array.from(theadRow.children);
+      const a = now.indexOf(thAmount);
+      const c = now.indexOf(thCurr);
+      if (a >= 0 && c >= 0 && c !== a+1){
+        theadRow.insertBefore(thCurr, thAmount.nextSibling);
+      }
+    }
+  }
+
+  // 2) Por cada fila: si Amount está vacío y el importe está en la última celda, moverlo a Amount.
+  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  rows.forEach(tr => {
+    const tds = Array.from(tr.children);
+    if (!tds.length) return;
+
+    // Recalcular índices reales en la fila (porque puede haber columna selector al principio)
+    const headerCells = Array.from(table.querySelectorAll("thead tr > th"));
+    const amountIdx = headerCells.findIndex(th => ["amount","importe"].includes(rgNorm(th.textContent)));
+    const currIdx   = headerCells.findIndex(th => ["currency","cur","moneda"].includes(rgNorm(th.textContent)));
+    if (amountIdx < 0 || currIdx < 0) return;
+
+    const tdAmount = tds[amountIdx];
+    const tdCurr   = tds[currIdx];
+    const tdLast   = tds[tds.length-1];
+
+    if (!tdAmount || !tdCurr || !tdLast) return;
+
+    const amountTxt = (tdAmount.textContent||"").trim();
+    // Si la columna Amount ya tiene número, no tocamos
+    if (rgIsNumberText(amountTxt)) return;
+
+    // Detecta si en la última celda hay el número
+    const amountEl = rgExtractAmountFromCell(tdLast);
+    if (!amountEl) return;
+
+    // Limpia Amount y mete ahí el número (manteniendo color si venía de un span)
+    tdAmount.innerHTML = "";
+    tdAmount.appendChild(amountEl);
+
+    // Y en la última celda eliminamos SOLO ese número si venía de dentro
+    // Si lo movimos desde dentro del DOM, ya no queda. Si lo creamos por fallback, no tocamos tdLast.
+  });
+}
+
+// Ejecutar al cargar + tras refrescos
+document.addEventListener("DOMContentLoaded", () => {
+  rgFixAmountCurrency();
+  setTimeout(rgFixAmountCurrency, 300);
+  setTimeout(rgFixAmountCurrency, 900);
+});
+
+(function(){
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+  const obs = new MutationObserver(() => rgFixAmountCurrency());
   obs.observe(tbody, {childList:true, subtree:true});
 })();
 
