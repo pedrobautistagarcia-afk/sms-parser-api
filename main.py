@@ -730,108 +730,182 @@ class UndoRequest(BaseModel):
         populate_by_name = True
 
 @app.post("/delete")
-def delete_expense(req: DeleteRequest, request: Request):
-    require_key(request)
+def delete_expense(payload: dict, api_key: str = Query(None)):
+    # acepta api_key por query o en body (compatibilidad)
+    key = api_key or payload.get("api_key") or payload.get("key")
+    check_key(key)
 
-    conn = db()
-    cur = conn.cursor()
+    user_id = payload.get("userid") or payload.get("user_id")
+    row_id = payload.get("id")
+    if not user_id or row_id is None:
+        raise HTTPException(status_code=400, detail="Missing userid or id")
+    try:
+        row_id = int(row_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="id must be int")
 
-    cur.execute("SELECT * FROM expenses WHERE id=? AND user_id=?", (req.id, req.user_id))
-    row = cur.fetchone()
-    if not row:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Row not found")
+    # Conecta
+    if "db" in globals():
+        conn = db()
+    else:
+        import sqlite3, os
+        conn = sqlite3.connect(os.getenv("DB_PATH", "/var/data/gastos.db"))
+    conn.row_factory = sqlite3.Row
 
-    cols = [c[1] for c in cur.execute("PRAGMA table_info(expenses)").fetchall()]
-    data = dict(zip(cols, row))
+    try:
+        _ensure_deleted_table(conn)
+        cur = conn.cursor()
 
-    cur.execute(
-        "INSERT INTO trash(deleted_at, row_json) VALUES (?, ?)",
-        (datetime.now(timezone.utc).isoformat(), json.dumps(data, ensure_ascii=False))
-    )
+        cur.execute("SELECT * FROM expenses WHERE id=? AND user_id=?", (row_id, user_id))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Row not found")
 
-    cur.execute("DELETE FROM expenses WHERE id=? AND user_id=?", (req.id, req.user_id))
-    conn.commit()
-    conn.close()
-    return {"ok": True, "deleted_id": req.id}
+        row_dict = dict(row)
+        from datetime import datetime, timezone
+        import json
+        deleted_at = datetime.now(timezone.utc).isoformat()
 
-@app.post("/undo_delete")
-def undo_delete(req: UndoRequest, request: Request):
-    require_key(request)
+        cur.execute(
+            "INSERT INTO deleted_expenses(user_id, original_id, row_json, deleted_at) VALUES(?,?,?,?)",
+            (user_id, row_id, json.dumps(row_dict, ensure_ascii=False), deleted_at)
+        )
+        cur.execute("DELETE FROM expenses WHERE id=? AND user_id=?", (row_id, user_id))
+        conn.commit()
 
-    conn = db()
-    cur = conn.cursor()
+        return {"ok": True, "deleted_id": row_id, "deleted_at": deleted_at}
 
-    cur.execute("SELECT id, row_json FROM trash ORDER BY id DESC LIMIT 1")
-    t = cur.fetchone()
-    if not t:
-        conn.close()
-        return {"ok": False, "restored": False, "reason": "nothing_to_undo"}
-
-    trash_id, row_json = t
-    data = json.loads(row_json)
-
-    if data.get("user_id") != req.user_id:
-        conn.close()
-        raise HTTPException(status_code=403, detail="Cannot undo other user's row")
-
-    existing_cols = [r[1] for r in cur.execute("PRAGMA table_info(expenses)").fetchall()]
-    insert_cols = [c for c in existing_cols if c in data and c != "id"]
-    insert_vals = [data[c] for c in insert_cols]
-
-    placeholders = ",".join(["?"] * len(insert_cols))
-    sql = f"INSERT INTO expenses({','.join(insert_cols)}) VALUES ({placeholders})"
-    cur.execute(sql, insert_vals)
-
-    cur.execute("DELETE FROM trash WHERE id=?", (trash_id,))
-    conn.commit()
-    conn.close()
-    return {"ok": True, "restored": True}
+    finally:
+        try: conn.close()
+        except Exception: pass
 
 @app.post("/undo_delete")
-def undo_delete(req: UndoRequest, request: Request):
-    require_key(request)
+def undo_delete(payload: dict, api_key: str = Query(None)):
+    # acepta api_key por query o en body (compatibilidad)
+    key = api_key or payload.get("api_key") or payload.get("key")
+    check_key(key)
 
-    conn = db()
-    cur = conn.cursor()
+    user_id = payload.get("userid") or payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing userid")
 
-    cur.execute("SELECT id, row_json FROM trash ORDER BY id DESC LIMIT 1")
-    t = cur.fetchone()
-    if not t:
-        conn.close()
-        return {"ok": False, "restored": False, "reason": "nothing_to_undo"}
+    if "db" in globals():
+        conn = db()
+    else:
+        import sqlite3, os
+        conn = sqlite3.connect(os.getenv("DB_PATH", "/var/data/gastos.db"))
+    conn.row_factory = sqlite3.Row
 
-    trash_id, row_json = t
-    data = json.loads(row_json)
+    try:
+        _ensure_deleted_table(conn)
+        cur = conn.cursor()
 
-    if data.get("user_id") != req.user_id:
-        conn.close()
-        raise HTTPException(status_code=403, detail="Cannot undo other user's row")
+        cur.execute(
+            "SELECT id, original_id, row_json, deleted_at FROM deleted_expenses WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            (user_id,)
+        )
+        d = cur.fetchone()
+        if not d:
+            raise HTTPException(status_code=404, detail="Nothing to undo")
 
-    existing_cols = [r[1] for r in cur.execute("PRAGMA table_info(expenses)").fetchall()]
-    insert_cols = [c for c in existing_cols if c in data and c != "id"]
-    insert_vals = [data[c] for c in insert_cols]
+        from datetime import datetime, timezone
+        import json
+        deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z","+00:00"))
+        age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
+        if age > 10:
+            raise HTTPException(status_code=400, detail="Undo window expired (>10s)")
 
-    placeholders = ",".join(["?"] * len(insert_cols))
-    sql = f"INSERT INTO expenses({','.join(insert_cols)}) VALUES ({placeholders})"
-    cur.execute(sql, insert_vals)
+        row = json.loads(d["row_json"])
+        original_id = row.get("id")
 
-    cur.execute("DELETE FROM trash WHERE id=?", (trash_id,))
-    conn.commit()
-    conn.close()
-    return {"ok": True, "restored": True}
+        cols = [k for k in row.keys() if k != "id"]
+        vals = [row[k] for k in cols]
 
-# ======================================================
-# UPDATE FIELD (merchant_clean / category)
-# ======================================================
-class UpdateFieldRequest(BaseModel):
-    user_id: str = Field(..., alias="userid")
-    id: int
-    field: str
-    value: str
+        try:
+            cur.execute(
+                f'INSERT INTO expenses (id, {",".join(cols)}) VALUES (?, {",".join(["?"]*len(cols))})',
+                [original_id] + vals
+            )
+            restored_id = original_id
+        except Exception:
+            cur.execute(
+                f'INSERT INTO expenses ({",".join(cols)}) VALUES ({",".join(["?"]*len(cols))})',
+                vals
+            )
+            restored_id = cur.lastrowid
 
-    class Config:
-        populate_by_name = True
+        cur.execute("DELETE FROM deleted_expenses WHERE id=?", (d["id"],))
+        conn.commit()
+
+        return {"ok": True, "restored_id": restored_id}
+
+    finally:
+        try: conn.close()
+        except Exception: pass
+
+@app.post("/undo_delete")
+def undo_delete(payload: dict, api_key: str = Query(None)):
+    # acepta api_key por query o en body (compatibilidad)
+    key = api_key or payload.get("api_key") or payload.get("key")
+    check_key(key)
+
+    user_id = payload.get("userid") or payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing userid")
+
+    if "db" in globals():
+        conn = db()
+    else:
+        import sqlite3, os
+        conn = sqlite3.connect(os.getenv("DB_PATH", "/var/data/gastos.db"))
+    conn.row_factory = sqlite3.Row
+
+    try:
+        _ensure_deleted_table(conn)
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT id, original_id, row_json, deleted_at FROM deleted_expenses WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            (user_id,)
+        )
+        d = cur.fetchone()
+        if not d:
+            raise HTTPException(status_code=404, detail="Nothing to undo")
+
+        from datetime import datetime, timezone
+        import json
+        deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z","+00:00"))
+        age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
+        if age > 10:
+            raise HTTPException(status_code=400, detail="Undo window expired (>10s)")
+
+        row = json.loads(d["row_json"])
+        original_id = row.get("id")
+
+        cols = [k for k in row.keys() if k != "id"]
+        vals = [row[k] for k in cols]
+
+        try:
+            cur.execute(
+                f'INSERT INTO expenses (id, {",".join(cols)}) VALUES (?, {",".join(["?"]*len(cols))})',
+                [original_id] + vals
+            )
+            restored_id = original_id
+        except Exception:
+            cur.execute(
+                f'INSERT INTO expenses ({",".join(cols)}) VALUES ({",".join(["?"]*len(cols))})',
+                vals
+            )
+            restored_id = cur.lastrowid
+
+        cur.execute("DELETE FROM deleted_expenses WHERE id=?", (d["id"],))
+        conn.commit()
+
+        return {"ok": True, "restored_id": restored_id}
+
+    finally:
+        try: conn.close()
+        except Exception: pass
 
 @app.post("/update_field")
 def update_field(payload: dict, api_key: str = Query(None)):
