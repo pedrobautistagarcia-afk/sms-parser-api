@@ -2,6 +2,7 @@ import os
 import re
 import sqlite3
 import hashlib
+import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
@@ -627,3 +628,91 @@ async def update_merchant(req: UpdateMerchantReq):
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
+# ======================================================
+# DELETE + UNDO (Trash bin simple)
+# ======================================================
+def init_trash():
+    conn = db()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS trash (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            deleted_at TEXT NOT NULL,
+            row_json TEXT NOT NULL
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_trash_deleted_at ON trash(deleted_at)")
+    conn.commit()
+    conn.close()
+
+init_trash()
+
+class DeleteRequest(BaseModel):
+    user_id: str = Field(..., alias="userid")
+    id: int
+    class Config:
+        populate_by_name = True
+
+class UndoRequest(BaseModel):
+    user_id: str = Field(..., alias="userid")
+    class Config:
+        populate_by_name = True
+
+@app.post("/delete")
+def delete_expense(req: DeleteRequest, request: Request):
+    require_key(request)
+
+    conn = db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM expenses WHERE id=? AND user_id=?", (req.id, req.user_id))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Row not found")
+
+    cols = [c[1] for c in cur.execute("PRAGMA table_info(expenses)").fetchall()]
+    data = dict(zip(cols, row))
+
+    cur.execute(
+        "INSERT INTO trash(deleted_at, row_json) VALUES (?, ?)",
+        (datetime.now(timezone.utc).isoformat(), json.dumps(data, ensure_ascii=False))
+    )
+
+    cur.execute("DELETE FROM expenses WHERE id=? AND user_id=?", (req.id, req.user_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "deleted_id": req.id}
+
+@app.post("/undo_delete")
+def undo_delete(req: UndoRequest, request: Request):
+    require_key(request)
+
+    conn = db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, row_json FROM trash ORDER BY id DESC LIMIT 1")
+    t = cur.fetchone()
+    if not t:
+        conn.close()
+        return {"ok": False, "restored": False, "reason": "nothing_to_undo"}
+
+    trash_id, row_json = t
+    data = json.loads(row_json)
+
+    if data.get("user_id") != req.user_id:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Cannot undo other user's row")
+
+    existing_cols = [r[1] for r in cur.execute("PRAGMA table_info(expenses)").fetchall()]
+    insert_cols = [c for c in existing_cols if c in data and c != "id"]
+    insert_vals = [data[c] for c in insert_cols]
+
+    placeholders = ",".join(["?"] * len(insert_cols))
+    sql = f"INSERT INTO expenses({','.join(insert_cols)}) VALUES ({placeholders})"
+    cur.execute(sql, insert_vals)
+
+    cur.execute("DELETE FROM trash WHERE id=?", (trash_id,))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "restored": True}
