@@ -55,6 +55,7 @@ def init_db() -> None:
             merchant_raw TEXT,
             merchant_clean TEXT,
             category TEXT,
+            direction TEXT,
             hash TEXT,
             created_at TEXT,
             date_raw TEXT,
@@ -83,6 +84,7 @@ def init_db() -> None:
     add_col("merchant_raw", "TEXT")
     add_col("merchant_clean", "TEXT")
     add_col("category", "TEXT")
+    add_col("direction", "TEXT")
     add_col("hash", "TEXT")
     add_col("created_at", "TEXT")
     add_col("date_raw", "TEXT")
@@ -141,6 +143,12 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_user ON rules(user_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_priority ON rules(priority)")
+
+
+    # BACKFILL_DIRECTION_V1
+    # Si direction está NULL en filas antiguas, lo rellenamos desde sms
+    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%credited%'")
+    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND (lower(sms) LIKE '%debited%' OR direction IS NULL OR direction='')")
 
     conn.commit()
     conn.close()
@@ -220,7 +228,14 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         date_iso = dt.isoformat()
         date_raw = dt.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Category (basic heuristic)
+    # Direction (expense vs income)
+    direction = "expense"
+    if "credited" in lower:
+        direction = "income"
+    elif "debited" in lower:
+        direction = "expense"
+
+# Category (basic heuristic)
     cat = "other"
     merch_l = merchant_clean.lower()
     if any(k in merch_l for k in ["starbucks", "cafe", "coffee"]):
@@ -229,6 +244,7 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         cat = "food"
 
     return {
+        "direction": direction,
         "amount": amount,
         "currency": currency,
         "merchant_raw": merchant_raw,
@@ -390,7 +406,7 @@ def list_expenses(
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT id, user_id, amount, currency, merchant_clean, category, created_at
+        SELECT id, user_id, amount, currency, merchant_clean, category, direction, created_at
         FROM expenses
         WHERE user_id = ?
         ORDER BY datetime(created_at) DESC, id DESC
