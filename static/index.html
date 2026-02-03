@@ -354,12 +354,13 @@
     lastDeleted: false
   };
 
+  
   function withKey(url){
-    try{
-      const u = new URL(url, window.location.origin);
-      u.searchParams.set("api_key", API_KEY);
-      return u.pathname + "?" + u.searchParams.toString();
-    }catch(e){
+    const k = "ElPortichuelo99";
+    const u = new URL(url, window.location.origin);
+    if (!u.searchParams.get("api_key")) u.searchParams.set("api_key", k);
+    return u.pathname + u.search;
+  }catch(e){
       return url + (url.includes("?") ? "&" : "?") + "api_key=" + encodeURIComponent(API_KEY);
     }
   }
