@@ -1259,5 +1259,167 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 
+
+<!-- RG_PATCH_V4_SAFE_AMOUNT_CURRENCY_FIX -->
+<style>
+/* Alineación visual (sin tocar estructura) */
+table thead th.rg-th-amount, table tbody td.rg-td-amount { text-align: right !important; }
+table thead th.rg-th-currency, table tbody td.rg-td-currency { text-align: center !important; }
+
+/* Ocultar SOLO el contenido duplicado en la celda origen (sin eliminar TDs) */
+.rg-ghost { opacity: 0 !important; pointer-events: none !important; }
+
+/* Extra: que Amount use números tabulares */
+table tbody td.rg-td-amount { font-variant-numeric: tabular-nums; }
+</style>
+
+<script>
+(function(){
+  function norm(t){ return (t||"").trim().toLowerCase(); }
+  function isNumText(t){
+    const x = (t||"").trim().replace(/,/g,"");
+    return /^-?\d+(\.\d+)?$/.test(x);
+  }
+  function hasCurrencyText(t){
+    const u = (t||"").toUpperCase();
+    return u.includes("KWD") || u.includes("USD") || u.includes("EUR");
+  }
+
+  function findHeaderIndex(names){
+    const ths = Array.from(document.querySelectorAll("table thead th"));
+    for (let i=0;i<ths.length;i++){
+      const t = norm(ths[i].textContent);
+      if (names.includes(t)) return i;
+    }
+    return -1;
+  }
+
+  function findNumberElement(td){
+    if (!td) return null;
+    // Preferimos un elemento hijo (span) que sea un número limpio
+    const els = Array.from(td.querySelectorAll("*"));
+    for (const el of els){
+      const txt = (el.textContent||"").trim();
+      if (isNumText(txt)) return el;
+    }
+    // fallback: texto plano
+    const txt = (td.textContent||"").trim();
+    if (isNumText(txt)){
+      const sp = document.createElement("span");
+      sp.textContent = txt;
+      return sp;
+    }
+    return null;
+  }
+
+  function findCurrencyContainer(td){
+    if (!td) return null;
+    const txt = (td.textContent||"").trim();
+    if (hasCurrencyText(txt)) return td;
+    return null;
+  }
+
+  function fixOnce(){
+    const table = document.querySelector("table");
+    if (!table) return;
+
+    const idxAmount = findHeaderIndex(["amount","importe"]);
+    const idxCurr   = findHeaderIndex(["currency","cur","moneda"]);
+    if (idxAmount < 0 || idxCurr < 0) return;
+
+    // Marca headers para alineación
+    const ths = Array.from(table.querySelectorAll("thead th"));
+    if (ths[idxAmount]) ths[idxAmount].classList.add("rg-th-amount");
+    if (ths[idxCurr])   ths[idxCurr].classList.add("rg-th-currency");
+
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    if (!rows.length) return;
+
+    for (const tr of rows){
+      const tds = Array.from(tr.children);
+      if (tds.length <= Math.max(idxAmount, idxCurr)) continue;
+
+      const tdAmount = tds[idxAmount];
+      const tdCurr   = tds[idxCurr];
+
+      if (tdAmount) tdAmount.classList.add("rg-td-amount");
+      if (tdCurr)   tdCurr.classList.add("rg-td-currency");
+
+      // Si Amount ya tiene número, no tocamos
+      const amtNow = (tdAmount?.textContent||"").trim();
+      const amountOk = isNumText(amtNow) || Array.from(tdAmount?.querySelectorAll("*")||[]).some(el=>isNumText((el.textContent||"").trim()));
+
+      // Si Currency ya contiene KWD/EUR/USD, no tocamos
+      const currNow = (tdCurr?.textContent||"").trim();
+      const currencyOk = hasCurrencyText(currNow);
+
+      // Busca en otras celdas el número y la currency (sin tocar estructura)
+      let srcAmountEl = null, srcAmountTd = null;
+      let srcCurrTd = null;
+
+      if (!amountOk){
+        // buscamos el número en las celdas (prioridad: últimas 3 celdas)
+        const scan = tds.slice(-4).concat(tds); // por si acaso
+        for (const td of scan){
+          if (td === tdAmount || td === tdCurr) continue;
+          const el = findNumberElement(td);
+          if (el){
+            srcAmountEl = el;
+            srcAmountTd = td;
+            break;
+          }
+        }
+        if (srcAmountEl && tdAmount){
+          // copiamos el HTML de la celda origen (mantiene color rojo/verde)
+          tdAmount.innerHTML = srcAmountTd.innerHTML;
+          // y ocultamos SOLO el elemento numérico en la celda origen para evitar duplicado
+          // (si el número va en un span/child)
+          if (srcAmountEl.classList) srcAmountEl.classList.add("rg-ghost");
+        }
+      }
+
+      if (!currencyOk){
+        const scan = tds.slice(-5).concat(tds);
+        for (const td of scan){
+          if (td === tdAmount || td === tdCurr) continue;
+          if (hasCurrencyText((td.textContent||"").trim())){
+            srcCurrTd = td;
+            break;
+          }
+        }
+        if (srcCurrTd && tdCurr){
+          tdCurr.innerHTML = srcCurrTd.innerHTML;
+          // ocultamos el texto en origen (no toda la celda)
+          const kids = Array.from(srcCurrTd.childNodes);
+          kids.forEach(n=>{
+            if (n && n.nodeType === 3){ // text node
+              // no tocamos
+            }
+          });
+          // Si hay spans, los ocultamos
+          Array.from(srcCurrTd.querySelectorAll("*")).forEach(el=>el.classList?.add("rg-ghost"));
+        }
+      }
+    }
+  }
+
+  function run(){
+    try { fixOnce(); } catch(e){}
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    run();
+    setTimeout(run, 250);
+    setTimeout(run, 800);
+  });
+
+  const tbody = document.querySelector("tbody");
+  if (tbody){
+    const obs = new MutationObserver(() => run());
+    obs.observe(tbody, {childList:true, subtree:true});
+  }
+})();
+</script>
+
 </body>
 </html>
