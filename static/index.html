@@ -345,7 +345,7 @@
         <h1>Registro Gastos</h1>
         <div class="sub">Estable (no rompe) + Add Category + Balance por divisa + Flags SVG.</div>
         <div class="themeCtl">
-          <button class="btn small" id="themeToggle"><span id="themeText">Dark</span></button>
+          <button class="btn small" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
 </div>
       </div>
 
@@ -556,16 +556,16 @@
   }
 
   function applyFilters(){
-    const q = $("q").value.trim().toLowerCase();
-    const cur = $("cur").value.trim().toUpperCase();
-    const cat = $("cat").value.trim().toLowerCase();
+    const q = ($("q")?.value || "").trim().toLowerCase();
+    const cur = ($("cur")?.value || "").trim().toUpperCase();
+    const cat = ($("cat")?.value || "").trim().toLowerCase();
 
-    const fCreated = $("fCreated").value.trim().toLowerCase();
+    const fCreated = ($("fCreated")?.value || "").trim().toLowerCase();
     const fMerch = $("fMerch").value.trim().toLowerCase();
     const fCat = $("fCat").value.trim().toLowerCase();
-    const fCur = $("fCur").value.trim().toLowerCase();
-    const sd = $("startDate") ? $("startDate").value : "";
-    const ed = $("endDate") ? $("endDate").value : "";
+    const fCur = ($("fCur")?.value || "").trim().toLowerCase();
+    const sd = $("startDate") ? ($("startDate")?.value || "") : "";
+    const ed = $("endDate") ? ($("endDate")?.value || "") : "";
 
     let v = state.raw.filter(e=>{
       const merch = String(e.merchant_clean||"").toLowerCase();
@@ -727,15 +727,15 @@
   if($("fCur")) $("fCur").addEventListener("input", applyFilters);
 
   if($("clear")) $("clear").addEventListener("click", ()=>{
-    $("q").value="";
-    $("cur").value="";
-    $("cat").value="";
+    ($("q")?.value || "")="";
+    ($("cur")?.value || "")="";
+    ($("cat")?.value || "")="";
     $("fCreated").value="";
     $("fMerch").value="";
     $("fCat").value="";
-    $("fCur").value="";
-    if($("startDate")) $("startDate").value="";
-    if($("endDate")) $("endDate").value="";
+    ($("fCur")?.value || "")="";
+    if($("startDate")) ($("startDate")?.value || "")="";
+    if($("endDate")) ($("endDate")?.value || "")="";
     applyFilters();
   });
 
@@ -796,17 +796,19 @@
     const saved = localStorage.getItem("rg_theme");
     const theme = (saved === "light" || saved === "dark") ? saved : "dark";
     document.documentElement.setAttribute("data-theme", theme);
-    const t = document.getElementById("themeText"); if(t) t.textContent = next.charAt(0).toUpperCase() + next.slice(1);
+    const t = document.getElementById("themeText");
+    if(t) t.textContent = (theme === "dark") ? "Dark" : "Light";
   }
 
-  const tbtn = document.getElementById("themeToggle");
+const tbtn = document.getElementById("themeToggle");
   if(tbtn){
     tbtn.addEventListener("click", ()=>{
       const cur = document.documentElement.getAttribute("data-theme") || "dark";
       const next = (cur === "dark") ? "light" : "dark";
       localStorage.setItem("rg_theme", next);
       document.documentElement.setAttribute("data-theme", next);
-      const t = document.getElementById("themeText"); if(t) t.textContent = next.charAt(0).toUpperCase() + next.slice(1);
+      const t = document.getElementById("themeText");
+      if(t) t.textContent = (next === "dark") ? "Dark" : "Light";
     });
   }
 
