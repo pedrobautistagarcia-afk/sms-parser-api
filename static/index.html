@@ -814,13 +814,12 @@
     const t = (theme === "light") ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", t);
     const btn = document.getElementById("themeToggle");
-    if(btn) btn.textContent = "Theme: " + (t.charAt(0).toUpperCase() + t.slice(1));
+    if(btn) btn.textContent = "Theme: " + (t === "dark" ? "Dark" : "Light");
   }
 
   function applyBg(bg){
-    const allowed = new Set(["graphite","midnight","carbon"]); const b = allowed.has(bg) ? bg : "graphite";
-  }
-
+    const allowed = new Set(["graphite","midnight","carbon"]);
+    const b = allowed.has(bg) ? bg : "graphite";
     document.documentElement.setAttribute("data-bg", b);
     const sel = document.getElementById("bgSelect");
     if(sel) sel.value = b;
