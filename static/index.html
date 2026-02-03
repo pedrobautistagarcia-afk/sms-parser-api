@@ -172,7 +172,14 @@
       box-shadow:var(--shadow);
     }
     .kpi .v{font-size:18px; font-weight:800; margin-top:6px}
-  </style>
+  
+/* Keep selection visible even when not hovering */
+tr .row-select { opacity: 0; transition: opacity .12s ease; }
+tr:hover .row-select { opacity: 1; }
+tr .row-select:checked { opacity: 1; }
+tr.selected-row { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); }
+
+</style>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -812,6 +819,15 @@
   // boot
   bind();
   load();
+
+// Persist row selection (do not lose selection on mouse leave)
+document.addEventListener("change", (e) => {
+  const el = e.target;
+  if (!el || !el.classList || !el.classList.contains("row-select")) return;
+  const tr = el.closest("tr");
+  if (tr) tr.classList.toggle("selected-row", el.checked);
+});
+
 </script>
 </body>
 </html>
