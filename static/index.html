@@ -1,135 +1,86 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Registro Gastos</title>
   <style>
     :root{
-      --bg:#000000;          /* dark */
+      --bg:#000000;
       --text:#e5e7eb;
       --muted:#9ca3af;
       --border:#1f2937;
       --border2:#243041;
-      --green:#22c55e;
-      --red:#ef4444;
 
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-      --border:#1f2937;
-      --border2:#243041;
+      --panelBg:rgba(255,255,255,.03);
+      --tableBg:rgba(255,255,255,.02);
+
       --green:#22c55e;
       --red:#ef4444;
+      --amber:#fbbf24;
     }
+
+    html[data-theme="light"]{
+      --bg:#ffffff;
+      --text:#0b1220;
+      --muted:#4b5563;
+      --border:#e5e7eb;
+      --border2:#d1d5db;
+
+      --panelBg:#ffffff;
+      --tableBg:#ffffff;
+    }
+
     *{box-sizing:border-box}
     body{
       margin:0; padding:0;
-      background: var(--bg);
+      background:var(--bg);
       color:var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
-    .wrap{max-width:1100px; margin:24px auto; padding:0 18px;}
+
+    .wrap{max-width:1100px; margin:28px auto; padding:0 18px;}
     .top{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:16px;
-      margin-bottom:14px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;
+      margin-bottom:10px;
     }
     h1{margin:0; font-size:22px; letter-spacing:.2px;}
-    .sub{margin:6px 0 0 0; color:var(--muted); font-size:12px}
-
-    /* flags */
-    .flagSvg{width:16px;height:12px;display:inline-block;vertical-align:-2px;margin-right:6px;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.10) inset;}
-
-    /* Balance dropdown */
-    #balanceBox{
-      display:inline-flex;
-      flex-direction:column;
-      padding:8px 12px;
-      border-radius:10px;
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      font-size:13px;
-      white-space:nowrap;
-      cursor:pointer;
-      user-select:none;
-      min-width:170px;
-    }
-    #balanceBox .balTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-weight:900;
-    }
-    #balanceBox .balChevron{
-      color:var(--muted);
-      font-weight:900;
-      font-size:12px;
-      transition:transform .15s ease;
-    }
-    #balanceBox[aria-expanded="true"] .balChevron{ transform: rotate(180deg); }
-    #balanceBox .balDrop{
-      display:none;
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px solid rgba(31,41,55,.7);
-      gap:8px;
-    }
-    #balanceBox[aria-expanded="true"] .balDrop{
-      display:flex;
-      flex-direction:column;
-    }
-    .balRow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-size:12px;
-      padding:6px 8px;
-      border-radius:10px;
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(31,41,55,.8);
-      font-weight:900;
-    }
-    .balLeft{display:flex; align-items:center; gap:8px;}
-    .balCur{color:var(--muted); width:44px;}
-    .balAmt{font-variant-numeric: tabular-nums; font-weight:900;}
-    .pos{color:var(--green)}
-    .neg{color:var(--red)}
-
-    #errBanner{
-      display:none;
-      margin:12px 0;
-      padding:10px 12px;
-      border-radius:12px;
-      background:rgba(239,68,68,.10);
-      border:1px solid rgba(239,68,68,.35);
-      color:#fecaca;
-      font-size:12px;
-      line-height:1.35;
-      white-space:pre-wrap;
-    }
+    .sub{margin-top:6px; color:var(--muted); font-size:12px; font-weight:800}
 
     .panel{
       background:var(--panelBg);
       border:1px solid var(--border);
       border-radius:16px;
-      padding:12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      padding:14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.30);
+    }
+    html[data-theme="light"] .panel{ box-shadow: 0 10px 30px rgba(0,0,0,.10); }
+
+    .row{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
     }
 
-    .bar{
-      display:flex; flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:10px;
+    .btn{
+      cursor:pointer;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:900;
+      transition:background .15s ease, border-color .15s ease, transform .02s ease;
+      user-select:none;
+      height:32px;
+      display:inline-flex; align-items:center;
     }
-    .left, .right{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .btn:hover{background:rgba(255,255,255,.06); border-color:var(--border2)}
+    .btn:active{transform:translateY(1px)}
+    html[data-theme="light"] .btn{background:#fff; color:#0b1220;}
+    html[data-theme="light"] .btn:hover{background:#f9fafb}
+
     .pill{
-      background:#0b0f14;
+      background:rgba(255,255,255,.03);
       border:1px solid var(--border);
       color:var(--text);
       border-radius:10px;
@@ -137,134 +88,89 @@
       font-size:12px;
       outline:none;
       font-weight:900;
+      height:32px;
     }
     .pill:focus{border-color:#304156}
-    select.pill option{background:#0b0f14; color:var(--text)}
-    .btn{
-      cursor:pointer;
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      color:var(--text);
-      border-radius:10px;
-      padding:7px 10px;
-      font-size:12px;
-      transition:transform .02s ease, background .2s ease, border-color .2s ease;
-      user-select:none;
+    html[data-theme="light"] .pill{
+      background:#fff;
+      color:#0b1220;
     }
-    .btn:hover{background:rgba(255,255,255,.05); border-color:var(--border2)}
-    .btn:active{transform:translateY(1px)}
-    .btn.ghost{background:transparent}
-    .btn.small{padding:6px 9px; font-size:12px}
-    .loading{color:var(--muted); font-size:12px; padding:6px 2px}
+    select.pill option{background:#0b0f14; color:var(--text)}
+    html[data-theme="light"] select.pill option{background:#fff; color:#0b1220}
 
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      overflow:hidden;
+    .spacer{flex:1}
+
+    #err{
+      margin-top:10px;
+      display:none;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.35);
+      color:#fecaca;
+      font-weight:900;
+      font-size:12px;
+      white-space:pre-wrap;
+    }
+    html[data-theme="light"] #err{
+      background:rgba(239,68,68,.08);
+      color:#7f1d1d;
+      border-color:rgba(239,68,68,.25);
+    }
+
+    .tableWrap{
+      margin-top:12px;
+      overflow:auto;
       border-radius:14px;
       border:1px solid var(--border);
       background:var(--tableBg);
     }
+
+    table{width:100%; border-collapse:collapse; min-width:920px;}
     thead th{
-      text-align:left;
-      font-size:12px;
-      color:#cbd5e1;
-      background:rgba(255,255,255,.03);
+      position:sticky; top:0;
+      background:rgba(0,0,0,.35);
       border-bottom:1px solid var(--border);
+      text-align:left;
       padding:10px 10px;
-      position:sticky;
-      top:0;
-      z-index:5;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:900;
+      white-space:nowrap;
+      cursor:pointer;
+      user-select:none;
+    }
+    html[data-theme="light"] thead th{
+      background:#f3f4f6;
+      color:#111827;
     }
     tbody td{
-      padding:9px 10px;
-      font-size:12px;
-      border-bottom:1px solid rgba(31,41,55,.8);
-      vertical-align:middle;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      padding:10px 10px;
+      font-size:13px;
       white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:1px;
+      vertical-align:middle;
     }
-    tbody tr:hover td{background:rgba(255,255,255,.02)}
-    tbody tr:last-child td{border-bottom:none}
-
-    th.th-sort{cursor:pointer; user-select:none}
-    th.th-sort:hover{background:rgba(255,255,255,.06)}
-    .sort-ind{display:inline-block; min-width:14px; opacity:.8}
-
-    td.amt{font-variant-numeric: tabular-nums; text-align:right}
-    .amt-income{color:var(--green); font-weight:900}
-    .amt-expense{color:var(--red); font-weight:900}
-
-    .muted{color:var(--muted)}
-    .tight{max-width:260px}
-    .tight2{max-width:170px}
-
-    .filterRow th{padding:8px 10px; background:rgba(255,255,255,.02)}
-    .colFilter{
-      width:100%;
-      background:#0b0f14;
-      border:1px solid var(--border);
-      color:var(--text);
-      border-radius:10px;
-      padding:6px 8px;
-      font-size:12px;
-      outline:none;
+    html[data-theme="light"] tbody td{
+      border-bottom:1px solid rgba(229,231,235,.9);
     }
-    .colFilter:focus{border-color:#304156}
+    tbody tr:hover td{background:rgba(255,255,255,.03)}
+    html[data-theme="light"] tbody tr:hover td{background:#f9fafb}
 
-    /* inline edit */
-    td .inlineInput{
-      width:100%;
-      background:#0b0f14;
-      color:var(--text);
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:6px 8px;
-      font-size:12px;
-      outline:none;
-    }
-    td .inlineInput:focus{border-color:#304156}
-    td .catSel{
-      width:100%;
-      background:#0b0f14;
-      color:var(--text);
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:6px 8px;
-      font-size:12px;
-      outline:none;
-      font-weight:900;
-    }
-    td .catSel:focus{border-color:#304156}
-    td .catSel option{background:#0b0f14; color:var(--text)}
-  
-    /* THEMES */
-    html[data-theme="light"]{
-      --bgA:#f3f4f6;
-      --bgB:#ffffff;
-      --bgC:#f3f4f6;
+    .muted{color:var(--muted); font-weight:800; font-size:12px}
+    .amt{font-weight:900; text-align:right}
+    .amt.neg{color:var(--red)}
+    .amt.pos{color:var(--green)}
 
-      --panelBg:#ffffff;
-      --tableBg:#ffffff;
+    .th-sort .sort-ind{opacity:.7; margin-left:6px; font-size:11px}
+    .actions{width:62px; text-align:right}
+    .actions .delBtn{opacity:0; transition:opacity .15s ease}
+    tbody tr:hover .actions .delBtn{opacity:1}
 
-      --text:#0b1220;
-      --muted:#4b5563;
-      --border:#e5e7eb;
-      --border2:#d1d5db;
-    }
-/* Theme control UI */
-    .themeCtl{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-top:10px;
-      flex-wrap:wrap;
-    }
-.themeCtl .miniBtn{
-      cursor:pointer;
+    /* inline edit for merchant */
+    .inlineInput{
+      width: 260px;
+      max-width: 260px;
       background:rgba(255,255,255,.03);
       border:1px solid var(--border);
       color:var(--text);
@@ -272,252 +178,128 @@
       padding:7px 10px;
       font-size:12px;
       font-weight:900;
-      transition:background .2s ease, border-color .2s ease, transform .02s ease;
-      user-select:none;
+      outline:none;
+      height:32px;
     }
-    .themeCtl .miniBtn:hover{background:rgba(255,255,255,.05); border-color:var(--border2)}
-    .themeCtl .miniBtn:active{transform:translateY(1px)}
-
-    /* LIGHT THEME FIXES (contrast) */
-    html[data-theme="light"] body{
-      background:linear-gradient(180deg,var(--bgA), var(--bgB) 40%, var(--bgC));
-    }
-    html[data-theme="light"] .panel{
-      box-shadow: 0 10px 30px rgba(0,0,0,.08);
-    }
-    html[data-theme="light"] table{
-      background:var(--tableBg);
-    }
-    html[data-theme="light"] thead th{
-      color:#111827;
-      background:#f3f4f6;
-      border-bottom:1px solid var(--border);
-    }
-    html[data-theme="light"] tbody td{
-      border-bottom:1px solid rgba(229,231,235,.9);
-    }
-    html[data-theme="light"] tbody tr:hover td{
-      background:#f9fafb;
-    }
-    /* Inputs / selects */
-    html[data-theme="light"] .pill,
-    html[data-theme="light"] .colFilter,
-    html[data-theme="light"] td .inlineInput,
-    html[data-theme="light"] td .catSel{
-      background:#ffffff !important;
-      color:#0b1220 !important;
-      border-color:var(--border) !important;
-    }
-    html[data-theme="light"] select.pill option,
-    html[data-theme="light"] td .catSel option{
-      background:#ffffff !important;
-      color:#0b1220 !important;
-    }
-    /* Buttons */
-    html[data-theme="light"] .btn,
-    html[data-theme="light"] .themeCtl .miniBtn{
-      background:#ffffff;
+    html[data-theme="light"] .inlineInput{
+      background:#fff;
       color:#0b1220;
       border-color:var(--border);
     }
-    html[data-theme="light"] .btn:hover,
-    html[data-theme="light"] .themeCtl .miniBtn:hover{
-      background:#f9fafb;
-      border-color:var(--border2);
-    }
-    /* Balance box */
-    html[data-theme="light"] #balanceBox{
-      background:#ffffff;
-      border-color:var(--border);
-    }
-    html[data-theme="light"] .balRow{
-      background:#f9fafb;
-      border-color:var(--border);
-    }
-    html[data-theme="light"] .balCur{ color:#6b7280; }
 
-</style>
+    /* category selector (same style) */
+    .catSel{
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      outline:none;
+      font-weight:900;
+      height:32px;
+      min-width:150px;
+    }
+    html[data-theme="light"] .catSel{
+      background:#fff;
+      color:#0b1220;
+      border-color:var(--border);
+    }
+    .catSel option{background:#0b0f14; color:var(--text)}
+    html[data-theme="light"] .catSel option{background:#fff; color:#0b1220}
+
+    /* currency flags (emoji - simple and works everywhere) */
+    .cur{font-weight:900}
+    .cur .flag{margin-right:6px}
+
+    /* toast undo */
+    #toast{
+      position:fixed; left:18px; bottom:18px;
+      display:none; gap:10px; align-items:center; z-index:9999;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      color:var(--text);
+      font-size:12px;
+      backdrop-filter: blur(10px);
+    }
+    html[data-theme="light"] #toast{ background:rgba(0,0,0,.05); color:#0b1220; }
+    #toastMsg{font-weight:900}
+  </style>
 </head>
+
 <body>
   <div class="wrap">
     <div class="top">
       <div>
         <h1>Registro Gastos</h1>
-        <div class="sub">Estable (no rompe) + Add Category + Balance por divisa + Flags SVG.</div>
-        <div class="themeCtl">
-          <button class="btn small" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
-</div>
+        <div class="sub">Filtros arriba + tabla estable (si falla, muestra el HTTP). Dark/Light estable.</div>
       </div>
 
-      <div id="balanceBox" aria-expanded="false" title="Click to expand">
-        <div class="balTop">
-          <span class="balTitle">Balance</span>
-          <span class="balChevron">▾</span>
-        </div>
-        <div class="balDrop" id="balDrop">
-          <div class="balRow" id="balKWD"><span class="balLeft"><span class="balCur">KWD</span></span><span class="balAmt">+0.000</span></div>
-          <div class="balRow" id="balUSD"><span class="balLeft"><span class="balCur">USD</span></span><span class="balAmt">+0.000</span></div>
-          <div class="balRow" id="balEUR"><span class="balLeft"><span class="balCur">EUR</span></span><span class="balAmt">+0.000</span></div>
-        </div>
-      </div>
+      <button class="btn" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
     </div>
 
-    <div id="errBanner"></div>
-
     <div class="panel">
-      <div class="bar">
-        <div class="left">
-          <input id="q" class="pill" placeholder="Search merchant / category / currency…" />
-          <select id="cur" class="pill">
-            <option value="">All currencies</option>
-            <option value="KWD">KWD</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-          </select>
-          <select id="cat" class="pill">
-            <option value="">All categories</option>
-          </select>
-          <input id="startDate" class="pill" type="date" title="Start date"/>
-          <input id="endDate" class="pill" type="date" title="End date"/>
-          <button class="btn ghost" id="clear">Clear</button>
-        </div>
+      <div class="row">
+        <input id="q" class="pill" placeholder="Search merchant..." style="min-width:220px"/>
+        <select id="cur" class="pill" style="min-width:170px">
+          <option value="">All currencies</option>
+        </select>
+        <select id="cat" class="pill" style="min-width:170px">
+          <option value="">All categories</option>
+        </select>
 
-        <div class="right">
-          <button class="btn small" data-range="today">Today</button>
-          <button class="btn small" data-range="week">Last week</button>
-          <button class="btn small" data-range="month">Last month</button>
-          <button class="btn small" data-range="year">This year</button>
-          <button class="btn small" id="reload">Reload</button>
-          <button class="btn small" id="csv">Export CSV</button>
-        </div>
+        <input id="startDate" class="pill" type="date" title="Start date"/>
+        <input id="endDate" class="pill" type="date" title="End date"/>
+
+        <button class="btn" id="clear">Clear</button>
+        <div class="spacer"></div>
+        <span id="status" class="muted">Ready</span>
       </div>
 
-      <div class="loading" id="loading">Loading…</div>
+      <div id="err"></div>
 
-      <table>
-        <thead>
-          <tr>
-            <th class="th-sort" data-sort="created_at">Created <span class="sort-ind" data-ind="created_at"></span></th>
-            <th class="tight th-sort" data-sort="merchant_clean">Merchant <span class="sort-ind" data-ind="merchant_clean"></span></th>
-            <th>Category</th>
-            <th class="th-sort" data-sort="currency">Currency <span class="sort-ind" data-ind="currency"></span></th>
-            <th class="th-sort" data-sort="amount" style="text-align:right">Amount <span class="sort-ind" data-ind="amount"></span></th>
-          </tr>
-          <tr class="filterRow">
-            <th></th>
-            <th><input class="colFilter" id="fMerch" placeholder="Merchant contains…" /></th>
-            <th><input class="colFilter" id="fCat" placeholder="Category contains…" /></th>
-            <th><input class="colFilter" id="fCur" placeholder="KWD/USD/EUR…" /></th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+      <div class="tableWrap" style="margin-top:12px">
+        <table>
+          <thead>
+            <tr>
+              <th class="th-sort" data-sort="created_at">Date <span class="sort-ind" data-ind="created_at"></span></th>
+              <th class="th-sort" data-sort="currency">Currency <span class="sort-ind" data-ind="currency"></span></th>
+              <th>Merchant</th>
+              <th>Category</th>
+              <th class="th-sort" data-sort="amount" style="text-align:right">Amount <span class="sort-ind" data-ind="amount"></span></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- rows -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
+  <div id="toast">
+    <span id="toastMsg">Deleted (undo 10s)</span>
+    <button id="undoBtn" class="btn">Undo</button>
+  </div>
+
 <script>
-(function(){
+  // ===== CONFIG =====
+  const API_KEY = "ElPortichuelo99";
+  const DEFAULT_USER = "pedro";
+
   const $ = (id)=>document.getElementById(id);
 
-  const errBanner = $("errBanner");
-  function showError(msg){
-    errBanner.style.display="block";
-    errBanner.textContent = String(msg || "Unknown error");
-  }
-  function clearError(){
-    errBanner.style.display="none";
-    errBanner.textContent="";
-  }
-  window.addEventListener("error", (e)=>showError("JS error: " + (e?.message || e)));
-  window.addEventListener("unhandledrejection", (e)=>showError("Promise error: " + (e?.reason?.message || e?.reason || e)));
-
-  // balance toggle
-  const bal = $("balanceBox");
-  if(bal){
-    bal.addEventListener("click", (ev)=>{
-      ev.stopPropagation();
-      const open = bal.getAttribute("aria-expanded") === "true";
-      bal.setAttribute("aria-expanded", open ? "false" : "true");
-    });
-    document.addEventListener("click", ()=> bal.setAttribute("aria-expanded","false"));
-  }
-
   const state = {
-    user_id: "pedro",
+    user_id: DEFAULT_USER,
     raw: [],
     view: [],
-    sort: { key:"created_at", dir:"desc" },
-    cats: new Set()
+    sortKey: "created_at",
+    sortDir: "desc",
+    lastDeleted: false
   };
-
-  function flagForCur(cur){
-    const c = String(cur||"").toUpperCase();
-    if(c==="KWD") return `
-      <svg class="flagSvg" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect width="24" height="18" fill="#fff"/>
-        <rect width="24" height="6" y="0" fill="#16a34a"/>
-        <rect width="24" height="6" y="12" fill="#dc2626"/>
-        <path d="M0 0h7l5 9-5 9H0z" fill="#111827"/>
-      </svg>`;
-    if(c==="USD") return `
-      <svg class="flagSvg" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect width="24" height="18" fill="#fff"/>
-        <g fill="#dc2626">
-          <rect y="0" width="24" height="2"/>
-          <rect y="4" width="24" height="2"/>
-          <rect y="8" width="24" height="2"/>
-          <rect y="12" width="24" height="2"/>
-          <rect y="16" width="24" height="2"/>
-        </g>
-        <rect width="10" height="8" fill="#1d4ed8"/>
-        <g fill="#fff">
-          <circle cx="2" cy="2" r="0.6"/><circle cx="4" cy="2" r="0.6"/><circle cx="6" cy="2" r="0.6"/><circle cx="8" cy="2" r="0.6"/>
-          <circle cx="3" cy="4" r="0.6"/><circle cx="5" cy="4" r="0.6"/><circle cx="7" cy="4" r="0.6"/><circle cx="9" cy="4" r="0.6"/>
-          <circle cx="2" cy="6" r="0.6"/><circle cx="4" cy="6" r="0.6"/><circle cx="6" cy="6" r="0.6"/><circle cx="8" cy="6" r="0.6"/>
-        </g>
-      </svg>`;
-    if(c==="EUR") return `
-      <svg class="flagSvg" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect width="24" height="18" fill="#1d4ed8"/>
-        <g fill="#facc15">
-          <circle cx="12" cy="3.5" r="0.7"/><circle cx="15" cy="4.3" r="0.7"/><circle cx="17.3" cy="6.5" r="0.7"/><circle cx="18.1" cy="9" r="0.7"/>
-          <circle cx="17.3" cy="11.5" r="0.7"/><circle cx="15" cy="13.7" r="0.7"/><circle cx="12" cy="14.5" r="0.7"/><circle cx="9" cy="13.7" r="0.7"/>
-          <circle cx="6.7" cy="11.5" r="0.7"/><circle cx="5.9" cy="9" r="0.7"/><circle cx="6.7" cy="6.5" r="0.7"/><circle cx="9" cy="4.3" r="0.7"/>
-        </g>
-      </svg>`;
-    return "";
-  }
-
-  function isIncomeFromSms(sms){
-    const t = String(sms||"").toLowerCase();
-    return t.includes("credit") || t.includes("credited") || t.includes("deposit") || t.includes("salary") || t.includes("received") || t.includes("refund");
-  }
-
-  function fmtCat(x){
-    const raw = String(x||"other").trim();
-    const t = raw ? raw : "other";
-    const nice = t.replaceAll("_"," ").replaceAll("-"," ").toLowerCase();
-    return nice.split(" ").filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
-  }
-
-  function setLoading(text){ $("loading").textContent = text || ""; }
-
-  function catOptions(selected){
-    const sel = String(selected || "other").toLowerCase();
-    const cats = Array.from(state.cats || []).map(x=>String(x||"").toLowerCase()).filter(Boolean);
-    if(!cats.includes("other")) cats.push("other");
-    if(sel && !cats.includes(sel)) cats.push(sel);
-    cats.sort();
-
-    const opts = cats.map(c=>{
-      const label = fmtCat(c);
-      const isSel = c === sel ? "selected" : "";
-      return `<option value="${c}" ${isSel}>${label}</option>`;
-    }).join("");
-
-    return opts + `<option value="__add__">+ Add category…</option>`;
-  }
 
   function withKey(url){
     try{
@@ -529,376 +311,342 @@
     }
   }
 
+  function setStatus(t){ if($("status")) $("status").textContent = t; }
+  function showError(t){
+    const e = $("err");
+    if(!e) return;
+    e.style.display = "block";
+    e.textContent = String(t || "");
+  }
+  function clearError(){
+    const e = $("err");
+    if(!e) return;
+    e.style.display = "none";
+    e.textContent = "";
+  }
+
   async function postJSON(url, body){
-    const r = await fetch(url, {
+    const r = await fetch(withKey(url), {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body || {})
     });
-    if(!r.ok) throw new Error("HTTP " + r.status);
-    return r.json().catch(()=> ({}));
-  }
-
-  async function load(){
-    clearError();
-    setLoading("Loading…");
-    try{
-      const r = await fetch(withKey(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`));
-      if(!r.ok) throw new Error("HTTP " + r.status);
-      const j = await r.json();
-      state.raw = Array.isArray(j.expenses) ? j.expenses : [];
-      state.cats = new Set(state.raw.map(x=>String(x.category||"other").toLowerCase()));
-      syncCategoryDropdown();
-      applyFilters();
-    }catch(e){
-      showError(e?.message || e);
-    }finally{
-      setLoading("");
+    if(!r.ok){
+      const t = await r.text().catch(()=> "");
+      throw new Error(`HTTP ${r.status} ${r.statusText} :: ${t.slice(0,200)}`);
     }
+    return await r.json();
   }
 
-  function syncCategoryDropdown(){
-    const sel = $("cat");
-    const keep = sel.value;
-    const arr = Array.from(state.cats).sort();
-    sel.innerHTML = '<option value="">All categories</option>' + arr.map(c=>`<option value="${c}">${fmtCat(c)}</option>`).join("");
-    sel.value = keep;
+  function flagFor(cur){
+    const c = (cur||"").toUpperCase();
+    if(c==="KWD") return "🇰🇼";
+    if(c==="USD") return "🇺🇸";
+    if(c==="EUR") return "🇪🇺";
+    return "🏳️";
+  }
+
+  function fmtAmount(a){
+    if(a === null || a === undefined || a === "") return "";
+    const n = Number(a);
+    if(Number.isNaN(n)) return String(a);
+    return n.toFixed(3).replace(/\.000$/, ".000").replace(/\.([0-9]*?)0+$/, ".$1").replace(/\.$/,"");
+  }
+
+  function normalizeCat(c){
+    const x = String(c||"other").trim().toLowerCase();
+    return x ? (x[0].toUpperCase() + x.slice(1)) : "Other";
+  }
+
+  function setSort(key){
+    if(state.sortKey === key){
+      state.sortDir = (state.sortDir === "asc") ? "desc" : "asc";
+    }else{
+      state.sortKey = key;
+      state.sortDir = (key === "amount") ? "desc" : "desc";
+    }
+    applyFilters();
+    updateSortIndicators();
+  }
+
+  function updateSortIndicators(){
+    document.querySelectorAll(".sort-ind").forEach(el=>el.textContent="");
+    const ind = document.querySelector(`.sort-ind[data-ind="${state.sortKey}"]`);
+    if(ind) ind.textContent = (state.sortDir === "asc") ? "▲" : "▼";
   }
 
   function applyFilters(){
     const q = ($("q")?.value || "").trim().toLowerCase();
-    const cur = ($("cur")?.value || "").trim().toUpperCase();
+    const cur = ($("cur")?.value || "").trim().toLowerCase();
     const cat = ($("cat")?.value || "").trim().toLowerCase();
-
-    const fCreated = ($("fCreated")?.value || "").trim().toLowerCase();
-    const fMerch = $("fMerch").value.trim().toLowerCase();
-    const fCat = $("fCat").value.trim().toLowerCase();
-    const fCur = ($("fCur")?.value || "").trim().toLowerCase();
-    const sd = $("startDate") ? ($("startDate")?.value || "") : "";
-    const ed = $("endDate") ? ($("endDate")?.value || "") : "";
+    const sd  = ($("startDate")?.value || "");
+    const ed  = ($("endDate")?.value || "");
 
     let v = state.raw.filter(e=>{
-      const merch = String(e.merchant_clean||"").toLowerCase();
-      const category = String(e.category||"other").toLowerCase();
-      const currency = String(e.currency||"").toUpperCase();
-      const created = String(e.created_at||"");
+      const m = String(e.merchant_clean || "").toLowerCase();
+      const c = String(e.currency || "").toLowerCase();
+      const k = String(e.category || "other").toLowerCase();
+      const created = String(e.created_at || "");
       const cdate = created ? created.slice(0,10) : "";
+
+      if(q && !m.includes(q)) return false;
+      if(cur && c !== cur) return false;
+      if(cat && k !== cat) return false;
       if(sd && cdate && cdate < sd) return false;
       if(ed && cdate && cdate > ed) return false;
-
-      if(cur && currency !== cur) return false;
-      if(cat && category !== cat) return false;
-
-      if(q){
-        const hay = (merch + " " + category + " " + currency).toLowerCase();
-        if(!hay.includes(q)) return false;
-      }
-
-      if(fCreated && !created.toLowerCase().includes(fCreated)) return false;
-      if(fMerch && !merch.includes(fMerch)) return false;
-      if(fCat && !category.includes(fCat)) return false;
-      if(fCur && !currency.toLowerCase().includes(fCur)) return false;
 
       return true;
     });
 
-    const {key, dir} = state.sort;
-    const mul = dir === "asc" ? 1 : -1;
+    // sort
+    const dir = (state.sortDir === "asc") ? 1 : -1;
+    const key = state.sortKey;
+
     v.sort((a,b)=>{
-      let av = a?.[key], bv = b?.[key];
+      const av = a[key], bv = b[key];
       if(key === "amount"){
-        av = Number(av||0); bv = Number(bv||0);
-        return (av===bv?0:(av>bv?1:-1))*mul;
+        const an = Number(av||0), bn = Number(bv||0);
+        return (an - bn) * dir;
       }
-      if(key === "created_at"){
-        const ad = new Date(av||0).getTime();
-        const bd = new Date(bv||0).getTime();
-        return (ad===bd?0:(ad>bd?1:-1))*mul;
-      }
-      av = String(av||"").toLowerCase();
-      bv = String(bv||"").toLowerCase();
-      return (av===bv?0:(av>bv?1:-1))*mul;
+      const as = String(av||""), bs = String(bv||"");
+      return as.localeCompare(bs) * dir;
     });
 
     state.view = v;
     render();
   }
 
-  function updateSortIndicators(){
-    document.querySelectorAll(".sort-ind").forEach(el=>el.textContent="");
-    const ind = document.querySelector(`.sort-ind[data-ind="${state.sort.key}"]`);
-    if(ind) ind.textContent = state.sort.dir === "asc" ? "↑" : "↓";
-  }
-
-  function setBalanceFlags(){
-    const map = { balKWD:"KWD", balUSD:"USD", balEUR:"EUR" };
-    for(const id in map){
-      const row = document.getElementById(id);
-      if(!row) continue;
-      const left = row.querySelector(".balLeft");
-      if(!left) continue;
-      if(left.querySelector("svg")) continue;
-      const span = document.createElement("span");
-      span.innerHTML = flagForCur(map[id]);
-      left.insertBefore(span, left.firstChild);
-    }
-  }
-
-  function updateBalance(){
-    const totals = { KWD:0, USD:0, EUR:0 };
-    for(const e of state.view){
-      const cur = String(e.currency||"").toUpperCase();
-      if(!(cur in totals)) continue;
-      const income = isIncomeFromSms(e.sms);
-      const amt = Number(e.amount||0);
-      totals[cur] += income ? amt : -amt;
-    }
-    function setRow(rowId, val){
-      const row = document.getElementById(rowId);
-      if(!row) return;
-      const amtEl = row.querySelector(".balAmt");
-      if(!amtEl) return;
-      amtEl.classList.remove("pos","neg");
-      amtEl.classList.add(val >= 0 ? "pos" : "neg");
-      const sign = val >= 0 ? "+" : "";
-      amtEl.textContent = sign + val.toFixed(3);
-    }
-    setRow("balKWD", totals.KWD);
-    setRow("balUSD", totals.USD);
-    setRow("balEUR", totals.EUR);
-    setBalanceFlags();
-  }
-
   function render(){
-    updateSortIndicators();
     const tb = $("tbody");
+    if(!tb) return;
+
     tb.innerHTML = state.view.map(e=>{
-      const income = isIncomeFromSms(e.sms);
       const amt = Number(e.amount||0);
-      const amtTxt = (income?"+":"") + amt.toFixed(3);
-      const amtClass = income ? "amt-income" : "amt-expense";
+      const dir = String(e.direction||"").toLowerCase(); // may be "in"/"out"
+      const isOut = (dir === "out") || (String(e.sms||"").toLowerCase().includes("debited"));
+      const isIn  = (dir === "in")  || (String(e.sms||"").toLowerCase().includes("credited"));
+      const cls = isIn ? "pos" : (isOut ? "neg" : (amt < 0 ? "neg" : ""));
+      const amtTxt = fmtAmount(Math.abs(amt));
+
+      const cur = String(e.currency||"");
+      const flag = flagFor(cur);
+
+      // category options built later (stateCats)
+      const cat = String(e.category||"other").toLowerCase();
+
       return `
         <tr>
-          <td class="muted tight2">${String(e.created_at||"")}</td>
-          <td class="tight merchCell" data-id="${e.id}">
-            <span class="merchText">${String(e.merchant_clean||"")}</span>
+          <td>${String(e.created_at||"").slice(0,19).replace("T"," ")}</td>
+          <td class="cur"><span class="flag">${flag}</span>${cur}</td>
+          <td><input class="inlineInput" data-id="${e.id}" data-field="merchant_clean" value="${escapeHtml(e.merchant_clean||"")}" /></td>
+          <td>
+            <select class="catSel" data-id="${e.id}" data-field="category">
+              ${stateCats.map(x=>{
+                const val = x.toLowerCase();
+                const sel = (val === cat) ? "selected" : "";
+                return `<option value="${val}" ${sel}>${x}</option>`;
+              }).join("")}
+            </select>
           </td>
-          <td class="category">
-            <select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select>
-          </td>
-          <td class="muted">${flagForCur(e.currency)} ${String(e.currency||"")}</td>
-          <td class="amt ${amtClass}">${amtTxt}</td>
+          <td class="amt ${cls}">${isIn ? "" : "-"}${amtTxt}</td>
+          <td class="actions" data-id="${e.id}"><button class="btn delBtn" title="Delete">🗑️</button></td>
         </tr>
       `;
     }).join("");
-    updateBalance();
   }
 
-  function setRange(range){
-    const now = new Date();
-    const start = new Date(now);
-    if(range==="today"){ start.setHours(0,0,0,0); }
-    else if(range==="week"){ start.setDate(start.getDate()-7); }
-    else if(range==="month"){ start.setMonth(start.getMonth()-1); }
-    else if(range==="year"){ start.setMonth(0,1); start.setHours(0,0,0,0); }
-    $("fCreated").value = start.toISOString().slice(0,10);
-    applyFilters();
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (m)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
   }
 
-  function exportCSV(){
-    const rows = [["created_at","merchant","category","currency","amount"]];
-    for(const e of state.view){
-      rows.push([String(e.created_at||""), String(e.merchant_clean||""), String(e.category||"other"), String(e.currency||""), String(e.amount||"")]);
+  // Categories list (dynamic)
+  let stateCats = ["Other","Coffee","Food","Transport","Shopping","Rent"];
+
+  function rebuildSelectOptions(){
+    // currencies
+    const curSel = $("cur");
+    const catSel = $("cat");
+    if(curSel){
+      const curSet = new Set(state.raw.map(e=>String(e.currency||"").toUpperCase()).filter(Boolean));
+      const curVals = Array.from(curSet).sort();
+      curSel.innerHTML = `<option value="">All currencies</option>` + curVals.map(c=>`<option value="${c.toLowerCase()}">${c}</option>`).join("");
     }
-    const csv = rows.map(r=>r.map(x=>{
-      const t = String(x).replaceAll('"','""');
-      return `"${t}"`;
-    }).join(",")).join("\n");
-    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "expenses.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    if(catSel){
+      const catSet = new Set(state.raw.map(e=>String(e.category||"other").toLowerCase()));
+      const catVals = Array.from(catSet).sort();
+      // keep pretty label
+      catSel.innerHTML = `<option value="">All categories</option>` + catVals.map(c=>{
+        const label = (c && c[0]) ? (c[0].toUpperCase()+c.slice(1)) : "Other";
+        return `<option value="${c}">${label}</option>`;
+      }).join("");
+    }
+
+    // per-row category selector options (pretty)
+    const catSet2 = new Set(state.raw.map(e=>normalizeCat(e.category||"other")));
+    stateCats = Array.from(catSet2).sort((a,b)=>a.localeCompare(b));
+    if(!stateCats.length) stateCats = ["Other"];
   }
 
-  // events filters
-  if($("q")) $("q").addEventListener("input", applyFilters);
-  if($("cur")) $("cur").addEventListener("change", applyFilters);
-  if($("cat")) $("cat").addEventListener("change", applyFilters);
-  if($("startDate")) if($("startDate")) $("startDate").addEventListener("change", applyFilters);
-  if($("endDate")) if($("endDate")) $("endDate").addEventListener("change", applyFilters);
-  if($("fCreated")) $("fCreated").addEventListener("input", applyFilters);
-  if($("fMerch")) $("fMerch").addEventListener("input", applyFilters);
-  if($("fCat")) $("fCat").addEventListener("input", applyFilters);
-  if($("fCur")) $("fCur").addEventListener("input", applyFilters);
+  async function load(){
+    clearError();
+    setStatus("Loading...");
 
-  if($("clear")) $("clear").addEventListener("click", ()=>{
-    ($("q")?.value || "")="";
-    ($("cur")?.value || "")="";
-    ($("cat")?.value || "")="";
-    $("fCreated").value="";
-    $("fMerch").value="";
-    $("fCat").value="";
-    ($("fCur")?.value || "")="";
-    if($("startDate")) ($("startDate")?.value || "")="";
-    if($("endDate")) ($("endDate")?.value || "")="";
+    let r;
+    try{
+      r = await fetch(withKey(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`));
+    }catch(e){
+      showError("Load failed: network error");
+      setStatus("Error");
+      return;
+    }
+
+    if(!r.ok){
+      const t = await r.text().catch(()=> "");
+      showError(`Load failed: HTTP ${r.status} ${r.statusText}\n${t.slice(0,400)}`);
+      setStatus("Error");
+      return;
+    }
+
+    let j;
+    try{
+      j = await r.json();
+    }catch(e){
+      const t = await r.text().catch(()=> "");
+      showError(`Load failed: invalid JSON\n${t.slice(0,400)}`);
+      setStatus("Error");
+      return;
+    }
+
+    const arr = (j && j.expenses) ? j.expenses : [];
+    state.raw = Array.isArray(arr) ? arr : [];
+    rebuildSelectOptions();
     applyFilters();
-  });
 
-  document.querySelectorAll('[data-range]').forEach(btn=>{
-    btn.addEventListener("click", ()=> setRange(btn.dataset.range));
-  });
+    setStatus(`Loaded: ${state.raw.length}`);
+    if(state.raw.length === 0){
+      showError("0 rows from API. (No es la tabla; la API está devolviendo vacío.)");
+    }
+  }
 
-  if($("reload")) $("reload").addEventListener("click", load);
-  if($("csv")) $("csv").addEventListener("click", exportCSV);
-
-  document.querySelectorAll("th.th-sort").forEach(th=>{
-    th.addEventListener("click", ()=>{
-      const key = th.dataset.sort;
-      if(state.sort.key === key) state.sort.dir = (state.sort.dir === "asc") ? "desc" : "asc";
-      else { state.sort.key = key; state.sort.dir = "asc"; }
-      applyFilters();
-    });
-  });
-
-  // Merchant inline edit
-  document.addEventListener("click", (ev)=>{
-    const cell = ev.target.closest("td.merchCell");
-    if(!cell) return;
-    if(cell.querySelector("input.inlineInput")) return;
-
-    const id = Number(cell.dataset.id||0);
-    if(!id) return;
-
-    const span = cell.querySelector(".merchText");
-    const oldValue = span ? span.textContent : "";
-
-    const input = document.createElement("input");
-    input.className = "inlineInput";
-    input.type = "text";
-    input.value = oldValue;
-
-    if(span) span.replaceWith(input);
-    else cell.appendChild(input);
-
-    input.focus();
-    input.select();
-
-    const finish = async (save)=>{
-      const val = input.value.trim();
-      const finalVal = save ? val : oldValue;
-
-      const sp = document.createElement("span");
-      sp.className = "merchText";
-      sp.textContent = finalVal;
-      input.replaceWith(sp);
-
-      if(save && val !== oldValue){
-        try{
-          await postJSON("/update/merchant", { id, merchant: val });
-          await initTheme();
-  
+  // ===== Theme =====
   function initTheme(){
     const saved = localStorage.getItem("rg_theme");
     const theme = (saved === "light" || saved === "dark") ? saved : "dark";
     document.documentElement.setAttribute("data-theme", theme);
-    const t = document.getElementById("themeText");
-    if(t) t.textContent = (theme === "dark") ? "Dark" : "Light";
+    if($("themeText")) $("themeText").textContent = (theme === "dark") ? "Dark" : "Light";
   }
 
-const tbtn = document.getElementById("themeToggle");
-  if(tbtn){
-    tbtn.addEventListener("click", ()=>{
+  if($("themeToggle")){
+    $("themeToggle").addEventListener("click", ()=>{
       const cur = document.documentElement.getAttribute("data-theme") || "dark";
       const next = (cur === "dark") ? "light" : "dark";
       localStorage.setItem("rg_theme", next);
       document.documentElement.setAttribute("data-theme", next);
-      const t = document.getElementById("themeText");
-      if(t) t.textContent = (next === "dark") ? "Dark" : "Light";
+      if($("themeText")) $("themeText").textContent = (next === "dark") ? "Dark" : "Light";
     });
   }
 
-  load();
-        }catch(e){
-          showError("Save merchant failed: " + (e?.message || e));
-        }
-      }
-    };
+  // ===== Events =====
+  if($("q")) $("q").addEventListener("input", applyFilters);
+  if($("cur")) $("cur").addEventListener("change", applyFilters);
+  if($("cat")) $("cat").addEventListener("change", applyFilters);
+  if($("startDate")) $("startDate").addEventListener("change", applyFilters);
+  if($("endDate")) $("endDate").addEventListener("change", applyFilters);
 
-    input.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter") finish(true);
-      if(e.key === "Escape") finish(false);
+  if($("clear")){
+    $("clear").addEventListener("click", ()=>{
+      if($("q")) $("q").value="";
+      if($("cur")) $("cur").value="";
+      if($("cat")) $("cat").value="";
+      if($("startDate")) $("startDate").value="";
+      if($("endDate")) $("endDate").value="";
+      applyFilters();
+      clearError();
     });
-    input.addEventListener("blur", ()=>finish(true));
+  }
+
+  // Sorting
+  document.querySelectorAll(".th-sort").forEach(th=>{
+    th.addEventListener("click", ()=> setSort(th.dataset.sort));
   });
 
-  // Category save + add category
-  document.addEventListener("change", async (ev)=>{
-    const sel = ev.target.closest("select.catSel");
-    if(!sel) return;
-
-    const id = Number(sel.dataset.id||0);
+  // Inline merchant save on blur
+  document.addEventListener("blur", async (ev)=>{
+    const inp = ev.target;
+    if(!(inp && inp.classList && inp.classList.contains("inlineInput"))) return;
+    const id = Number(inp.dataset.id||0);
+    const val = inp.value || "";
     if(!id) return;
 
-    let category = String(sel.value||"other").toLowerCase();
-
-    if(category === "__add__"){
-      const userText = prompt("New category name (e.g. coffee shop, rent, groceries):");
-      if(!userText){
-        await load();
-        return;
-      }
-      category = userText.trim().toLowerCase().replaceAll(" ", "_");
-      category = category.replace(/[^a-z0-9_-]/g, "");
-      category = category.replace(/__+/g, "_").replace(/^[_-]+|[_-]+$/g, "");
-      if(!category) category = "other";
-
-      state.cats.add(category);
-      syncCategoryDropdown(); // para que se vea también arriba
-    }
-
     try{
-      await postJSON("/update/category", { id, category });
+      // Backend must have /update_field or similar; if not, we just don't crash.
+      // If your backend endpoint is different, tell me and lo ajusto.
+      await postJSON("/update_field", { id, user_id: state.user_id, field:"merchant_clean", value: val });
       await load();
     }catch(e){
-      showError("Save category failed: " + (e?.message || e));
+      // Don’t kill UI
+      showError("Save merchant failed: " + (e.message||e));
+    }
+  }, true);
+
+  // Category change save
+  document.addEventListener("change", async (ev)=>{
+    const sel = ev.target;
+    if(!(sel && sel.classList && sel.classList.contains("catSel"))) return;
+    const id = Number(sel.dataset.id||0);
+    const val = sel.value || "other";
+    if(!id) return;
+    try{
+      await postJSON("/update_field", { id, user_id: state.user_id, field:"category", value: val });
       await load();
+    }catch(e){
+      showError("Save category failed: " + (e.message||e));
     }
   });
 
-
-  function applyTheme(theme){
-    const t = (theme === "light") ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", t);
-    const btn = document.getElementById("themeToggle");
-    if(btn) btn.textContent = "Theme: " + (t === "dark" ? "Dark" : "Light");
+  // Delete + Undo (requires backend /delete and /undo_delete; if not present, we show error)
+  let undoTimer = null;
+  function showToast(msg){
+    if(!$("toast")) return;
+    if($("toastMsg")) $("toastMsg").textContent = msg || "Deleted (undo 10s)";
+    $("toast").style.display = "inline-flex";
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(()=>{ if($("toast")) $("toast").style.display="none"; }, 10000);
   }
 
-  function loadThemePrefs(){
-    const theme = localStorage.getItem("rg_theme") || "dark";
-    applyTheme(theme);
-}
+  document.addEventListener("click", async (ev)=>{
+    const btn = ev.target.closest(".delBtn");
+    if(!btn) return;
+    const td = ev.target.closest("td.actions");
+    const id = Number(td?.dataset?.id||0);
+    if(!id) return;
+    try{
+      await postJSON("/delete", { id, user_id: state.user_id });
+      showToast("Deleted (undo 10s)");
+      await load();
+    }catch(e){
+      showError("Delete failed: " + (e.message||e));
+    }
+  });
 
-  // boot
-  loadThemePrefs();
-  load();
-
-  // Theme listeners
-  const tbtn = document.getElementById("themeToggle");
-  if(tbtn){
-    tbtn.addEventListener("click", ()=>{
-      const cur = document.documentElement.getAttribute("data-theme") || "dark";
-      const next = (cur === "dark") ? "light" : "dark";
-      localStorage.setItem("rg_theme", next);
-      applyTheme(next);
+  if($("undoBtn")){
+    $("undoBtn").addEventListener("click", async ()=>{
+      try{
+        await postJSON("/undo_delete", { user_id: state.user_id });
+        if($("toast")) $("toast").style.display="none";
+        await load();
+      }catch(e){
+        showError("Undo failed: " + (e.message||e));
+      }
     });
   }
 
-})();
+  // boot
+  initTheme();
+  updateSortIndicators();
+  load();
 </script>
 </body>
 </html>
