@@ -120,6 +120,24 @@ td select:focus {
   border-color: #555;
 }
 
+
+/* ERR_BANNER_V1 */
+#errBanner{
+  display:none;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin: 10px 0 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(239,68,68,.12);
+  border: 1px solid rgba(239,68,68,.35);
+  color: #fecaca;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
 </style>
 
 <style>
@@ -154,6 +172,7 @@ td select:focus {
     <div class="top">
       <div>
         <h1>Registro Gastos</h1>
+<div id=\"errBanner\"></div>
         <div class="sub" id="statusLine">Loading…</div>
       </div>
       <div class="right">
@@ -304,6 +323,9 @@ td select:focus {
 
 
   async function loadExpenses(){
+    // LOAD_EXPENSES_GUARD_V1
+    clearError();
+    try {
     const url = `/expenses?user_id=pedro&limit=500`;
     $("statusLine").textContent = "Loading…";
     try{
@@ -327,6 +349,12 @@ td select:focus {
     }
     hydrateCategoryFilter();
     applyAndRender();
+    } catch (err) {
+      showError(err?.message || err);
+    } finally {
+      const l = document.getElementById('loading');
+      if (l) l.textContent = '';
+    }
   }
 
   function hydrateCategoryFilter(){
@@ -358,6 +386,7 @@ td select:focus {
 
     sortView();
     updateSortIndicators();
+    window.view = view;
     renderTable();
     if (typeof updateBalance === 'function') updateBalance();
   }
@@ -598,6 +627,29 @@ function updateBalance(){
   const sign = total >= 0 ? "+" : "";
   box.textContent = `Balance ${sign}${total.toFixed(3)}`;
 }
+</script>
+
+
+<script>
+/* ERR_HANDLER_V1 */
+function showError(msg){
+  const b = document.getElementById("errBanner");
+  if(!b) return;
+  b.style.display = "block";
+  b.textContent = String(msg || "Unknown error");
+}
+function clearError(){
+  const b = document.getElementById("errBanner");
+  if(!b) return;
+  b.style.display = "none";
+  b.textContent = "";
+}
+window.addEventListener("error", (e) => {
+  showError("JS error: " + (e?.message || e));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  showError("Promise error: " + (e?.reason?.message || e?.reason || e));
+});
 </script>
 
 </body>
