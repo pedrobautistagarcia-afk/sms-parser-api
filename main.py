@@ -523,41 +523,50 @@ def debug_users():
 
 @app.post("/debug/backfill_direction")
 def debug_backfill_direction(api_key: str = ""):
-    # opcional: protege con api_key si tu main ya lo usa
-    # si no tienes auth aquí, puedes quitarlo luego
     if api_key and api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Bad api key")
 
     conn = db()
     cur = conn.cursor()
 
-    # Usa sms_raw si existe, si no sms
-    # (COALESCE evita nulls)
-    cur.execute("""
+    # Detecta si existe sms_raw
+    cur.execute("PRAGMA table_info(expenses)")
+    cols = [r[1] for r in cur.fetchall()]
+    sms_col = "sms_raw" if "sms_raw" in cols else "sms"
+
+    # 1) SQL backfill por LIKE (rápido)
+    cur.execute(f"""
         UPDATE expenses
         SET direction='income'
         WHERE (direction IS NULL OR direction='')
-          AND lower(COALESCE(sms_raw, sms, '')) LIKE '%credit%'
+          AND lower(COALESCE({sms_col}, '')) LIKE '%credit%'
     """)
-    income_updated = cur.rowcount
+    income_like = cur.rowcount
 
-    cur.execute("""
+    cur.execute(f"""
         UPDATE expenses
         SET direction='expense'
         WHERE (direction IS NULL OR direction='')
-          AND lower(COALESCE(sms_raw, sms, '')) LIKE '%debit%'
+          AND lower(COALESCE({sms_col}, '')) LIKE '%debit%'
     """)
-    expense_updated = cur.rowcount
+    expense_like = cur.rowcount
 
-    # Cualquier cosa que siga null -> detector python (por si frases raras)
-    cur.execute("SELECT id, COALESCE(sms_raw, sms, '') FROM expenses WHERE direction IS NULL OR direction=''")
+    # 2) Python fallback para lo que siga vacío
+    cur.execute(f"SELECT id, COALESCE({sms_col}, '') FROM expenses WHERE direction IS NULL OR direction=''")
     rows = cur.fetchall()
-    py_updated = 0
+    py_filled = 0
     for _id, _sms in rows:
         d = detect_direction(_sms)
         cur.execute("UPDATE expenses SET direction=? WHERE id=?", (d, _id))
-        py_updated += 1
+        py_filled += 1
 
     conn.commit()
     conn.close()
-    return {"ok": True, "income_like_updated": income_updated, "expense_like_updated": expense_updated, "python_filled": py_updated}
+    return {
+        "ok": True,
+        "db_path": DB_PATH,
+        "sms_col_used": sms_col,
+        "income_like_updated": income_like,
+        "expense_like_updated": expense_like,
+        "python_filled": py_filled
+    }
