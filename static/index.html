@@ -230,7 +230,11 @@
     }
     td .catSel:focus{border-color:#304156}
     td .catSel option{background:#0b0f14; color:var(--text)}
-  </style>
+  
+/* FLAGS_SVG */
+.flagSvg{width:16px;height:12px;display:inline-block;vertical-align:-2px;margin-right:6px;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.10) inset;}
+
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -247,15 +251,15 @@
         </div>
         <div class="balDrop" id="balDrop">
           <div class="balRow" id="balKWD">
-            <span class="balLeft"><span class="balFlag">🇰🇼</span><span class="balCur">KWD</span></span>
+            <span class="balLeft"><span class="balFlag"></span><span class="balCur">KWD</span></span>
             <span class="balAmt">+0.000</span>
           </div>
           <div class="balRow" id="balUSD">
-            <span class="balLeft"><span class="balFlag">🇺🇸</span><span class="balCur">USD</span></span>
+            <span class="balLeft"><span class="balFlag"></span><span class="balCur">USD</span></span>
             <span class="balAmt">+0.000</span>
           </div>
           <div class="balRow" id="balEUR">
-            <span class="balLeft"><span class="balFlag">🇪🇺</span><span class="balCur">EUR</span></span>
+            <span class="balLeft"><span class="balFlag"></span><span class="balCur">EUR</span></span>
             <span class="balAmt">+0.000</span>
           </div>
         </div>
@@ -349,13 +353,64 @@
       cats: new Set()
     };
 
+    
     function flagForCur(cur){
       const c = String(cur||"").toUpperCase();
-      if(c==="KWD") return "🇰🇼";
-      if(c==="USD") return "🇺🇸";
-      if(c==="EUR") return "🇪🇺";
+      // Kuwait (simplified SVG)
+      if(c==="KWD") return `
+        <svg class="flagSvg" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="24" height="18" fill="#fff"/>
+          <rect width="24" height="6" y="0" fill="#16a34a"/>
+          <rect width="24" height="6" y="12" fill="#dc2626"/>
+          <path d="M0 0h7l5 9-5 9H0z" fill="#111827"/>
+        </svg>`;
+      // USA (very simplified)
+      if(c==="USD") return `
+        <svg class="flagSvg" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="24" height="18" fill="#fff"/>
+          <g fill="#dc2626">
+            <rect y="0" width="24" height="2"/>
+            <rect y="4" width="24" height="2"/>
+            <rect y="8" width="24" height="2"/>
+            <rect y="12" width="24" height="2"/>
+            <rect y="16" width="24" height="2"/>
+          </g>
+          <rect width="10" height="8" fill="#1d4ed8"/>
+          <circle cx="2" cy="2" r="0.6" fill="#fff"/>
+          <circle cx="4" cy="2" r="0.6" fill="#fff"/>
+          <circle cx="6" cy="2" r="0.6" fill="#fff"/>
+          <circle cx="8" cy="2" r="0.6" fill="#fff"/>
+          <circle cx="3" cy="4" r="0.6" fill="#fff"/>
+          <circle cx="5" cy="4" r="0.6" fill="#fff"/>
+          <circle cx="7" cy="4" r="0.6" fill="#fff"/>
+          <circle cx="9" cy="4" r="0.6" fill="#fff"/>
+          <circle cx="2" cy="6" r="0.6" fill="#fff"/>
+          <circle cx="4" cy="6" r="0.6" fill="#fff"/>
+          <circle cx="6" cy="6" r="0.6" fill="#fff"/>
+          <circle cx="8" cy="6" r="0.6" fill="#fff"/>
+        </svg>`;
+      // EU (simplified: blue + yellow dots)
+      if(c==="EUR") return `
+        <svg class="flagSvg" viewBox="0 0 24 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="24" height="18" fill="#1d4ed8"/>
+          <g fill="#facc15">
+            <circle cx="12" cy="3.5" r="0.7"/>
+            <circle cx="15" cy="4.3" r="0.7"/>
+            <circle cx="17.3" cy="6.5" r="0.7"/>
+            <circle cx="18.1" cy="9" r="0.7"/>
+            <circle cx="17.3" cy="11.5" r="0.7"/>
+            <circle cx="15" cy="13.7" r="0.7"/>
+            <circle cx="12" cy="14.5" r="0.7"/>
+            <circle cx="9" cy="13.7" r="0.7"/>
+            <circle cx="6.7" cy="11.5" r="0.7"/>
+            <circle cx="5.9" cy="9" r="0.7"/>
+            <circle cx="6.7" cy="6.5" r="0.7"/>
+            <circle cx="9" cy="4.3" r="0.7"/>
+          </g>
+        </svg>`;
       return "";
     }
+
 
     function isIncomeFromSms(sms){
       const t = String(sms||"").toLowerCase();
@@ -506,6 +561,23 @@
       updateBalance();
     }
 
+
+      function setBalanceFlags(){
+        const map = { balKWD:"KWD", balUSD:"USD", balEUR:"EUR" };
+        for(const id in map){
+          const row = document.getElementById(id);
+          if(!row) continue;
+          const left = row.querySelector(".balLeft");
+          if(!left) continue;
+          // si ya hay SVG, no repetir
+          if(left.querySelector("svg")) continue;
+          const span = document.createElement("span");
+          span.innerHTML = flagForCur(map[id]);
+          // meter al inicio
+          left.insertBefore(span, left.firstChild);
+        }
+      }
+
     function updateBalance(){
       const totals = { KWD:0, USD:0, EUR:0 };
       for(const e of state.view){
@@ -528,6 +600,7 @@
       setRow("balKWD", totals.KWD);
       setRow("balUSD", totals.USD);
       setRow("balEUR", totals.EUR);
+      setBalanceFlags();
     }
 
     function setRange(range){
