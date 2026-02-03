@@ -359,6 +359,7 @@ td select:focus {
     sortView();
     updateSortIndicators();
     renderTable();
+    if (typeof updateBalance === 'function') updateBalance();
   }
 
   function fmtDate(iso){
@@ -566,5 +567,38 @@ document.addEventListener("click", (e) => {
 });
 
 </script>
+
+<script>
+/* ===== Dynamic Balance ===== */
+function updateBalance(){
+  const box = document.getElementById("balanceBox");
+  if(!box) return;
+  if(!Array.isArray(window.view)) return;
+
+  let total = 0;
+
+  window.view.forEach(e => {
+    const amt = Number(e.amount || 0);
+    const sms = String(e.sms || "").toLowerCase();
+
+    const isIncome =
+      sms.includes("credit") ||
+      sms.includes("credited") ||
+      sms.includes("deposit") ||
+      sms.includes("salary") ||
+      sms.includes("received") ||
+      sms.includes("refund");
+
+    total += isIncome ? amt : -amt;
+  });
+
+  box.classList.remove("positive","negative");
+  box.classList.add(total >= 0 ? "positive" : "negative");
+
+  const sign = total >= 0 ? "+" : "";
+  box.textContent = `Balance ${sign}${total.toFixed(3)}`;
+}
+</script>
+
 </body>
 </html>
