@@ -989,6 +989,64 @@ if($("toast")) $("toast").style.display="none";
   if(typeof initBalanceFlags==='function') initBalanceFlags();
   updateSortIndicators();
   load();
+
+
+/* ===========================
+   FORCE_RENDER_FALLBACK
+   (si no hay filas, pinta igual)
+   =========================== */
+(function(){
+  function pickTbody(){
+    return document.querySelector("table tbody")
+        || document.querySelector("#table tbody")
+        || document.querySelector("#expensesTable tbody")
+        || document.querySelector("tbody");
+  }
+
+  function escapeHtml(x){
+    return String(x ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function renderDirect(rows){
+    const tbody = pickTbody();
+    if(!tbody) return;
+
+    // Si tu tabla tiene columnas distintas, esto igualmente pinta algo visible
+    tbody.innerHTML = rows.map(r => {
+      const date = escapeHtml(r.created_at || r.date_iso || r.date_raw || "");
+      const merch = escapeHtml(r.merchant_clean || r.merchant_raw || r.sms || "");
+      const cat = escapeHtml(r.category || "");
+      const cur = escapeHtml(r.currency || "");
+      const amt = (r.amount === null || r.amount === undefined) ? "" : escapeHtml(r.amount);
+      return `<tr>
+        <td>${date}</td>
+        <td>${merch}</td>
+        <td>${cat}</td>
+        <td>${cur}</td>
+        <td style="text-align:right">${amt}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  async function force(){
+    try{
+      const tbody = pickTbody();
+      const hasRows = tbody && tbody.querySelectorAll("tr").length > 0;
+      if(hasRows) return; // ya hay filas
+
+      const r = await fetch("/expenses?user_id=pedro&limit=200");
+      const j = await r.json();
+      const rows = j.expenses || j.rows || [];
+      if(rows.length) renderDirect(rows);
+    }catch(e){
+      console.error("FORCE_RENDER_FALLBACK error:", e);
+    }
+  }
+
+  // espera a que cargue el DOM y a que tu JS intente pintar primero
+  window.addEventListener("load", () => setTimeout(force, 1200));
+})();
+
 </script>
 </body>
 </html>
