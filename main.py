@@ -35,8 +35,10 @@ def detect_direction(sms: str) -> str:
 # ======================================================
 API_KEY = os.getenv("API_KEY", "ElPortichuelo99")
 
-def check_key(api_key: str | None):
-    check_key(api_key)
+def check_key(api_key):
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+
 app = FastAPI(title="Registro Gastos API (single-user, no api_key)")
 
 
@@ -813,35 +815,32 @@ class UpdateFieldRequest(BaseModel):
         populate_by_name = True
 
 @app.post("/update_field")
-def update_field(req: UpdateFieldRequest, api_key: str = Query(None)):
-    # ---- API KEY ----
+def update_field(payload: dict, api_key: str = Query(None)):
     check_key(api_key)
-    # ---- validate field ----
-    allowed = {
-        "merchant_clean": "TEXT",
-        "merchant_raw": "TEXT",
-        "category": "TEXT",
-        "amount": "REAL",
-        "currency": "TEXT",
-        "direction": "TEXT",
-        "created_at": "TEXT",
-        "date_raw": "TEXT",
-        "date_iso": "TEXT",
-        "sms_raw": "TEXT",
-        "sms": "TEXT",
-    }
-    field = (req.field or "").strip()
 
-    if field not in allowed:
+    user_id = payload.get("userid") or payload.get("user_id")
+    row_id = payload.get("id")
+    field = (payload.get("field") or "").strip()
+    value = payload.get("value")
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing userid")
+    if row_id is None:
+        raise HTTPException(status_code=400, detail="Missing id")
+    try:
+        row_id = int(row_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="id must be int")
+
+    allowed_fields = {"merchant_clean", "category", "currency", "amount", "direction"}
+    if field not in allowed_fields:
         raise HTTPException(status_code=400, detail=f"Field not allowed: {field}")
 
-    value = req.value
-
-    # normalize some fields
-    if field == "category" and value is not None:
-        value = str(value).strip().lower() or "other"
-    if field == "currency" and value is not None:
-        value = str(value).strip().upper()
+    # Normalizaciones
+    if field == "category":
+        value = (str(value).strip().lower() if value is not None else "other") or "other"
+    if field == "currency":
+        value = (str(value).strip().upper() if value is not None else None)
     if field == "amount" and value is not None:
         try:
             value = float(value)
@@ -849,36 +848,39 @@ def update_field(req: UpdateFieldRequest, api_key: str = Query(None)):
             raise HTTPException(status_code=400, detail="amount must be a number")
     if field == "merchant_clean" and value is not None:
         value = str(value).strip()
+    if field == "direction" and value is not None:
+        v = str(value).strip().lower()
+        if v not in ("in", "out"):
+            raise HTTPException(status_code=400, detail="direction must be 'in' or 'out'")
+        value = v
 
+    # DB (usa tu db() si existe, si no, conecta directo)
     try:
-        conn = db()
+        if "db" in globals():
+            conn = db()
+        else:
+            # fallback por si acaso
+            DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
+            conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # Make sure column exists (avoid sqlite errors -> 500)
+        # Verifica columna existe para evitar sqlite errors
         cur.execute("PRAGMA table_info(expenses)")
-        cols = {row[1] for row in cur.fetchall()}
+        cols = {r[1] for r in cur.fetchall()}
         if field not in cols:
             raise HTTPException(status_code=400, detail=f"Column not in DB: {field}")
 
-        cur.execute(
-            f"UPDATE expenses SET {field} = ? WHERE id = ? AND user_id = ?",
-            (value, req.id, req.user_id),
-        )
+        cur.execute(f"UPDATE expenses SET {field} = ? WHERE id = ? AND user_id = ?", (value, row_id, user_id))
         conn.commit()
 
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Row not found")
 
-        cur.execute("SELECT * FROM expenses WHERE id = ? AND user_id = ?", (req.id, req.user_id))
+        cur.execute("SELECT id, user_id, amount, currency, merchant_clean, category, created_at, direction FROM expenses WHERE id=? AND user_id=?", (row_id, user_id))
         row = cur.fetchone()
-        return {"ok": True, "id": req.id, "field": field, "value": value, "row": dict(row) if row else None}
+        return {"ok": True, "id": row_id, "field": field, "value": value, "row": dict(row) if row else None}
 
-    except HTTPException:
-        raise
-    except sqlite3.Error as e:
-        # return a clear error instead of generic 500 with no info
-        raise HTTPException(status_code=500, detail=f"sqlite error: {e}")
     finally:
         try:
             conn.close()
