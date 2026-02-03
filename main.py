@@ -30,7 +30,13 @@ def detect_direction(sms: str) -> str:
         return "income"
     return "expense"
 
+# ======================================================
+# CONFIG
+# ======================================================
+API_KEY = os.getenv("API_KEY", "ElPortichuelo99")
 
+def check_key(api_key: str | None):
+    check_key(api_key)
 app = FastAPI(title="Registro Gastos API (single-user, no api_key)")
 
 
@@ -809,9 +815,7 @@ class UpdateFieldRequest(BaseModel):
 @app.post("/update_field")
 def update_field(req: UpdateFieldRequest, api_key: str = Query(None)):
     # ---- API KEY ----
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid api_key")
-
+    check_key(api_key)
     # ---- validate field ----
     allowed = {
         "merchant_clean": "TEXT",
