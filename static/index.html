@@ -173,6 +173,39 @@
 
     /* select dark */
     select.colFilter option{background:#0b0f14; color:var(--text)}
+  
+    /* INLINE_EDIT_V1 */
+    td .inlineInput {
+      width: 100%;
+      background: #0b0f14;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+    td .inlineInput:focus {
+      border-color: #304156;
+    }
+    td .catSel {
+      width: 100%;
+      background: #0b0f14;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+    td .catSel:focus {
+      border-color: #304156;
+    }
+    td .catSel option {
+      background: #0b0f14;
+      color: var(--text);
+    }
+
   </style>
 </head>
 <body>
@@ -221,7 +254,7 @@
             <th class="th-sort" data-sort="created_at">Created <span class="sort-ind" data-ind="created_at"></span></th>
             <th class="tight th-sort" data-sort="merchant_clean">Merchant <span class="sort-ind" data-ind="merchant_clean"></span></th>
             <th>Category</th>
-            <th class="th-sort" data-sort="currency">Cur <span class="sort-ind" data-ind="currency"></span></th>
+            <th class="th-sort" data-sort="currency">Currency <span class="sort-ind" data-ind="currency"></span></th>
             <th class="th-sort" data-sort="amount" style="text-align:right">Amount <span class="sort-ind" data-ind="amount"></span></th>
           </tr>
           <tr class="filterRow">
@@ -376,8 +409,8 @@
       return `
         <tr>
           <td class="muted tight2">${String(e.created_at||"")}</td>
-          <td class="tight">${String(e.merchant_clean||"")}</td>
-          <td class="category">${fmtCat(e.category||"other")}</td>
+          <td class="tight merchCell" data-id="${e.id}"><span class="merchText">${String(e.merchant_clean||"")}</span></td>
+          <td class="category"><select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select></td>
           <td class="currency muted">${String(e.currency||"")}</td>
           <td class="amt ${amtClass}">${amtTxt}</td>
         </tr>
@@ -442,6 +475,31 @@
     URL.revokeObjectURL(url);
   }
 
+
+  /* EDIT_HANDLERS_V1 */
+  function catOptions(selected){
+    const sel = String(selected || "other").toLowerCase();
+    const cats = Array.from(state.cats || []).map(x=>String(x||"").toLowerCase()).filter(Boolean);
+    if(!cats.includes("other")) cats.push("other");
+    if(sel && !cats.includes(sel)) cats.push(sel);
+    cats.sort();
+    return cats.map(c => {
+      const label = fmtCat(c);
+      const isSel = c === sel ? "selected" : "";
+      return `<option value="${c}" ${isSel}>${label}</option>`;
+    }).join("");
+  }
+
+  async function postJSON(url, body){
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.json().catch(()=>({}));
+  }
+
   // events
   ["q","cur","cat","fCreated","fMerch","fCat","fCur"].forEach(id=>{
     $(id).addEventListener("input", applyFilters);
@@ -478,6 +536,74 @@
       state.sort.dir = (key==="created_at" || key==="amount") ? "desc" : "asc";
     }
     applyFilters();
+  });
+
+
+  /* ROW_EDIT_EVENTS_V1 */
+  // Merchant inline edit (click)
+  document.addEventListener("click", (ev)=>{
+    const cell = ev.target.closest("td.merchCell");
+    if(!cell) return;
+
+    // si clicas dentro del input, no reiniciar
+    if(cell.querySelector("input.inlineInput")) return;
+
+    const id = Number(cell.dataset.id || 0);
+    if(!id) return;
+
+    const span = cell.querySelector(".merchText");
+    const oldValue = span ? span.textContent : "";
+
+    const input = document.createElement("input");
+    input.className = "inlineInput";
+    input.type = "text";
+    input.value = oldValue;
+
+    if(span) span.replaceWith(input);
+    else cell.appendChild(input);
+
+    input.focus();
+    input.select();
+
+    const finish = async (save)=>{
+      const val = input.value.trim();
+      const finalVal = save ? val : oldValue;
+
+      const sp = document.createElement("span");
+      sp.className = "merchText";
+      sp.textContent = finalVal;
+      input.replaceWith(sp);
+
+      if(save && val !== oldValue){
+        try {
+          await postJSON("/update/merchant", { id, merchant: val });
+          await load(); // recarga para mantener consistencia
+        } catch(e) {
+          showError("Save merchant failed: " + (e?.message || e));
+        }
+      }
+    };
+
+    input.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter") finish(true);
+      if(e.key === "Escape") finish(false);
+    });
+    input.addEventListener("blur", ()=>finish(true));
+  });
+
+  // Category select save
+  document.addEventListener("change", async (ev)=>{
+    const sel = ev.target.closest("select.catSel");
+    if(!sel) return;
+    const id = Number(sel.dataset.id || 0);
+    if(!id) return;
+    const category = String(sel.value || "other").toLowerCase();
+    try {
+      await postJSON("/update/category", { id, category });
+      await load();
+    } catch(e) {
+      showError("Save category failed: " + (e?.message || e));
+    }
   });
 
   // boot
