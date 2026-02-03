@@ -519,6 +519,16 @@
     return opts + `<option value="__add__">+ Add category…</option>`;
   }
 
+  function withKey(url){
+    try{
+      const u = new URL(url, window.location.origin);
+      u.searchParams.set("api_key", API_KEY);
+      return u.pathname + "?" + u.searchParams.toString();
+    }catch(e){
+      return url + (url.includes("?") ? "&" : "?") + "api_key=" + encodeURIComponent(API_KEY);
+    }
+  }
+
   async function postJSON(url, body){
     const r = await fetch(url, {
       method:"POST",
@@ -533,7 +543,7 @@
     clearError();
     setLoading("Loading…");
     try{
-      const r = await fetch(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`);
+      const r = await fetch(withKey(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`));
       if(!r.ok) throw new Error("HTTP " + r.status);
       const j = await r.json();
       state.raw = Array.isArray(j.expenses) ? j.expenses : [];
