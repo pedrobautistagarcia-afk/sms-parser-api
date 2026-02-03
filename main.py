@@ -16,6 +16,20 @@ from pydantic import BaseModel, Field
 # Render disk mounted at /var/data
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
 
+
+def detect_direction(sms: str) -> str:
+    low = (sms or "").lower()
+    income_keys = ["credited", "credit", "deposit", "salary", "received", "refund", "transfer received"]
+    expense_keys = ["debited", "debit", "paid", "purchase", "card purchase", "withdrawn"]
+
+    # prioridad: si aparece debit -> expense
+    if any(k in low for k in expense_keys):
+        return "expense"
+    if any(k in low for k in income_keys):
+        return "income"
+    return "expense"
+
+
 app = FastAPI(title="Registro Gastos API (single-user, no api_key)")
 
 # Serve dashboard
@@ -353,6 +367,8 @@ async def ingest(payload: IngestRequest):
 
     parsed = parse_sms(sms)
     parsed["user_id"] = user_id
+    if not parsed.get("direction"):
+        parsed["direction"] = detect_direction(sms)
 
     # FALLBACK_DIRECTION_V1
     # Por si alguna fila antigua o parser raro deja direction vacío
@@ -425,7 +441,7 @@ def list_expenses(
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT id, user_id, amount, currency, merchant_clean, category, direction, created_at
+        SELECT id, user_id, sms, amount, currency, merchant_clean, category, direction, created_at
         FROM expenses
         WHERE user_id = ?
         ORDER BY datetime(created_at) DESC, id DESC
@@ -503,3 +519,45 @@ def debug_users():
     rows = [{"user_id": r[0], "count": r[1]} for r in cur.fetchall()]
     conn.close()
     return {"db_path": DB_PATH, "users": rows}
+
+
+@app.post("/debug/backfill_direction")
+def debug_backfill_direction(api_key: str = ""):
+    # opcional: protege con api_key si tu main ya lo usa
+    # si no tienes auth aquí, puedes quitarlo luego
+    if api_key and api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Bad api key")
+
+    conn = db()
+    cur = conn.cursor()
+
+    # Usa sms_raw si existe, si no sms
+    # (COALESCE evita nulls)
+    cur.execute("""
+        UPDATE expenses
+        SET direction='income'
+        WHERE (direction IS NULL OR direction='')
+          AND lower(COALESCE(sms_raw, sms, '')) LIKE '%credit%'
+    """)
+    income_updated = cur.rowcount
+
+    cur.execute("""
+        UPDATE expenses
+        SET direction='expense'
+        WHERE (direction IS NULL OR direction='')
+          AND lower(COALESCE(sms_raw, sms, '')) LIKE '%debit%'
+    """)
+    expense_updated = cur.rowcount
+
+    # Cualquier cosa que siga null -> detector python (por si frases raras)
+    cur.execute("SELECT id, COALESCE(sms_raw, sms, '') FROM expenses WHERE direction IS NULL OR direction=''")
+    rows = cur.fetchall()
+    py_updated = 0
+    for _id, _sms in rows:
+        d = detect_direction(_sms)
+        cur.execute("UPDATE expenses SET direction=? WHERE id=?", (d, _id))
+        py_updated += 1
+
+    conn.commit()
+    conn.close()
+    return {"ok": True, "income_like_updated": income_updated, "expense_like_updated": expense_updated, "python_filled": py_updated}
