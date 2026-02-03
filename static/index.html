@@ -179,6 +179,12 @@ tr:hover .row-select { opacity: 1; }
 tr .row-select:checked { opacity: 1; }
 tr.selected-row { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); }
 
+
+/* --- RG patch: always-visible row selector --- */
+th.rg-sel, td.rg-sel { width: 36px; text-align: center; }
+input.rg-rowcb { width: 16px; height: 16px; cursor: pointer; }
+tr.rg-selected { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+
 </style>
 </head>
 <body>
@@ -833,6 +839,112 @@ document.addEventListener("change", (e) => {
   const tr = el.closest("tr");
   if (tr) tr.classList.toggle("selected-row", el.checked);
 });
+
+
+/* --- RG patch: persistent multi-select + delete selected --- */
+window.__rgSel = window.__rgSel || new Set();
+
+function rgEnsureSelectHeader() {
+  const theadRow = document.querySelector("thead tr");
+  if (!theadRow) return;
+  if (theadRow.querySelector("th.rg-sel")) return;
+
+  const th = document.createElement("th");
+  th.className = "rg-sel";
+  th.title = "Select";
+  th.innerHTML = "✓";
+  theadRow.insertBefore(th, theadRow.firstChild);
+}
+
+function rgRowIdFromTr(tr){
+  if (!tr) return null;
+  const did = tr.getAttribute("data-id") || tr.dataset?.id;
+  if (did && /^\d+$/.test(did)) return Number(did);
+  // fallback: first numeric cell
+  const tds = Array.from(tr.querySelectorAll("td"));
+  for (const td of tds){
+    const txt = (td.textContent||"").trim();
+    if (/^\d+$/.test(txt)) return Number(txt);
+  }
+  return null;
+}
+
+function rgInjectCheckboxes(){
+  rgEnsureSelectHeader();
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+
+  tbody.querySelectorAll("tr").forEach(tr => {
+    if (tr.querySelector("td.rg-sel")) return;
+
+    const id = rgRowIdFromTr(tr);
+    const td = document.createElement("td");
+    td.className = "rg-sel";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "rg-rowcb";
+    if (id && window.__rgSel.has(id)) cb.checked = true;
+
+    cb.addEventListener("change", () => {
+      const rid = rgRowIdFromTr(tr);
+      if (!rid) return;
+      if (cb.checked) window.__rgSel.add(rid);
+      else window.__rgSel.delete(rid);
+      tr.classList.toggle("rg-selected", cb.checked);
+    });
+
+    td.appendChild(cb);
+    tr.insertBefore(td, tr.firstChild);
+
+    // apply selected style
+    if (id && window.__rgSel.has(id)) tr.classList.add("rg-selected");
+  });
+}
+
+// Observe table changes and reinject checkboxes after refresh/filter
+(function(){
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+  const obs = new MutationObserver(() => rgInjectCheckboxes());
+  obs.observe(tbody, { childList: true, subtree: true });
+  rgInjectCheckboxes();
+})();
+
+// Optional: hook existing Delete button to delete selected (if it exists)
+async function rgDeleteSelected(){
+  const ids = Array.from(window.__rgSel);
+  if (!ids.length){ alert("No rows selected."); return; }
+
+  const user = window.__currentUserId || "pedro";
+  for (const id of ids){
+    const res = await fetch(rgAddApiKey("/delete"), {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({userid: user, id})
+    });
+    if (!res.ok){
+      const txt = await res.text();
+      alert("Delete failed id "+id+": "+res.status+" :: "+txt);
+      return;
+    }
+    window.__rgSel.delete(id);
+  }
+  if (typeof window.loadExpenses === "function") window.loadExpenses();
+  else location.reload();
+}
+
+// Hook: if there is a button whose text includes "Delete selected" or "Delete"
+function rgHookDeleteBtn(){
+  const btns = Array.from(document.querySelectorAll("button"));
+  const b = btns.find(x => /delete selected|borrar seleccion|borrar/i.test((x.textContent||"").trim()));
+  if (b && !b.__rgHooked){
+    b.__rgHooked = true;
+    b.addEventListener("click", (e)=>{ e.preventDefault(); rgDeleteSelected(); });
+  }
+}
+document.addEventListener("DOMContentLoaded", rgHookDeleteBtn);
+setTimeout(rgHookDeleteBtn, 800);
 
 </script>
 </body>
