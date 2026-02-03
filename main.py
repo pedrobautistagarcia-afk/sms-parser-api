@@ -54,6 +54,10 @@ def check_key(api_key):
     if api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid api_key")
 
+
+def require_key(api_key):
+    return check_key(api_key)
+
 app = FastAPI(title="Registro Gastos API (single-user, no api_key)")
 
 
