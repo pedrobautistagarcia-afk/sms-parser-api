@@ -570,3 +570,60 @@ def debug_backfill_direction(api_key: str = ""):
         "expense_like_updated": expense_like,
         "python_filled": py_filled
     }
+
+
+# ======================================================
+# UPDATE ENDPOINTS (inline edit from UI)
+# ======================================================
+from pydantic import BaseModel
+
+class UpdateCategoryReq(BaseModel):
+    id: int
+    category: str
+
+class UpdateMerchantReq(BaseModel):
+    id: int
+    merchant: str
+
+def _normalize_category(cat: str) -> str:
+    cat = (cat or "").strip()
+    if not cat:
+        return "other"
+    # normalizamos a lowercase + espacios a _
+    cat = cat.lower().replace(" ", "_")
+    # opcional: recortar chars raros
+    cat = "".join(ch for ch in cat if ch.isalnum() or ch in "_-")
+    return cat or "other"
+
+@app.post("/update/category")
+async def update_category(req: UpdateCategoryReq):
+    try:
+        cat = _normalize_category(req.category)
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("UPDATE expenses SET category=? WHERE id=?", (cat, int(req.id)))
+        conn.commit()
+        updated = cur.rowcount
+        conn.close()
+        if updated == 0:
+            return JSONResponse({"ok": False, "error": "not_found"}, status_code=404)
+        return {"ok": True, "id": int(req.id), "category": cat}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+@app.post("/update/merchant")
+async def update_merchant(req: UpdateMerchantReq):
+    try:
+        merchant = (req.merchant or "").strip()
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("UPDATE expenses SET merchant_clean=? WHERE id=?", (merchant, int(req.id)))
+        conn.commit()
+        updated = cur.rowcount
+        conn.close()
+        if updated == 0:
+            return JSONResponse({"ok": False, "error": "not_found"}, status_code=404)
+        return {"ok": True, "id": int(req.id), "merchant_clean": merchant}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
