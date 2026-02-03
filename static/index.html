@@ -230,6 +230,20 @@
     }
     td .catSel:focus{border-color:#304156}
     td .catSel option{background:#0b0f14; color:var(--text)}
+
+    td .catInput{
+      width:100%;
+      background:#0b0f14;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:6px 8px;
+      font-size:12px;
+      outline:none;
+      font-weight:900;
+    }
+    td .catInput:focus{border-color:#304156}
+
   
 /* FLAGS_SVG */
 .flagSvg{width:16px;height:12px;display:inline-block;vertical-align:-2px;margin-right:6px;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.10) inset;}
@@ -459,6 +473,7 @@
         state.raw = Array.isArray(j.expenses) ? j.expenses : [];
         state.cats = new Set(state.raw.map(x=>String(x.category||"other").toLowerCase()));
         syncCategoryDropdown();
+        refreshCatDatalist();
         applyFilters();
       }catch(e){
         showError(e?.message || e);
@@ -467,7 +482,17 @@
       }
     }
 
-    function syncCategoryDropdown(){
+    
+    function refreshCatDatalist(){
+      const dl = document.getElementById("catlist");
+      if(!dl) return;
+      const arr = Array.from(state.cats || []).map(x=>String(x||"").toLowerCase()).filter(Boolean);
+      if(!arr.includes("other")) arr.push("other");
+      arr.sort();
+      dl.innerHTML = arr.map(c=>`<option value="${fmtCat(c)}"></option>`).join("");
+    }
+
+function syncCategoryDropdown(){
       const sel = $("cat");
       const keep = sel.value;
       const arr = Array.from(state.cats).sort();
@@ -550,7 +575,7 @@
               <span class="merchText">${String(e.merchant_clean||"")}</span>
             </td>
             <td class="category">
-              <select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select>
+              <input class="catInput" list="catlist" data-id="${e.id}" value="${fmtCat(String(e.category||"other"))}" />
             </td>
             <td class="currency muted">${flagForCur(e.currency)} ${String(e.currency||"")}</td>
             <td class="amt ${amtClass}">${amtTxt}</td>
@@ -748,5 +773,7 @@
     load();
   })();
   </script>
+
+  <datalist id="catlist"></datalist>
 </body>
 </html>
