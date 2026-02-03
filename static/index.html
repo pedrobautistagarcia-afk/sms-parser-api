@@ -206,6 +206,67 @@
       color: var(--text);
     }
 
+  
+    /* BALANCE_DROPDOWN_V1 */
+    #balanceBox {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      min-width: 140px;
+    }
+    #balanceBox .balTop {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    #balanceBox .balTitle {
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    #balanceBox .balChevron {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+      transform: translateY(-1px);
+      transition: transform .15s ease;
+    }
+    #balanceBox[aria-expanded="true"] .balChevron {
+      transform: rotate(180deg);
+    }
+    #balanceBox .balDrop {
+      display:none;
+      margin-top:10px;
+      padding-top:10px;
+      border-top: 1px solid rgba(31,41,55,.7);
+      gap:8px;
+    }
+    #balanceBox[aria-expanded="true"] .balDrop {
+      display:flex;
+      flex-direction:column;
+    }
+    .balRow {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      padding:6px 8px;
+      border-radius:10px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(31,41,55,.8);
+    }
+    .balLeft {
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .balFlag { width: 18px; text-align:center; }
+    .balCur { color: var(--muted); font-weight: 700; width: 42px; }
+    .balAmt { font-variant-numeric: tabular-nums; font-weight: 900; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+
   </style>
 </head>
 <body>
@@ -215,7 +276,17 @@
         <h1>Registro Gastos</h1>
         <div class="sub">Dashboard/table (dark) — estable y sin “Loading infinito”.</div>
       </div>
-      <div id="balanceBox" class="positive"><span>Balance</span> <span class="mini" id="balanceVal">+0.000</span></div>
+      <div id="balanceBox" class="positive" aria-expanded="false" title="Click to expand">
+        <div class="balTop">
+          <span class="balTitle">Balance</span>
+          <span class="balChevron">▾</span>
+        </div>
+        <div class="balDrop" id="balDrop">
+          <div class="balRow" id="balKWD"><span class="balFlag">🇰🇼</span><span class="balCur">KWD</span><span class="balAmt">+0.000</span></div>
+          <div class="balRow" id="balUSD"><span class="balFlag">🇺🇸</span><span class="balCur">USD</span><span class="balAmt">+0.000</span></div>
+          <div class="balRow" id="balEUR"><span class="balFlag">🇪🇺</span><span class="balCur">EUR</span><span class="balAmt">+0.000</span></div>
+        </div>
+      </div>
     </div>
 
     <div id="errBanner"></div>
@@ -421,12 +492,43 @@
   }
 
   function updateBalance(){
-    let total = 0;
+    let totals = { KWD:0, USD:0, EUR:0 };
+
     for(const e of state.view){
+      const cur = String(e.currency||"").toUpperCase();
+      if(!(cur in totals)) continue;
+
       const income = isIncomeFromSms(e.sms);
       const amt = Number(e.amount||0);
-      total += income ? amt : -amt;
+
+      totals[cur] += income ? amt : -amt;
     }
+
+    // helper
+    function setRow(id, val){
+      const row = document.getElementById(id);
+      if(!row) return;
+      const amtEl = row.querySelector(".balAmt");
+      if(!amtEl) return;
+
+      amtEl.classList.remove("pos","neg");
+      amtEl.classList.add(val >= 0 ? "pos" : "neg");
+      const sign = val >= 0 ? "+" : "";
+      amtEl.textContent = sign + val.toFixed(3);
+    }
+
+    setRow("balKWD", totals.KWD);
+    setRow("balUSD", totals.USD);
+    setRow("balEUR", totals.EUR);
+
+    // el color del cuadro (global) lo dejamos neutral según suma total en todas las monedas conocidas
+    const grand = totals.KWD + totals.USD + totals.EUR;
+    const box = document.getElementById("balanceBox");
+    if(box){
+      box.classList.remove("positive","negative");
+      box.classList.add(grand >= 0 ? "positive" : "negative");
+    }
+  }
     const box = $("balanceBox");
     const val = $("balanceVal");
     box.classList.remove("positive","negative");
@@ -605,6 +707,21 @@
       showError("Save category failed: " + (e?.message || e));
     }
   });
+
+
+  /* BALANCE_TOGGLE_V1 */
+  const balBox = document.getElementById("balanceBox");
+  if(balBox){
+    balBox.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      const isOpen = balBox.getAttribute("aria-expanded") === "true";
+      balBox.setAttribute("aria-expanded", isOpen ? "false" : "true");
+    });
+
+    document.addEventListener("click", ()=>{
+      balBox.setAttribute("aria-expanded", "false");
+    });
+  }
 
   // boot
   load();
