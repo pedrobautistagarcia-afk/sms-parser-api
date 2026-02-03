@@ -121,14 +121,17 @@
     }
     .left, .right{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
     .pill{
-      background:rgba(255,255,255,.03);
+      background:#0b0f14;
       border:1px solid var(--border);
       color:var(--text);
       border-radius:10px;
       padding:7px 10px;
       font-size:12px;
       outline:none;
+      font-weight:900;
     }
+    .pill:focus{border-color:#304156}
+    select.pill option{background:#0b0f14; color:var(--text)}
     .btn{
       cursor:pointer;
       background:rgba(255,255,255,.03);
