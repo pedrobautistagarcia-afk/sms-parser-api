@@ -1,656 +1,488 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Registro Gastos</title>
   <style>
     :root{
-      --bg:#0b1220;
-      --card:#0f1b33;
-      --muted:rgba(255,255,255,.7);
-      --line:rgba(255,255,255,.08);
-      --text:#fff;
-      --chip:rgba(255,255,255,.08);
+      --bg:#0b0d10;
+      --panel:#0f1318;
+      --panel2:#0c1015;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#1f2937;
+      --border2:#243041;
+      --green:#22c55e;
+      --red:#ef4444;
+      --amber:#f59e0b;
     }
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box}
     body{
-      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1200px 600px at 20% -10%, rgba(84,140,255,.28), transparent 60%),
-                  radial-gradient(900px 500px at 100% 0%, rgba(255,170,80,.18), transparent 55%),
-                  var(--bg);
+      margin:0; padding:0;
+      background:linear-gradient(180deg,#07090c, #0b0d10 40%, #0b0d10);
       color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
-    .wrap{ max-width:1200px; margin:0 auto; padding:22px 18px 28px; }
+    .wrap{max-width:1100px; margin:24px auto; padding:0 18px;}
     .top{
-      display:flex; gap:14px; align-items:center; justify-content:space-between;
+      position:relative;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
       margin-bottom:14px;
     }
-    h1{ font-size:18px; margin:0; letter-spacing:.2px; }
-    .sub{ color:var(--muted); font-size:12px; margin-top:4px; }
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--line);
-      border-radius:16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      overflow:hidden;
-    }
-    .toolbar{
-      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
-      padding:12px 12px;
-      border-bottom:1px solid var(--line);
-      background: rgba(0,0,0,.15);
-    }
-    .left, .right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    input, select, button{
-      font: inherit;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      padding:8px 10px;
-      outline:none;
-    }
-    input::placeholder{ color:rgba(255,255,255,.45); }
-    button{
-      cursor:pointer;
-      background: rgba(255,255,255,.10);
-      transition: transform .05s ease, background .15s ease;
-    }
-    button:hover{ background: rgba(255,255,255,.16); }
-    button:active{ transform: scale(.98); }
-    .chip{
-      padding:7px 10px; border-radius:999px; background:var(--chip); border:1px solid var(--line);
-      font-size:12px; color:var(--muted);
-    }
-    .kpis{ display:flex; gap:10px; flex-wrap:wrap; }
-    table{ width:100%; border-collapse:collapse; }
-    thead th{
-      text-align:left; font-size:12px; color:rgba(255,255,255,.75);
-      padding:10px 12px; border-bottom:1px solid var(--line);
-      background: rgba(0,0,0,.18);
-      position:sticky; top:0; z-index:1;
-    }
-    tbody td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.06);
+    h1{margin:0; font-size:22px; letter-spacing:.2px;}
+    .sub{margin:6px 0 0 0; color:var(--muted); font-size:12px}
+
+    #balanceBox{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:10px;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      font-weight:700;
       font-size:13px;
-      vertical-align:middle;
-      line-height:1.25;
       white-space:nowrap;
     }
-    tbody tr:hover{ background: rgba(255,255,255,.03); }
-    .amt{ text-align:right; font-variant-numeric: tabular-nums; }
-    .amt-expense{ color: rgba(255,90,90,.95); font-weight:600; }
-    .amt-income{ color: rgba(90,255,160,.95); font-weight:600; }
-    .muted{ color:var(--muted); }
-    .category select{
-      text-transform: capitalize;
-      padding:6px 10px;
-      background: rgba(255,255,255,.07);
-    }
-    .actions{ text-align:right; width:1%; }
-    .btn-mini{
-      padding:6px 10px;
+    #balanceBox.positive{color:var(--green)}
+    #balanceBox.negative{color:var(--red)}
+    #balanceBox .mini{color:var(--muted); font-weight:600; font-size:12px}
+
+    #errBanner{
+      display:none;
+      margin:12px 0;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(239,68,68,.10);
+      border:1px solid rgba(239,68,68,.35);
+      color:#fecaca;
       font-size:12px;
-      border-radius:10px;
+      line-height:1.35;
+      white-space:pre-wrap;
     }
-    /* Rule button: solo visible al hover */
-    .ruleBtn{ opacity:0; pointer-events:none; transition: opacity .12s ease; }
-    tr:hover .ruleBtn{ opacity:1; pointer-events:auto; }
 
-    /* Keep cell size stable on click */
-    td:focus, td:active, td *:focus, td *:active{ outline:none !important; box-shadow:none !important; }
-  
-/* ---- Dark select (category) ---- */
-td select {
-  background: #111;
-  color: #e5e7eb;
-  border: 1px solid #333;
-  padding: 4px 6px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-td select option {
-  background: #111;
-  color: #e5e7eb;
-}
-td select:focus {
-  outline: none;
-  border-color: #555;
-}
+    .panel{
+      background:rgba(255,255,255,.02);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
 
+    .bar{
+      display:flex; flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .left, .right{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .pill{
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      outline:none;
+    }
+    .btn{
+      cursor:pointer;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      transition:transform .02s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+    }
+    .btn:hover{background:rgba(255,255,255,.05); border-color:var(--border2)}
+    .btn:active{transform:translateY(1px)}
+    .btn.ghost{background:transparent}
+    .btn.primary{border-color:#2b3647}
+    .btn.small{padding:6px 9px; font-size:12px}
 
-/* ERR_BANNER_V1 */
-#errBanner{
-  display:none;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  margin: 10px 0 0 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(239,68,68,.12);
-  border: 1px solid rgba(239,68,68,.35);
-  color: #fecaca;
-  font-size: 12px;
-  line-height: 1.35;
-  white-space: pre-wrap;
-}
+    .loading{color:var(--muted); font-size:12px; padding:6px 2px}
 
-</style>
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.15);
+    }
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color:#cbd5e1;
+      background:rgba(255,255,255,.03);
+      border-bottom:1px solid var(--border);
+      padding:10px 10px;
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+    tbody td{
+      padding:9px 10px;
+      font-size:12px;
+      border-bottom:1px solid rgba(31,41,55,.8);
+      vertical-align:middle;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:1px;
+    }
+    tbody tr:hover td{background:rgba(255,255,255,.02)}
+    tbody tr:last-child td{border-bottom:none}
 
-<style>
-/* SORT_HEADERS_V1 */
-.th-sort{ cursor:pointer; user-select:none; }
-.th-sort:hover{ background: rgba(255,255,255,.06); }
-.sort-ind{ display:inline-block; min-width:14px; opacity:.85; }
+    th.th-sort{cursor:pointer; user-select:none}
+    th.th-sort:hover{background:rgba(255,255,255,.06)}
+    .sort-ind{display:inline-block; min-width:14px; opacity:.8}
 
-/* ---- Dark select (category) ---- */
-td select {
-  background: #111;
-  color: #e5e7eb;
-  border: 1px solid #333;
-  padding: 4px 6px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-td select option {
-  background: #111;
-  color: #e5e7eb;
-}
-td select:focus {
-  outline: none;
-  border-color: #555;
-}
+    td.amt{font-variant-numeric: tabular-nums; text-align:right}
+    .amt-income{color:var(--green); font-weight:700}
+    .amt-expense{color:var(--red); font-weight:700}
 
-</style>
+    td.currency{color:#cbd5e1}
+    td.category{color:#e5e7eb}
 
+    .muted{color:var(--muted)}
+    .tight{max-width:260px}
+    .tight2{max-width:170px}
+
+    /* filter row inside header */
+    .filterRow th{padding:8px 10px; background:rgba(255,255,255,.02)}
+    .colFilter{
+      width:100%;
+      background:#0b0f14;
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:6px 8px;
+      font-size:12px;
+      outline:none;
+    }
+    .colFilter:focus{border-color:#304156}
+
+    /* select dark */
+    select.colFilter option{background:#0b0f14; color:var(--text)}
+  </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <div>
         <h1>Registro Gastos</h1>
-<div id=\"errBanner\"></div>
-        <div class="sub" id="statusLine">Loading…</div>
+        <div class="sub">Dashboard/table (dark) — estable y sin “Loading infinito”.</div>
       </div>
-      <div class="right">
-        <button class="btn-mini" id="btnRefresh">Refresh</button>
-        <button class="btn-mini" id="btnCsv">Export CSV</button>
-      </div>
+      <div id="balanceBox" class="positive"><span>Balance</span> <span class="mini" id="balanceVal">+0.000</span></div>
     </div>
 
-    <div class="card">
-      <div class="toolbar">
+    <div id="errBanner"></div>
+
+    <div class="panel">
+      <div class="bar">
         <div class="left">
-          <input id="q" placeholder="Search merchant…" />
-          <select id="cur">
+          <input id="q" class="pill" placeholder="Search merchant / category / currency…" />
+          <select id="cur" class="pill">
             <option value="">All currencies</option>
             <option value="KWD">KWD</option>
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
           </select>
-          <select id="cat">
+          <select id="cat" class="pill">
             <option value="">All categories</option>
           </select>
-          <span class="chip" id="chipCount">0 rows</span>
+          <button class="btn ghost" id="clear">Clear</button>
         </div>
 
         <div class="right">
-          <button class="btn-mini" data-preset="today">Today</button>
-          <button class="btn-mini" data-preset="week">Last week</button>
-          <button class="btn-mini" data-preset="month">Last month</button>
-          <button class="btn-mini" data-preset="year">This year</button>
-          <button class="btn-mini" id="btnClear">Clear filters</button>
+          <button class="btn small primary" data-range="today">Today</button>
+          <button class="btn small primary" data-range="week">Last week</button>
+          <button class="btn small primary" data-range="month">Last month</button>
+          <button class="btn small primary" data-range="year">This year</button>
+          <button class="btn small" id="reload">Reload</button>
+          <button class="btn small" id="csv">Export CSV</button>
         </div>
       </div>
 
-      <div style="overflow:auto; max-height:70vh;">
-        <table>
-          <thead>
-            <tr>
-              <th data-sort="created_at" class="th-sort">Created <span class="sort-ind" data-ind="created_at"></span></th>
-              <th>Merchant</th>
-              <th>Category</th>
-              <th class="amt th-sort" data-sort="amount">Amount <span class="sort-ind" data-ind="amount"></span></th>
-              <th>Cur</th>
-              <th class="actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
+      <div class="loading" id="loading">Loading…</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="th-sort" data-sort="created_at">Created <span class="sort-ind" data-ind="created_at"></span></th>
+            <th class="tight th-sort" data-sort="merchant_clean">Merchant <span class="sort-ind" data-ind="merchant_clean"></span></th>
+            <th>Category</th>
+            <th class="th-sort" data-sort="currency">Cur <span class="sort-ind" data-ind="currency"></span></th>
+            <th class="th-sort" data-sort="amount" style="text-align:right">Amount <span class="sort-ind" data-ind="amount"></span></th>
+          </tr>
+          <tr class="filterRow">
+            <th><input class="colFilter" id="fCreated" placeholder="YYYY-MM-DD contains…" /></th>
+            <th><input class="colFilter" id="fMerch" placeholder="Merchant contains…" /></th>
+            <th><input class="colFilter" id="fCat" placeholder="Category contains…" /></th>
+            <th><input class="colFilter" id="fCur" placeholder="KWD/USD/EUR…" /></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
   </div>
 
 <script>
-(() => {
-  // --- SINGLE SOURCE OF TRUTH ---
-  let lastGood = [];
-  let view = [];
+(function(){
+  const $ = (id)=>document.getElementById(id);
 
-  // Sorting (default: newest first)
-  const sortState = { key: "created_at", dir: "desc" }; // dir: "asc" | "desc"
+  const errBanner = $("errBanner");
+  function showError(msg){
+    errBanner.style.display="block";
+    errBanner.textContent = String(msg || "Unknown error");
+  }
+  function clearError(){
+    errBanner.style.display="none";
+    errBanner.textContent="";
+  }
 
-  // Filters
-  const filters = {
-    q: "",
-    cur: "",
-    cat: "",
-    from: null, // Date
-    to: null
+  window.addEventListener("error", (e)=>showError("JS error: " + (e?.message || e)));
+  window.addEventListener("unhandledrejection", (e)=>showError("Promise error: " + (e?.reason?.message || e?.reason || e)));
+
+  const state = {
+    user_id: "pedro",
+    raw: [],
+    view: [],
+    sort: { key:"created_at", dir:"desc" }, // default newest first
+    cats: new Set()
   };
 
-  const $ = (id) => document.getElementById(id);
-
-  function parseIso(s){
-    if(!s) return null;
-    const d = new Date(s);
-    return isNaN(d.getTime()) ? null : d;
+  function isIncomeFromSms(sms){
+    const t = String(sms||"").toLowerCase();
+    return t.includes("credit") || t.includes("credited") || t.includes("deposit") || t.includes("salary") || t.includes("received") || t.includes("refund");
   }
 
-  function setPreset(p){
-    const now = new Date();
-    const start = new Date(now);
-    const end = new Date(now);
-
-    if(p === "today"){
-      start.setHours(0,0,0,0);
-      end.setHours(23,59,59,999);
-    } else if(p === "week"){
-      start.setDate(now.getDate()-7);
-    } else if(p === "month"){
-      start.setMonth(now.getMonth()-1);
-    } else if(p === "year"){
-      start.setMonth(0,1);
-      start.setHours(0,0,0,0);
-    }
-    filters.from = start;
-    filters.to = end;
-    applyAndRender();
+  function fmtCat(x){
+    const t = String(x||"other");
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Other";
   }
 
-  function clearFilters(){
-    filters.q = "";
-    filters.cur = "";
-    filters.cat = "";
-    filters.from = null;
-    filters.to = null;
-    $("q").value = "";
-    $("cur").value = "";
-    $("cat").value = "";
-    applyAndRender();
+  function setLoading(text){
+    const el = $("loading");
+    el.textContent = text || "";
   }
 
-
-  function sortView(){
-    const k = sortState.key;
-    const dir = sortState.dir === "asc" ? 1 : -1;
-
-    view.sort((a,b) => {
-      let av = a?.[k];
-      let bv = b?.[k];
-
-      if(k === "amount"){
-        av = Number(av ?? 0);
-        bv = Number(bv ?? 0);
-        if(av === bv) return 0;
-        return (av > bv ? 1 : -1) * dir;
-      }
-
-      // created_at (ISO)
-      if(k === "created_at"){
-        const ad = new Date(av || 0).getTime();
-        const bd = new Date(bv || 0).getTime();
-        if(ad === bd) return 0;
-        return (ad > bd ? 1 : -1) * dir;
-      }
-
-      // fallback string
-      av = String(av ?? "").toLowerCase();
-      bv = String(bv ?? "").toLowerCase();
-      if(av === bv) return 0;
-      return (av > bv ? 1 : -1) * dir;
-    });
-  }
-
-  function updateSortIndicators(){
-    document.querySelectorAll(".sort-ind").forEach(el => el.textContent = "");
-    const ind = document.querySelector(`.sort-ind[data-ind="${sortState.key}"]`);
-    if(ind) ind.textContent = (sortState.dir === "asc") ? "↑" : "↓";
-  }
-
-
-  async function loadExpenses(){
-    // LOAD_EXPENSES_GUARD_V1
+  async function load(){
     clearError();
-    try {
-    const url = `/expenses?user_id=pedro&limit=500`;
-    $("statusLine").textContent = "Loading…";
+    setLoading("Loading…");
     try{
-      const r = await fetch(url, { cache: "no-store" });
+      const r = await fetch(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`);
+      if(!r.ok) throw new Error("HTTP " + r.status);
       const j = await r.json();
-      if(j && Array.isArray(j.expenses)){
-        // IMPORTANT: never wipe lastGood on empty unless explicitly true empty
-        // If backend returns count=0 but we previously had data, keep lastGood.
-        if(j.expenses.length > 0){
-          lastGood = j.expenses;
-        } else if(lastGood.length === 0){
-          lastGood = j.expenses;
-        }
-        $("statusLine").textContent = `OK · ${new Date().toLocaleTimeString()} · rows=${lastGood.length}`;
-      } else {
-        $("statusLine").textContent = "Bad response";
-      }
-    } catch(e){
-      $("statusLine").textContent = "Fetch error (kept last data)";
-      console.error(e);
-    }
-    hydrateCategoryFilter();
-    applyAndRender();
-    } catch (err) {
-      showError(err?.message || err);
-    } finally {
-      const l = document.getElementById('loading');
-      if (l) l.textContent = '';
+      state.raw = Array.isArray(j.expenses) ? j.expenses : [];
+      state.cats = new Set(state.raw.map(x=>String(x.category||"other").toLowerCase()));
+      syncCategoryDropdown();
+      applyFilters();
+    }catch(e){
+      showError(e?.message || e);
+    }finally{
+      setLoading("");
     }
   }
 
-  function hydrateCategoryFilter(){
-    const set = new Set(lastGood.map(e => (e.category || "other").toLowerCase()));
-    const cats = Array.from(set).sort();
+  function syncCategoryDropdown(){
     const sel = $("cat");
-    const current = sel.value;
-    sel.innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join("");
-    sel.value = current || "";
+    const keep = sel.value;
+    const arr = Array.from(state.cats).sort();
+    // reset
+    sel.innerHTML = '<option value="">All categories</option>' + arr.map(c=>`<option value="${c}">${fmtCat(c)}</option>`).join("");
+    sel.value = keep;
   }
 
-  function applyAndRender(){
-    const q = filters.q.trim().toLowerCase();
-    const cur = filters.cur;
-    const cat = filters.cat;
+  function applyFilters(){
+    const q = $("q").value.trim().toLowerCase();
+    const cur = $("cur").value.trim().toUpperCase();
+    const cat = $("cat").value.trim().toLowerCase();
 
-    view = lastGood.filter(e => {
-      const m = (e.merchant_clean || "").toLowerCase();
-      if(q && !m.includes(q)) return false;
-      if(cur && (e.currency || "") !== cur) return false;
-      if(cat && (e.category || "other").toLowerCase() !== cat.toLowerCase()) return false;
+    const fCreated = $("fCreated").value.trim().toLowerCase();
+    const fMerch = $("fMerch").value.trim().toLowerCase();
+    const fCat = $("fCat").value.trim().toLowerCase();
+    const fCur = $("fCur").value.trim().toLowerCase();
 
-      const d = parseIso(e.created_at);
-      if(filters.from && d && d < filters.from) return false;
-      if(filters.to && d && d > filters.to) return false;
+    let v = state.raw.filter(e=>{
+      const merch = String(e.merchant_clean||"").toLowerCase();
+      const category = String(e.category||"other").toLowerCase();
+      const currency = String(e.currency||"").toUpperCase();
+      const created = String(e.created_at||"");
+
+      if(cur && currency !== cur) return false;
+      if(cat && category !== cat) return false;
+
+      if(q){
+        const hay = (merch + " " + category + " " + currency).toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+
+      if(fCreated && !created.toLowerCase().includes(fCreated)) return false;
+      if(fMerch && !merch.includes(fMerch)) return false;
+      if(fCat && !category.includes(fCat)) return false;
+      if(fCur && !currency.toLowerCase().includes(fCur)) return false;
 
       return true;
     });
 
-    sortView();
+    // sort
+    const {key, dir} = state.sort;
+    const mul = dir === "asc" ? 1 : -1;
+    v.sort((a,b)=>{
+      let av = a?.[key], bv = b?.[key];
+      if(key === "amount"){
+        av = Number(av||0); bv = Number(bv||0);
+        return (av===bv?0:(av>bv?1:-1))*mul;
+      }
+      if(key === "created_at"){
+        const ad = new Date(av||0).getTime();
+        const bd = new Date(bv||0).getTime();
+        return (ad===bd?0:(ad>bd?1:-1))*mul;
+      }
+      av = String(av||"").toLowerCase();
+      bv = String(bv||"").toLowerCase();
+      return (av===bv?0:(av>bv?1:-1))*mul;
+    });
+
+    state.view = v;
+    render();
+  }
+
+  function updateSortIndicators(){
+    document.querySelectorAll(".sort-ind").forEach(el=>el.textContent="");
+    const ind = document.querySelector(`.sort-ind[data-ind="${state.sort.key}"]`);
+    if(ind) ind.textContent = state.sort.dir === "asc" ? "↑" : "↓";
+  }
+
+  function render(){
     updateSortIndicators();
-    window.view = view;
-    renderTable();
-    if (typeof updateBalance === 'function') updateBalance();
-  }
-
-  function fmtDate(iso){
-    if(!iso) return "";
-    return iso.replace("T"," ").replace("+00:00","").replace("Z","");
-  }
-
-  function renderTable(){
     const tb = $("tbody");
-    tb.innerHTML = "";
-
-    for(const e of view){
-      const tr = document.createElement("tr");
-      tr.setAttribute("data-id", e.id);
-
-      const catVal = (e.category || "other").toLowerCase();
-      const cur = (e.currency || "").toUpperCase();
-      const amt = Number(e.amount || 0);
-
-      // Expense vs income coloring (from backend field "direction")
-      
-      const sms = String(e.sms || "").toLowerCase();
-      const isIncome =
-        sms.includes("credit") ||
-        sms.includes("credited") ||
-        sms.includes("deposit") ||
-        sms.includes("salary") ||
-        sms.includes("received") ||
-        sms.includes("refund");
-
-      const amtClass = isIncome ? "amt-income" : "amt-expense";
-
-      tr.innerHTML = `
-        <td class="muted">${fmtDate(e.created_at)}</td>
-        <td>${e.merchant_clean || ""}</td>
-        <td class="category">
-          <select data-id="${e.id}">
-            ${["other","coffee","food","transport","shopping","rent","utilities","salary","income"].map(c =>
-              `<option value="${c}" ${c===catVal ? "selected":""}>${c}</option>`
-            ).join("")}
-          </select>
-        </td>
-        <td class="amt ${amtClass}">${(isIncome ? "+" : "") + amt.toFixed(3)}</td>
-        <td class="muted">${cur}</td>
-        <td class="actions">
-          <button class="btn-mini ruleBtn" data-action="rule" data-id="${e.id}">Rule</button>
-          <button class="btn-mini" data-action="del" data-id="${e.id}">Delete</button>
-        </td>
+    tb.innerHTML = state.view.map(e=>{
+      const income = isIncomeFromSms(e.sms);
+      const amt = Number(e.amount||0);
+      const amtTxt = (income?"+":"") + amt.toFixed(3);
+      const amtClass = income ? "amt-income" : "amt-expense";
+      return `
+        <tr>
+          <td class="muted tight2">${String(e.created_at||"")}</td>
+          <td class="tight">${String(e.merchant_clean||"")}</td>
+          <td class="category">${fmtCat(e.category||"other")}</td>
+          <td class="currency muted">${String(e.currency||"")}</td>
+          <td class="amt ${amtClass}">${amtTxt}</td>
+        </tr>
       `;
-      tb.appendChild(tr);
-    }
+    }).join("");
 
-    $("chipCount").textContent = `${view.length} rows`;
+    updateBalance();
   }
 
-  // Actions
-  document.addEventListener("click", async (ev) => {
-    const btn = ev.target.closest("button");
-    if(!btn) return;
-
-    const action = btn.getAttribute("data-action");
-    const id = btn.getAttribute("data-id");
-    if(!action || !id) return;
-
-    if(action === "del"){
-      if(!confirm(`Delete expense #${id}?`)) return;
-      try{
-        const r = await fetch(`/expense/${id}?user_id=pedro`, { method:"DELETE" });
-        const j = await r.json();
-        if(j && j.deleted){
-          lastGood = lastGood.filter(x => String(x.id) !== String(id));
-          applyAndRender();
-        }
-      } catch(e){ console.error(e); }
+  function updateBalance(){
+    let total = 0;
+    for(const e of state.view){
+      const income = isIncomeFromSms(e.sms);
+      const amt = Number(e.amount||0);
+      total += income ? amt : -amt;
     }
+    const box = $("balanceBox");
+    const val = $("balanceVal");
+    box.classList.remove("positive","negative");
+    box.classList.add(total>=0 ? "positive" : "negative");
+    val.textContent = (total>=0?"+":"") + total.toFixed(3);
+  }
 
-    if(action === "rule"){
-      // Minimal placeholder: later we open modal
-      alert("Rule UI next. (Backend endpoint /rules is ready)");
+  function setRange(range){
+    // nota: filtramos por created_at ISO, recortando al rango
+    const now = new Date();
+    const start = new Date(now);
+    if(range==="today"){
+      start.setHours(0,0,0,0);
+    } else if(range==="week"){
+      start.setDate(start.getDate()-7);
+    } else if(range==="month"){
+      start.setMonth(start.getMonth()-1);
+    } else if(range==="year"){
+      start.setMonth(0,1); start.setHours(0,0,0,0);
     }
-  });
+    const iso = start.toISOString().slice(0,10);
+    $("fCreated").value = iso; // contains YYYY-MM-DD
+    applyFilters();
+  }
 
-  // Category change (visual-only for now)
-  document.addEventListener("change", (ev) => {
-    const sel = ev.target.closest("select[data-id]");
-    if(!sel) return;
-    const id = sel.getAttribute("data-id");
-    const val = sel.value;
-
-    // Update local view so it doesn't jump back
-    const row = lastGood.find(x => String(x.id) === String(id));
-    if(row) row.category = val;
-
-    applyAndRender();
-  });
-
-  // Inputs
-  $("q").addEventListener("input", () => { filters.q = $("q").value; applyAndRender(); });
-  $("cur").addEventListener("change", () => { filters.cur = $("cur").value; applyAndRender(); });
-  $("cat").addEventListener("change", () => { filters.cat = $("cat").value; applyAndRender(); });
-
-
-  // Click-to-sort on table headers
-  document.addEventListener("click", (ev) => {
-    const th = ev.target.closest("th.th-sort");
-    if(!th) return;
-    const key = th.getAttribute("data-sort");
-    if(!key) return;
-
-    if(sortState.key === key){
-      sortState.dir = (sortState.dir === "asc") ? "desc" : "asc";
-    } else {
-      sortState.key = key;
-      // default direction: created desc, amount desc
-      sortState.dir = (key === "created_at" || key === "amount") ? "desc" : "asc";
+  function exportCSV(){
+    const rows = [["created_at","merchant","category","currency","amount"]];
+    for(const e of state.view){
+      rows.push([
+        String(e.created_at||""),
+        String(e.merchant_clean||""),
+        String(e.category||"other"),
+        String(e.currency||""),
+        String(e.amount||"")
+      ]);
     }
-    applyAndRender();
-  });
-
-  document.querySelectorAll("button[data-preset]").forEach(b => {
-    b.addEventListener("click", () => setPreset(b.getAttribute("data-preset")));
-  });
-
-  $("btnClear").addEventListener("click", clearFilters);
-  $("btnRefresh").addEventListener("click", loadExpenses);
-
-  $("btnCsv").addEventListener("click", () => {
-    const rows = view;
-    const header = ["created_at","merchant_clean","category","amount","currency"];
-    const csv = [
-      header.join(","),
-      ...rows.map(e => header.map(k => {
-        const v = (e[k] ?? "");
-        const s = String(v).replaceAll('"','""');
-        return `"${s}"`;
-      }).join(","))
-    ].join("<td class="merchant editable" data-id="${e.id}">
-        <span class="merchant-text">${e.merchant_clean || ""}</span>
-      </td>n");
-
-    const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `expenses_${new Date().toISOString().slice(0,10)}.csv`;
+    a.href=url;
+    a.download="expenses.csv";
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  // events
+  ["q","cur","cat","fCreated","fMerch","fCat","fCur"].forEach(id=>{
+    $(id).addEventListener("input", applyFilters);
+    $(id).addEventListener("change", applyFilters);
   });
 
-  // Boot
-  clearFilters();
-  updateSortIndicators();
-  loadExpenses();
-})();
+  $("clear").addEventListener("click", ()=>{
+    $("q").value="";
+    $("cur").value="";
+    $("cat").value="";
+    $("fCreated").value="";
+    $("fMerch").value="";
+    $("fCat").value="";
+    $("fCur").value="";
+    applyFilters();
+  });
 
-// ---- Inline edit merchant ----
-document.addEventListener("click", (e) => {
-  const cell = e.target.closest("td.merchant.editable");
-  if (!cell) return;
+  $("reload").addEventListener("click", load);
+  $("csv").addEventListener("click", exportCSV);
 
-  if (cell.querySelector("input")) return; // ya editando
+  document.querySelectorAll("button[data-range]").forEach(b=>{
+    b.addEventListener("click", ()=>setRange(b.getAttribute("data-range")));
+  });
 
-  const span = cell.querySelector(".merchant-text");
-  const oldValue = span.textContent;
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = oldValue;
-  input.style.width = "100%";
-  input.style.background = "#111";
-  input.style.color = "#e5e7eb";
-  input.style.border = "1px solid #333";
-  input.style.borderRadius = "6px";
-  input.style.fontSize = "12px";
-  input.style.padding = "4px 6px";
-
-  span.replaceWith(input);
-  input.focus();
-  input.select();
-
-  const finish = async (save) => {
-    const value = input.value.trim();
-    const newSpan = document.createElement("span");
-    newSpan.className = "merchant-text";
-    newSpan.textContent = save ? value : oldValue;
-    input.replaceWith(newSpan);
-
-    if (save && value !== oldValue) {
-      await fetch(`/update/merchant`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ id: cell.dataset.id, merchant: value })
-      });
-      loadExpenses();
+  document.addEventListener("click",(ev)=>{
+    const th = ev.target.closest("th.th-sort");
+    if(!th) return;
+    const key = th.getAttribute("data-sort");
+    if(!key) return;
+    if(state.sort.key === key){
+      state.sort.dir = (state.sort.dir==="asc") ? "desc" : "asc";
+    } else {
+      state.sort.key = key;
+      state.sort.dir = (key==="created_at" || key==="amount") ? "desc" : "asc";
     }
-  };
-
-  input.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") finish(true);
-    if (ev.key === "Escape") finish(false);
-  });
-  input.addEventListener("blur", () => finish(true));
-});
-
-</script>
-
-<script>
-/* ===== Dynamic Balance ===== */
-function updateBalance(){
-  const box = document.getElementById("balanceBox");
-  if(!box) return;
-  if(!Array.isArray(window.view)) return;
-
-  let total = 0;
-
-  window.view.forEach(e => {
-    const amt = Number(e.amount || 0);
-    const sms = String(e.sms || "").toLowerCase();
-
-    const isIncome =
-      sms.includes("credit") ||
-      sms.includes("credited") ||
-      sms.includes("deposit") ||
-      sms.includes("salary") ||
-      sms.includes("received") ||
-      sms.includes("refund");
-
-    total += isIncome ? amt : -amt;
+    applyFilters();
   });
 
-  box.classList.remove("positive","negative");
-  box.classList.add(total >= 0 ? "positive" : "negative");
-
-  const sign = total >= 0 ? "+" : "";
-  box.textContent = `Balance ${sign}${total.toFixed(3)}`;
-}
+  // boot
+  load();
+})();
 </script>
-
-
-<script>
-/* ERR_HANDLER_V1 */
-function showError(msg){
-  const b = document.getElementById("errBanner");
-  if(!b) return;
-  b.style.display = "block";
-  b.textContent = String(msg || "Unknown error");
-}
-function clearError(){
-  const b = document.getElementById("errBanner");
-  if(!b) return;
-  b.style.display = "none";
-  b.textContent = "";
-}
-window.addEventListener("error", (e) => {
-  showError("JS error: " + (e?.message || e));
-});
-window.addEventListener("unhandledrejection", (e) => {
-  showError("Promise error: " + (e?.reason?.message || e?.reason || e));
-});
-</script>
-
 </body>
 </html>
