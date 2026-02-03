@@ -1,509 +1,278 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Registro Gastos</title>
   <style>
     :root{
-      --bg:#000000;
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-      --border:#1f2937;
-      --border2:#243041;
-
-      --panelBg:rgba(255,255,255,.03);
-      --tableBg:rgba(255,255,255,.02);
-
-      --green:#22c55e;
-      --red:#ef4444;
-      --amber:#fbbf24;
+      --bg:#0b0f14; --panel:#0f1620; --panel2:#111b27; --text:#e6edf3; --muted:#93a4b8;
+      --line:rgba(255,255,255,.10);
+      --chip:rgba(255,255,255,.06);
+      --danger:#ff5c66; --ok:#3ddc97;
+      --accent:#7aa2ff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-
-    html[data-theme="light"]{
-      --bg:#ffffff;
-      --text:#0b1220;
-      --muted:#4b5563;
-      --border:#e5e7eb;
-      --border2:#d1d5db;
-
-      --panelBg:#ffffff;
-      --tableBg:#ffffff;
+    [data-theme="light"]{
+      --bg:#ffffff; --panel:#f6f7f9; --panel2:#ffffff; --text:#0b1220; --muted:#516074;
+      --line:rgba(0,0,0,.10);
+      --chip:rgba(0,0,0,.06);
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
     }
 
     *{box-sizing:border-box}
     body{
-      margin:0; padding:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--bg); color:var(--text);
     }
-
-    .wrap{max-width:1100px; margin:28px auto; padding:0 18px;}
+    .wrap{max-width:1200px; margin:0 auto; padding:18px}
     .top{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;
-      margin-bottom:10px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      margin-bottom:14px;
     }
-    h1{margin:0; font-size:22px; letter-spacing:.2px;}
-    .sub{margin-top:6px; color:var(--muted); font-size:12px; font-weight:800}
-
-    .panel{
-      background:var(--panelBg);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.30);
+    .title{
+      display:flex; align-items:center; gap:10px;
     }
-    html[data-theme="light"] .panel{ box-shadow: 0 10px 30px rgba(0,0,0,.10); }
+    h1{margin:0; font-size:20px; letter-spacing:.2px}
+    .pill{
+      border:1px solid var(--line); background:var(--chip); padding:6px 10px; border-radius:999px;
+      color:var(--muted); font-size:12px;
+    }
 
-    .row{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    .right{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
     }
 
     .btn{
-      cursor:pointer;
-      background:rgba(255,255,255,.04);
-      border:1px solid var(--border);
-      color:var(--text);
-      border-radius:10px;
-      padding:7px 10px;
-      font-size:12px;
-      font-weight:900;
-      transition:background .15s ease, border-color .15s ease, transform .02s ease;
-      user-select:none;
-      height:32px;
-      display:inline-flex; align-items:center;
+      border:1px solid var(--line); background:var(--panel2); color:var(--text);
+      padding:8px 10px; border-radius:10px; cursor:pointer; box-shadow:none;
+      font-size:13px;
     }
-    .btn:hover{background:rgba(255,255,255,.06); border-color:var(--border2)}
+    .btn:hover{filter:brightness(1.05)}
     .btn:active{transform:translateY(1px)}
-    html[data-theme="light"] .btn{background:#fff; color:#0b1220;}
-    html[data-theme="light"] .btn:hover{background:#f9fafb}
+    .btn.primary{border-color:rgba(122,162,255,.35); background:rgba(122,162,255,.12)}
+    .btn.danger{border-color:rgba(255,92,102,.35); background:rgba(255,92,102,.10)}
+    .btn.ghost{background:transparent}
+    .iconbtn{width:40px; display:inline-flex; align-items:center; justify-content:center}
 
-    .pill{
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      color:var(--text);
-      border-radius:10px;
-      padding:7px 10px;
-      font-size:12px;
-      outline:none;
-      font-weight:900;
-      height:32px;
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px;
+      box-shadow:var(--shadow);
     }
-    .pill:focus{border-color:#304156}
-    html[data-theme="light"] .pill{
-      background:#fff;
-      color:#0b1220;
-    }
-    select.pill option{background:#0b0f14; color:var(--text)}
-    html[data-theme="light"] select.pill option{background:#fff; color:#0b1220}
 
+    .ctrl{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+    .ctrl label{
+      font-size:12px; color:var(--muted); margin-right:2px;
+    }
+    select, input[type="date"], input[type="text"]{
+      border:1px solid var(--line); background:var(--panel2); color:var(--text);
+      padding:8px 10px; border-radius:10px; font-size:13px; outline:none;
+    }
+    select:focus, input:focus{border-color:rgba(122,162,255,.45)}
     .spacer{flex:1}
 
-    #err{
-      margin-top:10px;
+    .balance{
+      position:relative;
+    }
+    .dropdown{
+      position:absolute; right:0; top:44px; z-index:20;
+      min-width:230px;
+      border:1px solid var(--line); background:var(--panel2);
+      border-radius:14px; box-shadow:var(--shadow);
+      padding:10px;
       display:none;
-      padding:10px 12px;
-      border-radius:12px;
-      background:rgba(239,68,68,.12);
-      border:1px solid rgba(239,68,68,.35);
-      color:#fecaca;
-      font-weight:900;
-      font-size:12px;
-      white-space:pre-wrap;
     }
-    html[data-theme="light"] #err{
-      background:rgba(239,68,68,.08);
-      color:#7f1d1d;
-      border-color:rgba(239,68,68,.25);
+    .dropdown.open{display:block}
+    .brow{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 8px; border-radius:10px;
     }
+    .brow:hover{background:var(--chip)}
+    .brow b{font-weight:700}
+    .pos{color:var(--ok); font-weight:700}
+    .neg{color:var(--danger); font-weight:700}
 
-    .tableWrap{
-      margin-top:12px;
-      overflow:auto;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:var(--tableBg);
+    .tablewrap{
+      margin-top:14px;
+      border:1px solid var(--line); background:var(--panel);
+      border-radius:14px; overflow:hidden; box-shadow:var(--shadow);
     }
-
-    table{width:100%; border-collapse:collapse; min-width:920px;}
+    table{width:100%; border-collapse:collapse; table-layout:fixed}
     thead th{
-      position:sticky; top:0;
-      background:rgba(0,0,0,.35);
-      border-bottom:1px solid var(--border);
-      text-align:left;
-      padding:10px 10px;
-      font-size:12px;
-      color:var(--muted);
-      font-weight:900;
+      text-align:left; font-size:12px; color:var(--muted);
+      padding:12px 12px; border-bottom:1px solid var(--line);
+      user-select:none; cursor:pointer;
       white-space:nowrap;
-      cursor:pointer;
-      user-select:none;
-    }
-    html[data-theme="light"] thead th{
-      background:#f3f4f6;
-      color:#111827;
     }
     tbody td{
-      border-bottom:1px solid rgba(255,255,255,.06);
-      padding:10px 10px;
-      font-size:13px;
-      white-space:nowrap;
-      vertical-align:middle;
+      padding:10px 12px; border-bottom:1px solid var(--line);
+      font-size:13px; vertical-align:middle;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
-    html[data-theme="light"] tbody td{
-      border-bottom:1px solid rgba(229,231,235,.9);
-    }
-    tbody tr:hover td{background:rgba(255,255,255,.03)}
-    html[data-theme="light"] tbody tr:hover td{background:#f9fafb}
-
-    .muted{color:var(--muted); font-weight:800; font-size:12px}
-    .amt{font-weight:900; text-align:right}
-    .amt.neg{color:var(--red)}
-    .amt.pos{color:var(--green)}
-
-    .th-sort .sort-ind{opacity:.7; margin-left:6px; font-size:11px}
-    .actions{width:62px; text-align:right}
-    .actions .delBtn{opacity:0; transition:opacity .15s ease}
-    tbody tr:hover .actions .delBtn{opacity:1}
-
-    /* inline edit for merchant */
-    .inlineInput{
-      width: 260px;
-      max-width: 260px;
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+    [data-theme="light"] tbody tr:hover{background:rgba(0,0,0,.03)}
+    .amt{text-align:right; font-variant-numeric: tabular-nums}
+    .curcell{display:flex; align-items:center; gap:6px}
+    .flag{display:inline-flex; width:18px}
+    .flag svg{width:16px; height:12px; border-radius:3px; display:block}
+    .catSel, .merchantEdit{
+      width:100%;
+      border:1px solid transparent;
+      background:transparent;
       color:var(--text);
+      padding:6px 8px;
       border-radius:10px;
-      padding:7px 10px;
-      font-size:12px;
-      font-weight:900;
-      outline:none;
-      height:32px;
     }
-    html[data-theme="light"] .inlineInput{
-      background:#fff;
-      color:#0b1220;
-      border-color:var(--border);
+    .merchantEdit:hover{background:var(--chip)}
+    .merchantEdit:focus{outline:none; border-color:rgba(122,162,255,.45); background:var(--panel2)}
+    .cellActions{
+      opacity:0; transition:opacity .12s ease;
+      display:flex; justify-content:flex-end;
     }
-
-    /* category selector (same style) */
-    .catSel{
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      color:var(--text);
-      border-radius:10px;
-      padding:7px 10px;
-      font-size:12px;
-      outline:none;
-      font-weight:900;
-      height:32px;
-      min-width:150px;
-    }
-    html[data-theme="light"] .catSel{
-      background:#fff;
-      color:#0b1220;
-      border-color:var(--border);
-    }
-    .catSel option{background:#0b0f14; color:var(--text)}
-    html[data-theme="light"] .catSel option{background:#fff; color:#0b1220}
-
-    /* currency flags (emoji - simple and works everywhere) */
-    .cur{font-weight:900}
-    .cur .flag{margin-right:6px}
-
-    /* toast undo */
-    #toast{
-      position:fixed; left:18px; bottom:18px;
-      display:none; gap:10px; align-items:center; z-index:9999;
+    tr:hover .cellActions{opacity:1}
+    .small{font-size:12px; color:var(--muted)}
+    .toast{
+      margin-top:10px;
       padding:10px 12px;
       border-radius:12px;
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--border);
-      color:var(--text);
-      font-size:12px;
-      backdrop-filter: blur(10px);
-    }
-    html[data-theme="light"] #toast{ background:rgba(0,0,0,.05); color:#0b1220; }
-    #toastMsg{font-weight:900}
-  
-    /* Balance dropdown */
-    .balWrap{ position:relative; display:inline-flex; }
-    .balBtn{ gap:8px; }
-    .balMenu{
-      position:absolute; right:0; top:40px;
-      min-width:240px;
-      background:var(--panelBg);
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:10px;
-      box-shadow: 0 18px 45px rgba(0,0,0,.45);
+      border:1px solid var(--line);
+      background:var(--panel2);
       display:none;
-      z-index:9999;
-      backdrop-filter: blur(10px);
+      align-items:center; justify-content:space-between; gap:10px;
     }
-    html[data-theme="light"] .balMenu{
-      box-shadow: 0 18px 45px rgba(0,0,0,.12);
-    }
-    .balMenu .line{
-      display:flex; justify-content:space-between; align-items:center;
-      padding:8px 8px;
+    .toast.show{display:flex}
+    .err{
+      margin-top:10px;
+      padding:10px 12px;
       border-radius:12px;
-      font-weight:900;
-      font-size:12px;
+      border:1px solid rgba(255,92,102,.35);
+      background:rgba(255,92,102,.10);
+      color:#ffb4b4;
+      display:none;
+      white-space:pre-wrap;
     }
-    .balMenu .line:hover{ background:rgba(255,255,255,.03); }
-    html[data-theme="light"] .balMenu .line:hover{ background:#f9fafb; }
+    .err.show{display:block}
 
-    .balMenu .left{ display:flex; align-items:center; gap:8px; }
-    .balMenu .flag{ width:20px; text-align:center; }
-    .balMenu .pos{ color:var(--green); }
-    .balMenu .neg{ color:var(--red); }
-    .balMenu .muted{ color:var(--muted); font-weight:800; }
-
-    /* Quick range buttons */
-    .quickBtn{ padding:7px 10px; }
-    
-
-    .flag{display:inline-flex; align-items:center; justify-content:center; width:18px; margin-right:6px}
-    .flag svg{width:16px; height:12px; border-radius:3px; display:block}
-</style>
+    .sortHint{opacity:.6; margin-left:6px; font-size:11px}
+    .kpiRow{
+      display:none;
+      margin-top:12px;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap:10px;
+    }
+    .kpiRow.show{display:grid}
+    .kpi{
+      border:1px solid var(--line);
+      background:var(--panel);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:var(--shadow);
+    }
+    .kpi .v{font-size:18px; font-weight:800; margin-top:6px}
+  </style>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <h1>Registro Gastos</h1>
+<div class="wrap" id="app">
+  <div class="top">
+    <div class="title">
+      <h1>Registro Gastos</h1>
+      <div class="pill" id="statusPill">loading…</div>
+      <button class="btn ghost" id="toggleKpi">KPIs</button>
+    </div>
 
-<div id="jsErrorBox" style="display:none; margin:10px 0; padding:10px; border-radius:10px; font-size:13px; background:rgba(255,0,0,.12); color:#ffb4b4; border:1px solid rgba(255,0,0,.25);">
+    <div class="right">
+      <button class="btn iconbtn" id="themeBtn" title="Tema">
+        <span id="themeIcon">🌙</span>
+      </button>
+
+      <div class="balance">
+        <button class="btn primary" id="balanceBtn">Balance</button>
+        <div class="dropdown" id="balanceMenu">
+          <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
+          <div class="brow"><b><span class="flag" data-cur="USD"></span> USD</b><span id="balUSD" class="small">—</span></div>
+          <div class="brow"><b><span class="flag" data-cur="EUR"></span> EUR</b><span id="balEUR" class="small">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="ctrl">
+      <label>Currency</label>
+      <select id="curFilter"></select>
+    </div>
+    <div class="ctrl">
+      <label>Category</label>
+      <select id="catFilter"></select>
+    </div>
+    <div class="ctrl">
+      <label>From</label>
+      <input type="date" id="dateFrom">
+    </div>
+    <div class="ctrl">
+      <label>To</label>
+      <input type="date" id="dateTo">
+    </div>
+
+    <div class="ctrl">
+      <button class="btn" id="btnToday">Today</button>
+      <button class="btn" id="btnWeek">Last week</button>
+      <button class="btn" id="btnMonth">Last month</button>
+      <button class="btn" id="btnYear">This year</button>
+      <button class="btn" id="btnClear">Clear</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="ctrl">
+      <button class="btn danger" id="btnDelete" disabled>Delete selected</button>
+      <button class="btn" id="btnExport">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="kpiRow" id="kpiRow">
+    <div class="kpi"><div class="small">Total (filtered)</div><div class="v" id="kpiTotal">—</div></div>
+    <div class="kpi"><div class="small">Today</div><div class="v" id="kpiToday">—</div></div>
+    <div class="kpi"><div class="small">Avg / day</div><div class="v" id="kpiAvg">—</div></div>
+    <div class="kpi"><div class="small">Top category</div><div class="v" id="kpiTopCat">—</div></div>
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+  <div class="toast" id="toast">
+    <div id="toastMsg">Deleted.</div>
+    <button class="btn" id="btnUndo">Undo (10s)</button>
+  </div>
+
+  <div class="tablewrap">
+    <table id="t">
+      <thead>
+        <tr>
+          <th data-sort="created_at">Date <span class="sortHint" id="sortHintDate"></span></th>
+          <th data-sort="merchant_clean">Merchant</th>
+          <th data-sort="category">Category</th>
+          <th data-sort="currency">Currency</th>
+          <th data-sort="amount" style="text-align:right">Amount</th>
+          <th style="width:54px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 </div>
 
-        <div class="sub">Filtros arriba + tabla estable (si falla, muestra el HTTP). Dark/Light estable.</div>
-      </div>
-
-      <div class="balWrap">
-          <button class="btn balBtn" id="balanceBtn" title="Balance"><span id="balanceLabel">Balance</span> <span style="opacity:.7">▾</span></button>
-          <div class="balMenu" id="balanceMenu">
-            <div class="line"><div class="left"><span class="flag" data-flag="KWD"></span><span style="font-weight:900">KWD</span></div><div id="balKWD" class="muted">0</div></div>
-            <div class="line"><div class="left"><span class="flag" data-flag="USD"></span><span style="font-weight:900">USD</span></div><div id="balUSD" class="muted">0</div></div>
-            <div class="line"><div class="left"><span class="flag" data-flag="EUR"></span><span style="font-weight:900">EUR</span></div><div id="balEUR" class="muted">0</div></div>
-          </div>
-        </div>
-        <button class="btn" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
-    </div>
-
-    <div class="panel">
-      <div class="row">
-        <input id="q" class="pill" placeholder="Search merchant..." style="min-width:220px"/>
-        <select id="cur" class="pill" style="min-width:170px">
-          <option value="">All currencies</option>
-        </select>
-        <select id="cat" class="pill" style="min-width:170px">
-          <option value="">All categories</option>
-        </select>
-
-        <input id="startDate" class="pill" type="date" title="Start date"/>
-        <input id="endDate" class="pill" type="date" title="End date"/>
-
-        <button class="btn quickBtn" id="btnToday">Today</button>
-        <button class="btn quickBtn" id="btnWeek">Last week</button>
-        <button class="btn quickBtn" id="btnMonth">Last month</button>
-        <button class="btn quickBtn" id="btnYear">This year</button>
-        <button class="btn" id="clear">Clear</button>
-        <div class="spacer"></div>
-        <span id="status" class="muted">Ready</span>
-      </div>
-
-      <div id="err"></div>
-
-      <div class="tableWrap" style="margin-top:12px">
-        <table>
-          <thead>
-            <tr>
-              <th class="th-sort" data-sort="created_at">Date <span class="sort-ind" data-ind="created_at"></span></th>
-              <th class="th-sort" data-sort="currency">Currency <span class="sort-ind" data-ind="currency"></span></th>
-              <th>Merchant</th>
-              <th>Category</th>
-              <th class="th-sort" data-sort="amount" style="text-align:right">Amount <span class="sort-ind" data-ind="amount"></span></th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tbody">
-            <!-- rows -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast">
-    <span id="toastMsg">Deleted (undo 10s)</span>
-    <button id="undoBtn" class="btn">Undo</button>
-  </div>
-
 <script>
-  
-  // ===========================
-  // SAFETY LAYER (no rompe UI)
-  // ===========================
-  function showJsError(e){
-    try{
-      const box = document.getElementById("jsErrorBox");
-      if(box){
-        box.style.display = "block";
-        box.textContent = "JS error: " + (e?.message || e);
-      } else {
-        // fallback: console only
-        console.error("JS error:", e);
-      }
-    }catch(_){}
-  }
-
-  // Render robusto: intenta varias funciones/targets sin petar
-  function renderAny(rows){
-    rows = rows || [];
-    // intenta funciones típicas si existen
-    try { if (typeof renderTable === "function") return renderTable(rows); } catch(e){ showJsError(e); }
-    try { if (typeof renderRows  === "function") return renderRows(rows);  } catch(e){ showJsError(e); }
-    try { if (typeof render      === "function") return render(rows);      } catch(e){ showJsError(e); }
-    try { if (typeof drawTable   === "function") return drawTable(rows);   } catch(e){ showJsError(e); }
-
-    // fallback directo: pintar tbody si existe
-    try{
-      const tbody = document.querySelector("table tbody");
-      if(!tbody) return;
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td>${r.created_at || ""}</td>
-          <td>${r.merchant_clean || r.merchant_raw || ""}</td>
-          <td>${r.category || ""}</td>
-          <td>${r.currency || ""}</td>
-          <td style="text-align:right">${(r.amount ?? "")}</td>
-        </tr>
-      `).join("");
-    }catch(e){ showJsError(e); }
-  }
-
-  // Si applyFilters peta, no te quedas sin filas
-  function safeApplyFilters(){
-    try{
-      if(typeof applyFilters === "function"){
-        safeApplyFilters();
-        return;
-      }
-      // si no hay applyFilters, renderiza todo
-      if(typeof state !== "undefined"){
-        const all = state.view || state.expenses || state.all || [];
-        renderAny(all);
-      }
-    }catch(e){
-      showJsError(e);
-      try{
-        if(typeof state !== "undefined"){
-          const all = state.expenses || state.all || state.view || [];
-          renderAny(all);
-        }
-      }catch(_){}
-    }
-  }
-
-  // Captura errores globales para que no “desaparezcan”
-  window.addEventListener("error", (ev)=>{ showJsError(ev.error || ev.message); });
-  window.addEventListener("unhandledrejection", (ev)=>{ showJsError(ev.reason || ev); });
-// ===== CONFIG =====
+  // =============== CONFIG ===============
+  const USER_ID = "pedro";
   const API_KEY = "ElPortichuelo99";
-  const DEFAULT_USER = "pedro";
+  const LIMIT = 500;
 
-  const $ = (id)=>document.getElementById(id);
-
-  const state = {
-    user_id: DEFAULT_USER,
-    raw: [],
-    view: [],
-    sortKey: "created_at",
-    sortDir: "desc",
-    lastDeleted: false
-  };
-
-  
-  function withKey(url){
-    const k = "ElPortichuelo99";
-    const u = new URL(url, window.location.origin);
-    if (!u.searchParams.get("api_key")) u.searchParams.set("api_key", k);
-    return u.pathname + u.search;
-  }catch(e){
-      return url + (url.includes("?") ? "&" : "?") + "api_key=" + encodeURIComponent(API_KEY);
-    }
-  }
-
-  function setStatus(t){ if($("status")) $("status").textContent = t; }
-  function showError(t){
-    const e = $("err");
-    if(!e) return;
-    e.style.display = "block";
-    e.textContent = String(t || "");
-  }
-  function clearError(){
-    const e = $("err");
-    if(!e) return;
-    e.style.display = "none";
-    e.textContent = "";
-  }
-
-
-  async function postJSONTry(paths, bodies){
-    // paths: ["/update_field", "/update", ...]
-    // bodies: [payload1, payload2, ...]
-    const errs = [];
-    for(const path of paths){
-      for(const body of bodies){
-        try{
-          const r = await fetch(withKey(path), {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify(body || {})
-          });
-          if(!r.ok){
-            const t = await r.text().catch(()=> "");
-            errs.push(`${path} => HTTP ${r.status} ${r.statusText} :: ${t.slice(0,120)}`);
-            continue;
-          }
-          // attempt json, else ok
-          try{ return await r.json(); } catch(e){ return {ok:true}; }
-        }catch(e){
-          errs.append(`${path} => ${e}`);
-        }
-      }
-    }
-    throw new Error(errs.join("\n"));
-  }
-
-  async function postJSON(url, body){
-    const r = await fetch(withKey(url), {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body || {})
-    });
-    if(!r.ok){
-      const t = await r.text().catch(()=> "");
-      throw new Error(`HTTP ${r.status} ${r.statusText} :: ${t.slice(0,200)}`);
-    }
-    return await r.json();
-  }
-
-  function flagFor(cur){
-    const c = (cur||"").toUpperCase();
-    if(c==="KWD") return "🇰🇼";
-    if(c==="USD") return "🇺🇸";
-    if(c==="EUR") return "🇪🇺";
-    return "🏳️";
-  }
-
-
+  // =============== FLAGS (SVG) ===============
   function flagHTML(cur){
     const c = String(cur||"").toUpperCase();
-    // simple inline SVGs (lightweight, always render)
     const KUWAIT = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
       <rect width="16" height="12" fill="#fff"/>
       <rect width="16" height="4" y="0" fill="#0B7A3B"/>
@@ -545,508 +314,504 @@
         <circle cx="5.8" cy="2.7" r=".35"/>
       </g>
     </svg>`;
-
     if(c==="KWD") return KUWAIT;
     if(c==="USD") return USA;
     if(c==="EUR") return EU;
     return "";
   }
-
-  function fmtAmount(a){
-    if(a === null || a === undefined || a === "") return "";
-    const n = Number(a);
-    if(Number.isNaN(n)) return String(a);
-    return n.toFixed(3).replace(/\.000$/, ".000").replace(/\.([0-9]*?)0+$/, ".$1").replace(/\.$/,"");
+  function initFlags(){
+    document.querySelectorAll(".flag[data-cur]").forEach(el=>{
+      el.innerHTML = flagHTML(el.getAttribute("data-cur"));
+    });
   }
 
-  function normalizeCat(c){
-    const x = String(c||"other").trim().toLowerCase();
-    return x ? (x[0].toUpperCase() + x.slice(1)) : "Other";
+  // =============== HELPERS ===============
+  const $ = (id)=>document.getElementById(id);
+  function setStatus(txt){ $("statusPill").textContent = txt; }
+  function showErr(msg){
+    const b = $("errBox");
+    b.textContent = String(msg||"");
+    b.classList.toggle("show", !!msg);
+  }
+  function api(url){
+    const u = new URL(url, window.location.origin);
+    return u.pathname + u.search;
+  }
+  function apiKey(url){
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set("api_key", API_KEY);
+    return u.pathname + u.search;
+  }
+  async function getJSON(url){
+    const r = await fetch(api(url));
+    const j = await r.json();
+    return j;
+  }
+  async function postJSON(url, body){
+    const r = await fetch(apiKey(url), {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body||{})
+    });
+    const t = await r.text().catch(()=> "");
+    if(!r.ok) throw new Error(`${url} => HTTP ${r.status} :: ${t}`);
+    try{ return JSON.parse(t); }catch(_){ return {ok:true}; }
+  }
+  function titleCase(x){
+    x = String(x||"").trim();
+    if(!x) return "";
+    return x.charAt(0).toUpperCase() + x.slice(1);
+  }
+  function isoDay(s){ return (s||"").slice(0,10); }
+  function parseDate(s){
+    // created_at is ISO, keep as Date
+    try{ return new Date(s); }catch(_){ return null; }
+  }
+  function fmtMoney(n){
+    if(n===null||n===undefined||n==="") return "";
+    const v = Number(n);
+    if(Number.isNaN(v)) return String(n);
+    return v.toFixed(3).replace(/\.000$/,".000").replace(/(\.\d{2})0$/,"$1");
+  }
+  function inferDirection(row){
+    const d = (row.direction||"").toLowerCase();
+    if(d==="in"||d==="credit"||d==="credited") return "in";
+    if(d==="out"||d==="debit"||d==="debited") return "out";
+    const sms = (row.sms||row.sms_raw||"").toLowerCase();
+    if(sms.includes("credited")) return "in";
+    if(sms.includes("debited")) return "out";
+    return "out"; // default gasto
   }
 
-  function setSort(key){
-    if(state.sortKey === key){
-      state.sortDir = (state.sortDir === "asc") ? "desc" : "asc";
-    }else{
-      state.sortKey = key;
-      state.sortDir = (key === "amount") ? "desc" : "desc";
-    }
-    safeApplyFilters();
-    updateSortIndicators();
+  // =============== STATE ===============
+  const state = {
+    all: [],
+    view: [],
+    selectedId: null,
+    sortKey: "created_at",
+    sortDir: "desc",
+    categories: new Set(),
+    currencies: new Set(),
+    undoTimer: null,
+    lastDeleted: null
+  };
+
+  // =============== THEME ===============
+  function setTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    localStorage.setItem("theme", t);
+    $("themeIcon").textContent = (t==="light") ? "☀️" : "🌙";
+  }
+  function initTheme(){
+    const t = localStorage.getItem("theme") || "dark";
+    setTheme(t);
   }
 
-  function updateSortIndicators(){
-    document.querySelectorAll(".sort-ind").forEach(el=>el.textContent="");
-    const ind = document.querySelector(`.sort-ind[data-ind="${state.sortKey}"]`);
-    if(ind) ind.textContent = (state.sortDir === "asc") ? "▲" : "▼";
+  // =============== FILTERS ===============
+  function buildFilters(){
+    // currencies
+    const curSel = $("curFilter");
+    const curs = Array.from(state.currencies).sort();
+    curSel.innerHTML = `<option value="">All currencies</option>` + curs.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+    // categories
+    const catSel = $("catFilter");
+    const cats = Array.from(state.categories).sort();
+    catSel.innerHTML = `<option value="">All categories</option>` + cats.map(c=>`<option value="${c}">${titleCase(c)}</option>`).join("");
   }
 
   function applyFilters(){
-    const q = ($("q")?.value || "").trim().toLowerCase();
-    const cur = ($("cur")?.value || "").trim().toLowerCase();
-    const cat = ($("cat")?.value || "").trim().toLowerCase();
-    const sd  = ($("startDate")?.value || "");
-    const ed  = ($("endDate")?.value || "");
+    const cur = $("curFilter").value || "";
+    const cat = $("catFilter").value || "";
+    const df = $("dateFrom").value || "";
+    const dt = $("dateTo").value || "";
 
-    let v = state.raw.filter(e=>{
-      const m = String(e.merchant_clean || "").toLowerCase();
-      const c = String(e.currency || "").toLowerCase();
-      const k = String(e.category || "other").toLowerCase();
-      const created = String(e.created_at || "");
-      const cdate = created ? created.slice(0,10) : "";
+    state.view = state.all.filter(r=>{
+      if(cur && (r.currency||"")!==cur) return false;
+      if(cat && (r.category||"")!==cat) return false;
 
-      if(q && !m.includes(q)) return false;
-      if(cur && c !== cur) return false;
-      if(cat && k !== cat) return false;
-      if(sd && cdate && cdate < sd) return false;
-      if(ed && cdate && cdate > ed) return false;
-
+      if(df || dt){
+        const d = isoDay(r.created_at || r.date_iso || r.date_raw || "");
+        if(df && d && d < df) return false;
+        if(dt && d && d > dt) return false;
+      }
       return true;
     });
 
-    // sort
-    const dir = (state.sortDir === "asc") ? 1 : -1;
-    const key = state.sortKey;
-
-    v.sort((a,b)=>{
-      const av = a[key], bv = b[key];
-      if(key === "amount"){
-        const an = Number(av||0), bn = Number(bv||0);
-        return (an - bn) * dir;
-      }
-      const as = String(av||""), bs = String(bv||"");
-      return as.localeCompare(bs) * dir;
-    });
-
-    state.view = v;
+    sortView();
     render();
-    updateBalance();
   }
 
+  function setQuickRange(mode){
+    const today = new Date();
+    const iso = (d)=> d.toISOString().slice(0,10);
+    const to = iso(today);
+    let from = "";
+    if(mode==="today"){
+      from = to;
+    }else if(mode==="week"){
+      const d = new Date(today); d.setDate(d.getDate()-7);
+      from = iso(d);
+    }else if(mode==="month"){
+      const d = new Date(today); d.setMonth(d.getMonth()-1);
+      from = iso(d);
+    }else if(mode==="year"){
+      const d = new Date(today); d.setMonth(0); d.setDate(1);
+      from = iso(d);
+    }
+    $("dateFrom").value = from;
+    $("dateTo").value = to;
+    applyFilters();
+  }
+
+  function clearFilters(){
+    $("curFilter").value = "";
+    $("catFilter").value = "";
+    $("dateFrom").value = "";
+    $("dateTo").value = "";
+    applyFilters();
+  }
+
+  // =============== SORT ===============
+  function sortView(){
+    const k = state.sortKey;
+    const dir = state.sortDir === "asc" ? 1 : -1;
+    state.view.sort((a,b)=>{
+      let av = a[k], bv = b[k];
+      if(k==="amount"){
+        av = Number(av||0); bv = Number(bv||0);
+      }else{
+        av = String(av||""); bv = String(bv||"");
+      }
+      if(av < bv) return -1*dir;
+      if(av > bv) return  1*dir;
+      return 0;
+    });
+    $("sortHintDate").textContent = (state.sortKey==="created_at") ? (state.sortDir==="asc"?"↑":"↓") : "";
+  }
+
+  // =============== BALANCE + KPI ===============
+  function computeBalance(rows){
+    const out = {KWD:0, USD:0, EUR:0};
+    for(const r of rows){
+      const cur = (r.currency||"").toUpperCase();
+      const amt = Number(r.amount||0);
+      const sign = inferDirection(r)==="in" ? 1 : -1;
+      if(out[cur]!==undefined) out[cur] += sign*amt;
+    }
+    return out;
+  }
+
+  function updateBalanceAndKpis(){
+    const rows = state.view;
+    const b = computeBalance(rows);
+
+    const fmt = (v)=> (v>=0 ? `<span class="pos">${v.toFixed(3)}</span>` : `<span class="neg">${v.toFixed(3)}</span>`);
+    $("balKWD").innerHTML = fmt(b.KWD);
+    $("balUSD").innerHTML = fmt(b.USD);
+    $("balEUR").innerHTML = fmt(b.EUR);
+
+    // KPI: total (sum abs signed)
+    const tot = b.KWD + b.USD + b.EUR; // mixto, solo para idea (principalmente KWD)
+    $("kpiTotal").textContent = `${tot.toFixed(3)} (mix)`;
+
+    // today
+    const t = new Date().toISOString().slice(0,10);
+    const todayRows = rows.filter(r => isoDay(r.created_at||"") === t);
+    const bt = computeBalance(todayRows);
+    const todayMix = bt.KWD+bt.USD+bt.EUR;
+    $("kpiToday").textContent = `${todayMix.toFixed(3)} (mix)`;
+
+    // avg/day (por días en dataset)
+    const days = new Set(rows.map(r=>isoDay(r.created_at||"")).filter(Boolean));
+    const dcount = Math.max(1, days.size);
+    $("kpiAvg").textContent = `${(todayMix/dcount).toFixed(3)} (mix)`;
+
+    // top cat
+    const m = new Map();
+    for(const r of rows){
+      const c = (r.category||"other");
+      m.set(c, (m.get(c)||0) + 1);
+    }
+    let best = "—", bestN=0;
+    for(const [k,v] of m.entries()){
+      if(v>bestN){bestN=v; best=k;}
+    }
+    $("kpiTopCat").textContent = titleCase(best);
+  }
+
+  // =============== RENDER ===============
   function render(){
     const tb = $("tbody");
-    if(!tb) return;
+    tb.innerHTML = "";
 
-    tb.innerHTML = state.view.map(e=>{
-      const amt = Number(e.amount||0);
-      const dir = String(e.direction||"").toLowerCase(); // may be "in"/"out"
-      const isOut = (dir === "out") || (String(e.sms||"").toLowerCase().includes("debited"));
-      const isIn  = (dir === "in")  || (String(e.sms||"").toLowerCase().includes("credited"));
-      const cls = isIn ? "pos" : (isOut ? "neg" : (amt < 0 ? "neg" : ""));
-      const amtTxt = fmtAmount(Math.abs(amt));
+    for(const r of state.view){
+      const id = r.id;
+      const dir = inferDirection(r);
+      const signClass = dir==="in" ? "pos" : "neg";
+      const amountTxt = fmtMoney(r.amount);
+      const dateTxt = isoDay(r.created_at || r.date_iso || r.date_raw || "");
+      const cur = (r.currency||"").toUpperCase();
+      const cat = (r.category||"other");
+      const merch = (r.merchant_clean ?? r.merchant_raw ?? "").trim();
 
-      const cur = String(e.currency||"");
-      const flag = flagHTML(cur);
-// category options built later (stateCats)
-      const cat = String(e.category||"other").toLowerCase();
+      const tr = document.createElement("tr");
+      tr.dataset.id = id;
 
-      return `
-        <tr>
-          <td>${String(e.created_at||"").slice(0,19).replace("T"," ")}</td>
-          <td class="cur"><span class="flag">${flag}</span>${cur}</td>
-          <td><input class="inlineInput" data-id="${e.id}" data-field="merchant_clean" value="${escapeHtml(e.merchant_clean||"")}" /></td>
-          <td>
-            <select class="catSel" data-id="${e.id}" data-field="category">
-              ${stateCats.map(x=>{
-                const val = x.toLowerCase();
-                const sel = (val === cat) ? "selected" : "";
-                return `<option value="${val}" ${sel}>${x}</option>`;
-              }).join("")}
-            </select>
-          </td>
-          <td class="amt ${cls}">${isIn ? "" : "-"}${amtTxt}</td>
-          <td class="actions" data-id="${e.id}"><button class="btn delBtn" title="Delete">🗑️</button></td>
-        </tr>
+      tr.innerHTML = `
+        <td title="${dateTxt}">${dateTxt}</td>
+        <td>
+          <input class="merchantEdit" data-id="${id}" value="${merch.replace(/"/g,'&quot;')}" />
+        </td>
+        <td>
+          ${categoryCellHTML(id, cat)}
+        </td>
+        <td>
+          <div class="curcell" title="${cur}">
+            <span class="flag">${flagHTML(cur)}</span><span>${cur}</span>
+          </div>
+        </td>
+        <td class="amt ${signClass}" title="${amountTxt}">${amountTxt}</td>
+        <td>
+          <div class="cellActions">
+            <input type="radio" name="sel" ${state.selectedId===id ? "checked":""} />
+          </div>
+        </td>
       `;
+
+      tr.addEventListener("click", (e)=>{
+        const rid = Number(tr.dataset.id);
+        state.selectedId = rid;
+        $("btnDelete").disabled = false;
+        // marcar radio
+        tr.querySelector('input[type="radio"]').checked = true;
+      });
+
+      tb.appendChild(tr);
+    }
+
+    setStatus(`count ${state.view.length}`);
+    updateBalanceAndKpis();
+    wireRowInputs(); // binds after render
+  }
+
+  function categoryCellHTML(id, current){
+    const cats = Array.from(state.categories).sort();
+    const options = cats.map(c=>{
+      const sel = c===current ? "selected" : "";
+      return `<option value="${c}" ${sel}>${titleCase(c)}</option>`;
     }).join("");
+    return `
+      <select class="catSel" data-id="${id}">
+        ${options}
+        <option value="__add__">+ Add category…</option>
+      </select>
+    `;
   }
 
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, (m)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
+  function wireRowInputs(){
+    // merchant edit
+    document.querySelectorAll(".merchantEdit").forEach(inp=>{
+      inp.addEventListener("keydown", async (e)=>{
+        if(e.key === "Enter"){
+          e.preventDefault();
+          inp.blur();
+        }
+      });
+      inp.addEventListener("blur", async ()=>{
+        const id = Number(inp.dataset.id);
+        const val = inp.value.trim();
+        try{
+          showErr("");
+          await postJSON("/update_field", {userid: USER_ID, id, field:"merchant_clean", value: val});
+          // update local
+          const row = state.all.find(x=>x.id===id);
+          if(row) row.merchant_clean = val;
+          applyFilters();
+        }catch(err){
+          showErr("Save merchant failed: " + err.message);
+        }
+      });
+    });
 
-  // Categories list (dynamic)
-  let stateCats = ["Other","Coffee","Food","Transport","Shopping","Rent"];
-
-  function rebuildSelectOptions(){
-    // currencies
-    const curSel = $("cur");
-    const catSel = $("cat");
-    if(curSel){
-      const curSet = new Set(state.raw.map(e=>String(e.currency||"").toUpperCase()).filter(Boolean));
-      const curVals = Array.from(curSet).sort();
-      curSel.innerHTML = `<option value="">All currencies</option>` + curVals.map(c=>`<option value="${c.toLowerCase()}">${c}</option>`).join("");
-    }
-    if(catSel){
-      const catSet = new Set(state.raw.map(e=>String(e.category||"other").toLowerCase()));
-      const catVals = Array.from(catSet).sort();
-      // keep pretty label
-      catSel.innerHTML = `<option value="">All categories</option>` + catVals.map(c=>{
-        const label = (c && c[0]) ? (c[0].toUpperCase()+c.slice(1)) : "Other";
-        return `<option value="${c}">${label}</option>`;
-      }).join("");
-    }
-
-    // per-row category selector options (pretty)
-    const catSet2 = new Set(state.raw.map(e=>normalizeCat(e.category||"other")));
-    stateCats = Array.from(catSet2).sort((a,b)=>a.localeCompare(b));
-    if(!stateCats.length) stateCats = ["Other"];
-  }
-
-  async function load(){
-    clearError();
-    setStatus("Loading...");
-
-    let r;
-    try{
-      r = await fetch(withKey(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`));
-    }catch(e){
-      showError("Load failed: network error");
-      setStatus("Error");
-      return;
-    }
-
-    if(!r.ok){
-      const t = await r.text().catch(()=> "");
-      showError(`Load failed: HTTP ${r.status} ${r.statusText}\n${t.slice(0,400)}`);
-      setStatus("Error");
-      return;
-    }
-
-    let j;
-    try{
-      j = await r.json();
-    }catch(e){
-      const t = await r.text().catch(()=> "");
-      showError(`Load failed: invalid JSON\n${t.slice(0,400)}`);
-      setStatus("Error");
-      return;
-    }
-
-    const arr = (j && j.expenses) ? j.expenses : [];
-    state.raw = Array.isArray(arr) ? arr : [];
-    rebuildSelectOptions();
-    safeApplyFilters();
-    updateBalance();
-
-    setStatus(`Loaded: ${state.raw.length}`);
-    if(state.raw.length === 0){
-      showError("0 rows from API. (No es la tabla; la API está devolviendo vacío.)");
-    }
-  }
-
-  // ===== Theme =====
-  function initTheme(){
-    const saved = localStorage.getItem("rg_theme");
-    const theme = (saved === "light" || saved === "dark") ? saved : "dark";
-    document.documentElement.setAttribute("data-theme", theme);
-    if($("themeText")) $("themeText").textContent = (theme === "dark") ? "Dark" : "Light";
-  }
-
-  if($("themeToggle")){
-    $("themeToggle").addEventListener("click", ()=>{
-      const cur = document.documentElement.getAttribute("data-theme") || "dark";
-      const next = (cur === "dark") ? "light" : "dark";
-      localStorage.setItem("rg_theme", next);
-      document.documentElement.setAttribute("data-theme", next);
-      if($("themeText")) $("themeText").textContent = (next === "dark") ? "Dark" : "Light";
+    // category select
+    document.querySelectorAll(".catSel").forEach(sel=>{
+      sel.addEventListener("change", async ()=>{
+        const id = Number(sel.dataset.id);
+        const v = sel.value;
+        if(v === "__add__"){
+          const name = prompt("New category name:");
+          if(!name){
+            // revert
+            const row = state.all.find(x=>x.id===id);
+            sel.value = row?.category || "other";
+            return;
+          }
+          const cat = name.trim().toLowerCase();
+          if(!cat){
+            const row = state.all.find(x=>x.id===id);
+            sel.value = row?.category || "other";
+            return;
+          }
+          state.categories.add(cat);
+          buildFilters();
+          // re-render row dropdowns will happen after applyFilters
+          await saveCategory(id, cat);
+          return;
+        }
+        await saveCategory(id, v);
+      });
     });
   }
 
-  // ===== Events =====
-  if($("q")) $("q").addEventListener("input", applyFilters);
-  if($("cur")) $("cur").addEventListener("change", applyFilters);
-  if($("cat")) $("cat").addEventListener("change", applyFilters);
-  if($("startDate")) $("startDate").addEventListener("change", applyFilters);
-  if($("endDate")) $("endDate").addEventListener("change", applyFilters);
-
-  if($("clear")){
-    $("clear").addEventListener("click", ()=>{
-      if($("q")) $("q").value="";
-      if($("cur")) $("cur").value="";
-      if($("cat")) $("cat").value="";
-      if($("startDate")) $("startDate").value="";
-      if($("endDate")) $("endDate").value="";
-      safeApplyFilters();
-      clearError();
-    });
+  async function saveCategory(id, cat){
+    try{
+      showErr("");
+      await postJSON("/update_field", {userid: USER_ID, id, field:"category", value: cat});
+      const row = state.all.find(x=>x.id===id);
+      if(row) row.category = cat;
+      applyFilters();
+    }catch(err){
+      showErr("Save category failed: " + err.message);
+      // revert UI
+      const row = state.all.find(x=>x.id===id);
+      if(row) applyFilters();
+    }
   }
 
-  // Sorting
-  document.querySelectorAll(".th-sort").forEach(th=>{
-    th.addEventListener("click", ()=> setSort(th.dataset.sort));
-  });
-
-  // Inline merchant save on blur
-  document.addEventListener("blur", async (ev)=>{
-    const inp = ev.target;
-    if(!(inp && inp.classList && inp.classList.contains("inlineInput"))) return;
-    const id = Number(inp.dataset.id||0);
-    const val = inp.value || "";
-    if(!id) return;
-
-    try{
-      // Backend must have /update_field or similar; if not, we just don't crash.
-      // If your backend endpoint is different, tell me and lo ajusto.
-      await postJSONTry(
-        ["/update_field","/update","/edit","/set_field"],
-        [
-          {id, user_id: state.user_id, field:"merchant_clean", value: val},
-          {id, user_id: state.user_id, merchant_clean: val},
-          {id, user_id: state.user_id, field:"merchant_clean", merchant_clean: val, value: val}
-        ]
-      );
-      await load();
-}catch(e){
-      // Don’t kill UI
-      showError("Save merchant failed: " + (e.message||e));
-    }
-  }, true);
-
-  // Category change save
-  document.addEventListener("change", async (ev)=>{
-    const sel = ev.target;
-    if(!(sel && sel.classList && sel.classList.contains("catSel"))) return;
-    const id = Number(sel.dataset.id||0);
-    const val = sel.value || "other";
-    if(!id) return;
-    try{
-      await postJSONTry(
-        ["/update_field","/update","/set_category","/edit","/set_field"],
-        [
-          {id, user_id: state.user_id, field:"category", value: val},
-          {id, user_id: state.user_id, category: val},
-          {id, user_id: state.user_id, field:"category", category: val, value: val}
-        ]
-      );
-      await load();
-}catch(e){
-      showError("Save category failed: " + (e.message||e));
-    }
-  });
-
-  // Delete + Undo (requires backend /delete and /undo_delete; if not present, we show error)
-  let undoTimer = null;
+  // =============== DELETE + UNDO ===============
   function showToast(msg){
-    if(!$("toast")) return;
-    if($("toastMsg")) $("toastMsg").textContent = msg || "Deleted (undo 10s)";
-    $("toast").style.display = "inline-flex";
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(()=>{ if($("toast")) $("toast").style.display="none"; }, 10000);
+    $("toastMsg").textContent = msg;
+    $("toast").classList.add("show");
+    clearTimeout(state.undoTimer);
+    state.undoTimer = setTimeout(()=> $("toast").classList.remove("show"), 10000);
   }
 
-  document.addEventListener("click", async (ev)=>{
-    const btn = ev.target.closest(".delBtn");
-    if(!btn) return;
-    const td = ev.target.closest("td.actions");
-    const id = Number(td?.dataset?.id||0);
-    if(!id) return;
+  async function doDeleteSelected(){
+    if(!state.selectedId) return;
+    const id = state.selectedId;
     try{
-      await postJSONTry(
-        ["/delete","/delete_expense","/remove","/del"],
-        [
-          {id, user_id: state.user_id},
-          {id},
-        ]
-      );
-showToast("Deleted (undo 10s)");
+      showErr("");
+      await postJSON("/delete", {userid: USER_ID, id});
+      showToast(`Deleted #${id}`);
       await load();
-    }catch(e){
-      showError("Delete failed: " + (e.message||e));
+    }catch(err){
+      showErr("Delete failed: " + err.message);
     }
-  });
-
-  if($("undoBtn")){
-    $("undoBtn").addEventListener("click", async ()=>{
-      try{
-        await postJSONTry(
-        ["/undo_delete","/restore_last","/undo","/undelete"],
-        [
-          {user_id: state.user_id},
-          {}
-        ]
-      );
-if($("toast")) $("toast").style.display="none";
-        await load();
-      }catch(e){
-        showError("Undo failed: " + (e.message||e));
-      }
-    });
   }
 
-
-  function ymd(d){
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function setRange(start, end){
-    if($("startDate")) $("startDate").value = start || "";
-    if($("endDate")) $("endDate").value = end || "";
-    safeApplyFilters();
-  }
-
-  // Signed amount: expenses negative, income positive
-  function signedAmount(e){
-    const amt = Number(e.amount||0);
-    const dir = String(e.direction||"").toLowerCase();
-    const sms = String(e.sms||"").toLowerCase();
-    if(dir === "in") return Math.abs(amt);
-    if(dir === "out") return -Math.abs(amt);
-    if(sms.includes("credited")) return Math.abs(amt);
-    if(sms.includes("debited")) return -Math.abs(amt);
-    // fallback: assume expense if amount positive (most of your msgs are debited)
-    return -Math.abs(amt);
-  }
-
-  function fmtBal(n){
-    const x = Number(n||0);
-    const abs = Math.abs(x);
-    // 3 decimals pero sin ceros molestos
-    let t = abs.toFixed(3);
-    t = t.replace(/\.([0-9]*?)0+$/, ".$1").replace(/\.$/,"");
-    return (x < 0 ? "-" : "") + t;
-  }
-
-  function paintBal(el, val){
-    if(!el) return;
-    el.textContent = fmtBal(val);
-    el.classList.remove("pos","neg","muted");
-    if(val > 0) el.classList.add("pos");
-    else if(val < 0) el.classList.add("neg");
-    else el.classList.add("muted");
-  }
-
-  
-  function initBalanceFlags(){
-    document.querySelectorAll('.flag[data-flag]').forEach(el=>{
-      const c = el.getAttribute('data-flag');
-      el.innerHTML = flagHTML(c);
-    });
-  }
-
-  function updateBalance(){
-    const sums = {KWD:0, USD:0, EUR:0};
-    for(const e of (state.view || [])){
-      const cur = String(e.currency||"").toUpperCase();
-      if(!sums.hasOwnProperty(cur)) continue;
-      sums[cur] += signedAmount(e);
+  async function undoDelete(){
+    try{
+      showErr("");
+      await postJSON("/undo_delete", {userid: USER_ID});
+      $("toast").classList.remove("show");
+      await load();
+    }catch(err){
+      showErr("Undo failed: " + err.message);
     }
-    paintBal($("balKWD"), sums.KWD);
-    paintBal($("balUSD"), sums.USD);
-    paintBal($("balEUR"), sums.EUR);
   }
 
-  // Balance dropdown toggles
-  const balBtn = $("balanceBtn");
-  const balMenu = $("balanceMenu");
-  if(balBtn && balMenu){
-    balBtn.addEventListener("click", (ev)=>{
-      ev.stopPropagation();
-      balMenu.style.display = (balMenu.style.display === "block") ? "none" : "block";
-    });
-    document.addEventListener("click", ()=>{ balMenu.style.display = "none"; });
+  // =============== EXPORT CSV ===============
+  function exportCSV(){
+    const rows = state.view;
+    const headers = ["created_at","merchant_clean","category","currency","amount"];
+    const escape = (v)=> `"${String(v??"").replace(/"/g,'""')}"`;
+    const lines = [headers.join(",")].concat(rows.map(r=>[
+      r.created_at||"",
+      r.merchant_clean||"",
+      r.category||"",
+      r.currency||"",
+      r.amount??""
+    ].map(escape).join(",")));
+    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "registro_gastos.csv";
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 500);
   }
 
-  // Quick range buttons
-  if($("btnToday")){
-    $("btnToday").addEventListener("click", ()=>{
-      const d = new Date();
-      const t = ymd(d);
-      setRange(t, t);
-    });
+  // =============== LOAD ===============
+  async function load(){
+    try{
+      showErr("");
+      setStatus("loading…");
+      const j = await getJSON(`/expenses?user_id=${encodeURIComponent(USER_ID)}&limit=${LIMIT}`);
+      const rows = j.expenses || [];
+      state.all = rows;
+
+      // sets
+      state.categories = new Set(rows.map(r => (r.category||"other").toLowerCase()));
+      state.currencies = new Set(rows.map(r => (r.currency||"").toUpperCase()).filter(Boolean));
+
+      // ensure defaults exist
+      if(!state.categories.size) state.categories.add("other");
+      if(!state.currencies.size) state.currencies.add("KWD");
+
+      buildFilters();
+      applyFilters();
+      setStatus(`count ${state.view.length}`);
+    }catch(err){
+      showErr(String(err?.message || err));
+      setStatus("error");
+    }
   }
-  if($("btnWeek")){
-    $("btnWeek").addEventListener("click", ()=>{
-      const end = new Date();
-      const start = new Date();
-      start.setDate(start.getDate() - 7);
-      setRange(ymd(start), ymd(end));
+
+  // =============== EVENTS ===============
+  function bind(){
+    initFlags();
+    initTheme();
+
+    $("toggleKpi").addEventListener("click", ()=>{
+      $("kpiRow").classList.toggle("show");
     });
-  }
-  if($("btnMonth")){
-    $("btnMonth").addEventListener("click", ()=>{
-      const end = new Date();
-      const start = new Date();
-      start.setMonth(start.getMonth() - 1);
-      setRange(ymd(start), ymd(end));
+
+    $("themeBtn").addEventListener("click", ()=>{
+      const cur = document.documentElement.getAttribute("data-theme") || "dark";
+      setTheme(cur==="dark" ? "light" : "dark");
     });
-  }
-  if($("btnYear")){
-    $("btnYear").addEventListener("click", ()=>{
-      const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 1);
-      setRange(ymd(start), ymd(now));
+
+    $("balanceBtn").addEventListener("click", ()=>{
+      $("balanceMenu").classList.toggle("open");
+    });
+    document.addEventListener("click",(e)=>{
+      if(!e.target.closest(".balance")) $("balanceMenu").classList.remove("open");
+    });
+
+    $("curFilter").addEventListener("change", applyFilters);
+    $("catFilter").addEventListener("change", applyFilters);
+    $("dateFrom").addEventListener("change", applyFilters);
+    $("dateTo").addEventListener("change", applyFilters);
+
+    $("btnToday").addEventListener("click", ()=>setQuickRange("today"));
+    $("btnWeek").addEventListener("click", ()=>setQuickRange("week"));
+    $("btnMonth").addEventListener("click", ()=>setQuickRange("month"));
+    $("btnYear").addEventListener("click", ()=>setQuickRange("year"));
+    $("btnClear").addEventListener("click", clearFilters);
+
+    $("btnDelete").addEventListener("click", doDeleteSelected);
+    $("btnUndo").addEventListener("click", undoDelete);
+    $("btnExport").addEventListener("click", exportCSV);
+
+    // sorting headers
+    document.querySelectorAll("thead th[data-sort]").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const k = th.getAttribute("data-sort");
+        if(state.sortKey === k){
+          state.sortDir = (state.sortDir==="asc") ? "desc" : "asc";
+        }else{
+          state.sortKey = k;
+          state.sortDir = (k==="created_at") ? "desc" : "asc";
+        }
+        sortView();
+        render();
+      });
     });
   }
 
   // boot
-  initTheme();
-  if(typeof initBalanceFlags==='function') initBalanceFlags();
-  updateSortIndicators();
+  bind();
   load();
-
-
-/* ===========================
-   FORCE_RENDER_FALLBACK
-   (si no hay filas, pinta igual)
-   =========================== */
-(function(){
-  function pickTbody(){
-    return document.querySelector("table tbody")
-        || document.querySelector("#table tbody")
-        || document.querySelector("#expensesTable tbody")
-        || document.querySelector("tbody");
-  }
-
-  function escapeHtml(x){
-    return String(x ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  function renderDirect(rows){
-    const tbody = pickTbody();
-    if(!tbody) return;
-
-    // Si tu tabla tiene columnas distintas, esto igualmente pinta algo visible
-    tbody.innerHTML = rows.map(r => {
-      const date = escapeHtml(r.created_at || r.date_iso || r.date_raw || "");
-      const merch = escapeHtml(r.merchant_clean || r.merchant_raw || r.sms || "");
-      const cat = escapeHtml(r.category || "");
-      const cur = escapeHtml(r.currency || "");
-      const amt = (r.amount === null || r.amount === undefined) ? "" : escapeHtml(r.amount);
-      return `<tr>
-        <td>${date}</td>
-        <td>${merch}</td>
-        <td>${cat}</td>
-        <td>${cur}</td>
-        <td style="text-align:right">${amt}</td>
-      </tr>`;
-    }).join("");
-  }
-
-  async function force(){
-    try{
-      const tbody = pickTbody();
-      const hasRows = tbody && tbody.querySelectorAll("tr").length > 0;
-      if(hasRows) return; // ya hay filas
-
-      const r = await fetch("/expenses?user_id=pedro&limit=200");
-      const j = await r.json();
-      const rows = j.expenses || j.rows || [];
-      if(rows.length) renderDirect(rows);
-    }catch(e){
-      console.error("FORCE_RENDER_FALLBACK error:", e);
-    }
-  }
-
-  // espera a que cargue el DOM y a que tu JS intente pintar primero
-  window.addEventListener("load", () => setTimeout(force, 1200));
-})();
-
 </script>
 </body>
 </html>
