@@ -264,6 +264,9 @@
     /* Quick range buttons */
     .quickBtn{ padding:7px 10px; }
     
+
+    .flag{display:inline-flex; align-items:center; justify-content:center; width:18px; margin-right:6px}
+    .flag svg{width:16px; height:12px; border-radius:3px; display:block}
 </style>
 </head>
 
@@ -278,9 +281,9 @@
       <div class="balWrap">
           <button class="btn balBtn" id="balanceBtn" title="Balance"><span id="balanceLabel">Balance</span> <span style="opacity:.7">▾</span></button>
           <div class="balMenu" id="balanceMenu">
-            <div class="line"><div class="left"><span class="flag">🇰🇼</span><span style="font-weight:900">KWD</span></div><div id="balKWD" class="muted">0</div></div>
-            <div class="line"><div class="left"><span class="flag">🇺🇸</span><span style="font-weight:900">USD</span></div><div id="balUSD" class="muted">0</div></div>
-            <div class="line"><div class="left"><span class="flag">🇪🇺</span><span style="font-weight:900">EUR</span></div><div id="balEUR" class="muted">0</div></div>
+            <div class="line"><div class="left"><span class="flag" data-flag="KWD"></span><span style="font-weight:900">KWD</span></div><div id="balKWD" class="muted">0</div></div>
+            <div class="line"><div class="left"><span class="flag" data-flag="USD"></span><span style="font-weight:900">USD</span></div><div id="balUSD" class="muted">0</div></div>
+            <div class="line"><div class="left"><span class="flag" data-flag="EUR"></span><span style="font-weight:900">EUR</span></div><div id="balEUR" class="muted">0</div></div>
           </div>
         </div>
         <button class="btn" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
@@ -375,6 +378,34 @@
     e.textContent = "";
   }
 
+
+  async function postJSONTry(paths, bodies){
+    // paths: ["/update_field", "/update", ...]
+    // bodies: [payload1, payload2, ...]
+    const errs = [];
+    for(const path of paths){
+      for(const body of bodies){
+        try{
+          const r = await fetch(withKey(path), {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify(body || {})
+          });
+          if(!r.ok){
+            const t = await r.text().catch(()=> "");
+            errs.push(`${path} => HTTP ${r.status} ${r.statusText} :: ${t.slice(0,120)}`);
+            continue;
+          }
+          // attempt json, else ok
+          try{ return await r.json(); } catch(e){ return {ok:true}; }
+        }catch(e){
+          errs.append(`${path} => ${e}`);
+        }
+      }
+    }
+    throw new Error(errs.join("\n"));
+  }
+
   async function postJSON(url, body){
     const r = await fetch(withKey(url), {
       method:"POST",
@@ -394,6 +425,58 @@
     if(c==="USD") return "🇺🇸";
     if(c==="EUR") return "🇪🇺";
     return "🏳️";
+  }
+
+
+  function flagHTML(cur){
+    const c = String(cur||"").toUpperCase();
+    // simple inline SVGs (lightweight, always render)
+    const KUWAIT = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
+      <rect width="16" height="12" fill="#fff"/>
+      <rect width="16" height="4" y="0" fill="#0B7A3B"/>
+      <rect width="16" height="4" y="8" fill="#C8102E"/>
+      <path d="M0 0h5L8 6 5 12H0z" fill="#000"/>
+    </svg>`;
+    const USA = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
+      <rect width="16" height="12" fill="#fff"/>
+      <g fill="#B22234">
+        <rect y="0" width="16" height="1"/>
+        <rect y="2" width="16" height="1"/>
+        <rect y="4" width="16" height="1"/>
+        <rect y="6" width="16" height="1"/>
+        <rect y="8" width="16" height="1"/>
+        <rect y="10" width="16" height="1"/>
+      </g>
+      <rect width="7" height="5" fill="#3C3B6E"/>
+      <g fill="#fff" opacity=".9">
+        <circle cx="1.2" cy="1" r=".25"/><circle cx="2.4" cy="1" r=".25"/><circle cx="3.6" cy="1" r=".25"/><circle cx="4.8" cy="1" r=".25"/><circle cx="6.0" cy="1" r=".25"/>
+        <circle cx="1.8" cy="2" r=".25"/><circle cx="3.0" cy="2" r=".25"/><circle cx="4.2" cy="2" r=".25"/><circle cx="5.4" cy="2" r=".25"/>
+        <circle cx="1.2" cy="3" r=".25"/><circle cx="2.4" cy="3" r=".25"/><circle cx="3.6" cy="3" r=".25"/><circle cx="4.8" cy="3" r=".25"/><circle cx="6.0" cy="3" r=".25"/>
+        <circle cx="1.8" cy="4" r=".25"/><circle cx="3.0" cy="4" r=".25"/><circle cx="4.2" cy="4" r=".25"/><circle cx="5.4" cy="4" r=".25"/>
+      </g>
+    </svg>`;
+    const EU = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
+      <rect width="16" height="12" fill="#003399"/>
+      <g fill="#FFCC00">
+        <circle cx="8" cy="2.1" r=".35"/>
+        <circle cx="10.2" cy="2.7" r=".35"/>
+        <circle cx="11.8" cy="4.3" r=".35"/>
+        <circle cx="12.4" cy="6.0" r=".35"/>
+        <circle cx="11.8" cy="7.7" r=".35"/>
+        <circle cx="10.2" cy="9.3" r=".35"/>
+        <circle cx="8" cy="9.9" r=".35"/>
+        <circle cx="5.8" cy="9.3" r=".35"/>
+        <circle cx="4.2" cy="7.7" r=".35"/>
+        <circle cx="3.6" cy="6.0" r=".35"/>
+        <circle cx="4.2" cy="4.3" r=".35"/>
+        <circle cx="5.8" cy="2.7" r=".35"/>
+      </g>
+    </svg>`;
+
+    if(c==="KWD") return KUWAIT;
+    if(c==="USD") return USA;
+    if(c==="EUR") return EU;
+    return "";
   }
 
   function fmtAmount(a){
@@ -480,9 +563,8 @@
       const amtTxt = fmtAmount(Math.abs(amt));
 
       const cur = String(e.currency||"");
-      const flag = flagFor(cur);
-
-      // category options built later (stateCats)
+      const flag = flagHTML(cur);
+// category options built later (stateCats)
       const cat = String(e.category||"other").toLowerCase();
 
       return `
@@ -635,9 +717,16 @@
     try{
       // Backend must have /update_field or similar; if not, we just don't crash.
       // If your backend endpoint is different, tell me and lo ajusto.
-      await postJSON("/update_field", { id, user_id: state.user_id, field:"merchant_clean", value: val });
+      await postJSONTry(
+        ["/update_field","/update","/edit","/set_field"],
+        [
+          {id, user_id: state.user_id, field:"merchant_clean", value: val},
+          {id, user_id: state.user_id, merchant_clean: val},
+          {id, user_id: state.user_id, field:"merchant_clean", merchant_clean: val, value: val}
+        ]
+      );
       await load();
-    }catch(e){
+}catch(e){
       // Don’t kill UI
       showError("Save merchant failed: " + (e.message||e));
     }
@@ -651,9 +740,16 @@
     const val = sel.value || "other";
     if(!id) return;
     try{
-      await postJSON("/update_field", { id, user_id: state.user_id, field:"category", value: val });
+      await postJSONTry(
+        ["/update_field","/update","/set_category","/edit","/set_field"],
+        [
+          {id, user_id: state.user_id, field:"category", value: val},
+          {id, user_id: state.user_id, category: val},
+          {id, user_id: state.user_id, field:"category", category: val, value: val}
+        ]
+      );
       await load();
-    }catch(e){
+}catch(e){
       showError("Save category failed: " + (e.message||e));
     }
   });
@@ -675,8 +771,14 @@
     const id = Number(td?.dataset?.id||0);
     if(!id) return;
     try{
-      await postJSON("/delete", { id, user_id: state.user_id });
-      showToast("Deleted (undo 10s)");
+      await postJSONTry(
+        ["/delete","/delete_expense","/remove","/del"],
+        [
+          {id, user_id: state.user_id},
+          {id},
+        ]
+      );
+showToast("Deleted (undo 10s)");
       await load();
     }catch(e){
       showError("Delete failed: " + (e.message||e));
@@ -686,8 +788,14 @@
   if($("undoBtn")){
     $("undoBtn").addEventListener("click", async ()=>{
       try{
-        await postJSON("/undo_delete", { user_id: state.user_id });
-        if($("toast")) $("toast").style.display="none";
+        await postJSONTry(
+        ["/undo_delete","/restore_last","/undo","/undelete"],
+        [
+          {user_id: state.user_id},
+          {}
+        ]
+      );
+if($("toast")) $("toast").style.display="none";
         await load();
       }catch(e){
         showError("Undo failed: " + (e.message||e));
@@ -738,6 +846,14 @@
     if(val > 0) el.classList.add("pos");
     else if(val < 0) el.classList.add("neg");
     else el.classList.add("muted");
+  }
+
+  
+  function initBalanceFlags(){
+    document.querySelectorAll('.flag[data-flag]').forEach(el=>{
+      const c = el.getAttribute('data-flag');
+      el.innerHTML = flagHTML(c);
+    });
   }
 
   function updateBalance(){
@@ -797,6 +913,7 @@
 
   // boot
   initTheme();
+  if(typeof initBalanceFlags==='function') initBalanceFlags();
   updateSortIndicators();
   load();
 </script>
