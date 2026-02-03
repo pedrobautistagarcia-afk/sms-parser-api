@@ -345,7 +345,7 @@
         <h1>Registro Gastos</h1>
         <div class="sub">Estable (no rompe) + Add Category + Balance por divisa + Flags SVG.</div>
         <div class="themeCtl">
-          <button class="miniBtn" id="themeToggle">Theme: Dark</button>
+          <button class="btn small" id="themeToggle"><span id="themeText">Dark</span></button>
 </div>
       </div>
 
@@ -377,6 +377,8 @@
           <select id="cat" class="pill">
             <option value="">All categories</option>
           </select>
+          <input id="startDate" class="pill" type="date" title="Start date"/>
+          <input id="endDate" class="pill" type="date" title="End date"/>
           <button class="btn ghost" id="clear">Clear</button>
         </div>
 
@@ -402,7 +404,7 @@
             <th class="th-sort" data-sort="amount" style="text-align:right">Amount <span class="sort-ind" data-ind="amount"></span></th>
           </tr>
           <tr class="filterRow">
-            <th><input class="colFilter" id="fCreated" placeholder="YYYY-MM-DD contains…" /></th>
+            <th></th>
             <th><input class="colFilter" id="fMerch" placeholder="Merchant contains…" /></th>
             <th><input class="colFilter" id="fCat" placeholder="Category contains…" /></th>
             <th><input class="colFilter" id="fCur" placeholder="KWD/USD/EUR…" /></th>
@@ -562,12 +564,17 @@
     const fMerch = $("fMerch").value.trim().toLowerCase();
     const fCat = $("fCat").value.trim().toLowerCase();
     const fCur = $("fCur").value.trim().toLowerCase();
+    const sd = $("startDate") ? $("startDate").value : "";
+    const ed = $("endDate") ? $("endDate").value : "";
 
     let v = state.raw.filter(e=>{
       const merch = String(e.merchant_clean||"").toLowerCase();
       const category = String(e.category||"other").toLowerCase();
       const currency = String(e.currency||"").toUpperCase();
       const created = String(e.created_at||"");
+      const cdate = created ? created.slice(0,10) : "";
+      if(sd && cdate && cdate < sd) return false;
+      if(ed && cdate && cdate > ed) return false;
 
       if(cur && currency !== cur) return false;
       if(cat && category !== cat) return false;
@@ -712,6 +719,8 @@
   $("q").addEventListener("input", applyFilters);
   $("cur").addEventListener("change", applyFilters);
   $("cat").addEventListener("change", applyFilters);
+  if($("startDate")) $("startDate").addEventListener("change", applyFilters);
+  if($("endDate")) $("endDate").addEventListener("change", applyFilters);
   $("fCreated").addEventListener("input", applyFilters);
   $("fMerch").addEventListener("input", applyFilters);
   $("fCat").addEventListener("input", applyFilters);
@@ -725,6 +734,8 @@
     $("fMerch").value="";
     $("fCat").value="";
     $("fCur").value="";
+    if($("startDate")) $("startDate").value="";
+    if($("endDate")) $("endDate").value="";
     applyFilters();
   });
 
@@ -785,8 +796,8 @@
     const saved = localStorage.getItem("rg_theme");
     const theme = (saved === "light" || saved === "dark") ? saved : "dark";
     document.documentElement.setAttribute("data-theme", theme);
-    const ic = document.getElementById("themeIcon");
-    if(ic) ic.textContent = (theme === "dark") ? "🌙" : "☀️";
+    const t = document.getElementById("themeText");
+    if(t) t.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
   }
 
   const tbtn = document.getElementById("themeToggle");
@@ -796,8 +807,8 @@
       const next = (cur === "dark") ? "light" : "dark";
       localStorage.setItem("rg_theme", next);
       document.documentElement.setAttribute("data-theme", next);
-      const ic = document.getElementById("themeIcon");
-      if(ic) ic.textContent = (next === "dark") ? "🌙" : "☀️";
+      const t = document.getElementById("themeText");
+      if(t) t.textContent = next.charAt(0).toUpperCase() + next.slice(1);
     });
   }
 
