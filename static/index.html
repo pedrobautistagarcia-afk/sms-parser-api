@@ -226,7 +226,45 @@
     }
     html[data-theme="light"] #toast{ background:rgba(0,0,0,.05); color:#0b1220; }
     #toastMsg{font-weight:900}
-  </style>
+  
+    /* Balance dropdown */
+    .balWrap{ position:relative; display:inline-flex; }
+    .balBtn{ gap:8px; }
+    .balMenu{
+      position:absolute; right:0; top:40px;
+      min-width:240px;
+      background:var(--panelBg);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.45);
+      display:none;
+      z-index:9999;
+      backdrop-filter: blur(10px);
+    }
+    html[data-theme="light"] .balMenu{
+      box-shadow: 0 18px 45px rgba(0,0,0,.12);
+    }
+    .balMenu .line{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:8px 8px;
+      border-radius:12px;
+      font-weight:900;
+      font-size:12px;
+    }
+    .balMenu .line:hover{ background:rgba(255,255,255,.03); }
+    html[data-theme="light"] .balMenu .line:hover{ background:#f9fafb; }
+
+    .balMenu .left{ display:flex; align-items:center; gap:8px; }
+    .balMenu .flag{ width:20px; text-align:center; }
+    .balMenu .pos{ color:var(--green); }
+    .balMenu .neg{ color:var(--red); }
+    .balMenu .muted{ color:var(--muted); font-weight:800; }
+
+    /* Quick range buttons */
+    .quickBtn{ padding:7px 10px; }
+    
+</style>
 </head>
 
 <body>
@@ -237,7 +275,15 @@
         <div class="sub">Filtros arriba + tabla estable (si falla, muestra el HTTP). Dark/Light estable.</div>
       </div>
 
-      <button class="btn" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
+      <div class="balWrap">
+          <button class="btn balBtn" id="balanceBtn" title="Balance"><span id="balanceLabel">Balance</span> <span style="opacity:.7">▾</span></button>
+          <div class="balMenu" id="balanceMenu">
+            <div class="line"><div class="left"><span class="flag">🇰🇼</span><span style="font-weight:900">KWD</span></div><div id="balKWD" class="muted">0</div></div>
+            <div class="line"><div class="left"><span class="flag">🇺🇸</span><span style="font-weight:900">USD</span></div><div id="balUSD" class="muted">0</div></div>
+            <div class="line"><div class="left"><span class="flag">🇪🇺</span><span style="font-weight:900">EUR</span></div><div id="balEUR" class="muted">0</div></div>
+          </div>
+        </div>
+        <button class="btn" id="themeToggle" title="Toggle theme"><span id="themeText">Dark</span></button>
     </div>
 
     <div class="panel">
@@ -253,6 +299,10 @@
         <input id="startDate" class="pill" type="date" title="Start date"/>
         <input id="endDate" class="pill" type="date" title="End date"/>
 
+        <button class="btn quickBtn" id="btnToday">Today</button>
+        <button class="btn quickBtn" id="btnWeek">Last week</button>
+        <button class="btn quickBtn" id="btnMonth">Last month</button>
+        <button class="btn quickBtn" id="btnYear">This year</button>
         <button class="btn" id="clear">Clear</button>
         <div class="spacer"></div>
         <span id="status" class="muted">Ready</span>
@@ -414,6 +464,7 @@
 
     state.view = v;
     render();
+    updateBalance();
   }
 
   function render(){
@@ -523,6 +574,7 @@
     state.raw = Array.isArray(arr) ? arr : [];
     rebuildSelectOptions();
     applyFilters();
+    updateBalance();
 
     setStatus(`Loaded: ${state.raw.length}`);
     if(state.raw.length === 0){
@@ -640,6 +692,106 @@
       }catch(e){
         showError("Undo failed: " + (e.message||e));
       }
+    });
+  }
+
+
+  function ymd(d){
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function setRange(start, end){
+    if($("startDate")) $("startDate").value = start || "";
+    if($("endDate")) $("endDate").value = end || "";
+    applyFilters();
+  }
+
+  // Signed amount: expenses negative, income positive
+  function signedAmount(e){
+    const amt = Number(e.amount||0);
+    const dir = String(e.direction||"").toLowerCase();
+    const sms = String(e.sms||"").toLowerCase();
+    if(dir === "in") return Math.abs(amt);
+    if(dir === "out") return -Math.abs(amt);
+    if(sms.includes("credited")) return Math.abs(amt);
+    if(sms.includes("debited")) return -Math.abs(amt);
+    // fallback: assume expense if amount positive (most of your msgs are debited)
+    return -Math.abs(amt);
+  }
+
+  function fmtBal(n){
+    const x = Number(n||0);
+    const abs = Math.abs(x);
+    // 3 decimals pero sin ceros molestos
+    let t = abs.toFixed(3);
+    t = t.replace(/\.([0-9]*?)0+$/, ".$1").replace(/\.$/,"");
+    return (x < 0 ? "-" : "") + t;
+  }
+
+  function paintBal(el, val){
+    if(!el) return;
+    el.textContent = fmtBal(val);
+    el.classList.remove("pos","neg","muted");
+    if(val > 0) el.classList.add("pos");
+    else if(val < 0) el.classList.add("neg");
+    else el.classList.add("muted");
+  }
+
+  function updateBalance(){
+    const sums = {KWD:0, USD:0, EUR:0};
+    for(const e of (state.view || [])){
+      const cur = String(e.currency||"").toUpperCase();
+      if(!sums.hasOwnProperty(cur)) continue;
+      sums[cur] += signedAmount(e);
+    }
+    paintBal($("balKWD"), sums.KWD);
+    paintBal($("balUSD"), sums.USD);
+    paintBal($("balEUR"), sums.EUR);
+  }
+
+  // Balance dropdown toggles
+  const balBtn = $("balanceBtn");
+  const balMenu = $("balanceMenu");
+  if(balBtn && balMenu){
+    balBtn.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      balMenu.style.display = (balMenu.style.display === "block") ? "none" : "block";
+    });
+    document.addEventListener("click", ()=>{ balMenu.style.display = "none"; });
+  }
+
+  // Quick range buttons
+  if($("btnToday")){
+    $("btnToday").addEventListener("click", ()=>{
+      const d = new Date();
+      const t = ymd(d);
+      setRange(t, t);
+    });
+  }
+  if($("btnWeek")){
+    $("btnWeek").addEventListener("click", ()=>{
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 7);
+      setRange(ymd(start), ymd(end));
+    });
+  }
+  if($("btnMonth")){
+    $("btnMonth").addEventListener("click", ()=>{
+      const end = new Date();
+      const start = new Date();
+      start.setMonth(start.getMonth() - 1);
+      setRange(ymd(start), ymd(end));
+    });
+  }
+  if($("btnYear")){
+    $("btnYear").addEventListener("click", ()=>{
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 1);
+      setRange(ymd(start), ymd(now));
     });
   }
 
