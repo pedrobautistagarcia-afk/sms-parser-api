@@ -340,8 +340,18 @@
       const cur = (e.currency || "").toUpperCase();
       const amt = Number(e.amount || 0);
 
-      // For now, treat everything as expense unless you add "type" later
-      const amtClass = "amt-expense";
+      // Expense vs income coloring (from backend field "direction")
+      
+      const sms = String(e.sms || "").toLowerCase();
+      const isIncome =
+        sms.includes("credit") ||
+        sms.includes("credited") ||
+        sms.includes("deposit") ||
+        sms.includes("salary") ||
+        sms.includes("received") ||
+        sms.includes("refund");
+
+      const amtClass = isIncome ? "amt-income" : "amt-expense";
 
       tr.innerHTML = `
         <td class="muted">${fmtDate(e.created_at)}</td>
@@ -353,7 +363,7 @@
             ).join("")}
           </select>
         </td>
-        <td class="amt ${amtClass}">${amt.toFixed(3)}</td>
+        <td class="amt ${amtClass}">${(isIncome ? "+" : "") + amt.toFixed(3)}</td>
         <td class="muted">${cur}</td>
         <td class="actions">
           <button class="btn-mini ruleBtn" data-action="rule" data-id="${e.id}">Rule</button>
