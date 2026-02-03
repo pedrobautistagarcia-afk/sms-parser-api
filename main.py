@@ -731,7 +731,6 @@ class UndoRequest(BaseModel):
 
 @app.post("/delete")
 def delete_expense(payload: dict, api_key: str = Query(None)):
-    # acepta api_key por query o en body (compatibilidad)
     key = api_key or payload.get("api_key") or payload.get("key")
     check_key(key)
 
@@ -744,14 +743,9 @@ def delete_expense(payload: dict, api_key: str = Query(None)):
     except Exception:
         raise HTTPException(status_code=400, detail="id must be int")
 
-    # Conecta
-    if "db" in globals():
-        conn = db()
-    else:
-        import sqlite3, os
-        conn = sqlite3.connect(os.getenv("DB_PATH", "/var/data/gastos.db"))
+    # SIEMPRE usa db() (tu proyecto ya lo tiene)
+    conn = db()
     conn.row_factory = sqlite3.Row
-
     try:
         _ensure_deleted_table(conn)
         cur = conn.cursor()
@@ -762,8 +756,6 @@ def delete_expense(payload: dict, api_key: str = Query(None)):
             raise HTTPException(status_code=404, detail="Row not found")
 
         row_dict = dict(row)
-        from datetime import datetime, timezone
-        import json
         deleted_at = datetime.now(timezone.utc).isoformat()
 
         cur.execute(
@@ -774,14 +766,12 @@ def delete_expense(payload: dict, api_key: str = Query(None)):
         conn.commit()
 
         return {"ok": True, "deleted_id": row_id, "deleted_at": deleted_at}
-
     finally:
         try: conn.close()
         except Exception: pass
 
 @app.post("/undo_delete")
 def undo_delete(payload: dict, api_key: str = Query(None)):
-    # acepta api_key por query o en body (compatibilidad)
     key = api_key or payload.get("api_key") or payload.get("key")
     check_key(key)
 
@@ -789,13 +779,8 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
     if not user_id:
         raise HTTPException(status_code=400, detail="Missing userid")
 
-    if "db" in globals():
-        conn = db()
-    else:
-        import sqlite3, os
-        conn = sqlite3.connect(os.getenv("DB_PATH", "/var/data/gastos.db"))
+    conn = db()
     conn.row_factory = sqlite3.Row
-
     try:
         _ensure_deleted_table(conn)
         cur = conn.cursor()
@@ -808,8 +793,6 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
         if not d:
             raise HTTPException(status_code=404, detail="Nothing to undo")
 
-        from datetime import datetime, timezone
-        import json
         deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z","+00:00"))
         age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
         if age > 10:
@@ -838,14 +821,12 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
         conn.commit()
 
         return {"ok": True, "restored_id": restored_id}
-
     finally:
         try: conn.close()
         except Exception: pass
 
 @app.post("/undo_delete")
 def undo_delete(payload: dict, api_key: str = Query(None)):
-    # acepta api_key por query o en body (compatibilidad)
     key = api_key or payload.get("api_key") or payload.get("key")
     check_key(key)
 
@@ -853,13 +834,8 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
     if not user_id:
         raise HTTPException(status_code=400, detail="Missing userid")
 
-    if "db" in globals():
-        conn = db()
-    else:
-        import sqlite3, os
-        conn = sqlite3.connect(os.getenv("DB_PATH", "/var/data/gastos.db"))
+    conn = db()
     conn.row_factory = sqlite3.Row
-
     try:
         _ensure_deleted_table(conn)
         cur = conn.cursor()
@@ -872,8 +848,6 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
         if not d:
             raise HTTPException(status_code=404, detail="Nothing to undo")
 
-        from datetime import datetime, timezone
-        import json
         deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z","+00:00"))
         age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
         if age > 10:
@@ -902,7 +876,6 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
         conn.commit()
 
         return {"ok": True, "restored_id": restored_id}
-
     finally:
         try: conn.close()
         except Exception: pass
