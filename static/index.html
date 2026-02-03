@@ -16,7 +16,7 @@
     *{box-sizing:border-box}
     body{
       margin:0; padding:0;
-      background:linear-gradient(180deg,#07090c, #0b0d10 40%, #0b0d10);
+      background:linear-gradient(180deg,var(--bgA), var(--bgB) 40%, var(--bgC));
       color:var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
@@ -105,7 +105,7 @@
     }
 
     .panel{
-      background:rgba(255,255,255,.02);
+      background:var(--panelBg);
       border:1px solid var(--border);
       border-radius:16px;
       padding:12px;
@@ -156,7 +156,7 @@
       overflow:hidden;
       border-radius:14px;
       border:1px solid var(--border);
-      background:rgba(0,0,0,.15);
+      background:var(--tableBg);
     }
     thead th{
       text-align:left;
@@ -232,7 +232,87 @@
     }
     td .catSel:focus{border-color:#304156}
     td .catSel option{background:#0b0f14; color:var(--text)}
-  </style>
+  
+    /* THEMES */
+    html[data-theme="light"]{
+      --bgA:#f3f4f6;
+      --bgB:#ffffff;
+      --bgC:#f3f4f6;
+
+      --panelBg:#ffffff;
+      --tableBg:#ffffff;
+
+      --text:#0b1220;
+      --muted:#4b5563;
+      --border:#e5e7eb;
+      --border2:#d1d5db;
+    }
+
+    /* Dark background variants */
+    html[data-bg="midnight"]{
+      --bgA:#050816;
+      --bgB:#070b1c;
+      --bgC:#0a0f24;
+    }
+    html[data-bg="graphite"]{
+      --bgA:#07090c;
+      --bgB:#0d1117;
+      --bgC:#0b0d10;
+    }
+    html[data-bg="carbon"]{
+      --bgA:#050505;
+      --bgB:#0a0a0a;
+      --bgC:#111111;
+    }
+
+    /* Theme control UI */
+    .themeCtl{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .themeCtl .miniLbl{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:900;
+    }
+    .themeCtl .miniBtn{
+      cursor:pointer;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:900;
+      transition:background .2s ease, border-color .2s ease, transform .02s ease;
+      user-select:none;
+    }
+    .themeCtl .miniBtn:hover{background:rgba(255,255,255,.05); border-color:var(--border2)}
+    .themeCtl .miniBtn:active{transform:translateY(1px)}
+    .themeCtl .miniSel{
+      background:#0b0f14;
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      outline:none;
+      font-weight:900;
+      min-width:160px;
+    }
+    html[data-theme="light"] .themeCtl .miniSel{
+      background:#ffffff;
+      border-color:var(--border);
+      color:var(--text);
+    }
+    .themeCtl .miniSel:focus{border-color:#304156}
+    .themeCtl .miniSel option{background:#0b0f14; color:var(--text)}
+    html[data-theme="light"] .themeCtl .miniSel option{background:#ffffff; color:var(--text)}
+
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -240,6 +320,15 @@
       <div>
         <h1>Registro Gastos</h1>
         <div class="sub">Estable (no rompe) + Add Category + Balance por divisa + Flags SVG.</div>
+        <div class="themeCtl">
+          <button class="miniBtn" id="themeToggle">Theme: Dark</button>
+          <span class="miniLbl">Background</span>
+          <select class="miniSel" id="bgSelect">
+            <option value="graphite">Graphite (default)</option>
+            <option value="midnight">Midnight</option>
+            <option value="carbon">Carbon</option>
+          </select>
+        </div>
       </div>
 
       <div id="balanceBox" aria-expanded="false" title="Click to expand">
@@ -720,8 +809,53 @@
     }
   });
 
+
+  function applyTheme(theme){
+    const t = (theme === "light") ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", t);
+    const btn = document.getElementById("themeToggle");
+    if(btn) btn.textContent = "Theme: " + (t.charAt(0).toUpperCase() + t.slice(1));
+  }
+
+  function applyBg(bg){
+    const allowed = new Set(["graphite","midnight","carbon"]); const b = allowed.has(bg) ? bg : "graphite";
+  }
+
+    document.documentElement.setAttribute("data-bg", b);
+    const sel = document.getElementById("bgSelect");
+    if(sel) sel.value = b;
+  }
+
+  function loadThemePrefs(){
+    const theme = localStorage.getItem("rg_theme") || "dark";
+    const bg = localStorage.getItem("rg_bg") || "graphite";
+    applyTheme(theme);
+    applyBg(bg);
+  }
+
   // boot
+  loadThemePrefs();
   load();
+
+  // Theme listeners
+  const tbtn = document.getElementById("themeToggle");
+  if(tbtn){
+    tbtn.addEventListener("click", ()=>{
+      const cur = document.documentElement.getAttribute("data-theme") || "dark";
+      const next = (cur === "dark") ? "light" : "dark";
+      localStorage.setItem("rg_theme", next);
+      applyTheme(next);
+    });
+  }
+  const bgSel = document.getElementById("bgSelect");
+  if(bgSel){
+    bgSel.addEventListener("change", ()=>{
+      const v = bgSel.value || "graphite";
+      localStorage.setItem("rg_bg", v);
+      applyBg(v);
+    });
+  }
+
 })();
 </script>
 </body>
