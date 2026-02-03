@@ -1,3 +1,18 @@
+
+def _ensure_deleted_table(conn):
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS deleted_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            original_id INTEGER,
+            row_json TEXT NOT NULL,
+            deleted_at TEXT NOT NULL
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_deleted_user_time ON deleted_expenses(user_id, deleted_at)")
+    conn.commit()
+
 import os
 import re
 import sqlite3
