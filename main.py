@@ -33,6 +33,19 @@ def detect_direction(sms: str) -> str:
 
 app = FastAPI(title="Registro Gastos API (single-user, no api_key)")
 
+
+# --------------------------
+# Global error handler: return JSON instead of plain "Internal Server Error"
+# --------------------------
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    # IMPORTANT: esto es para debug mientras arreglamos /update_field
+    return JSONResponse(
+        status_code=500,
+        content={"ok": False, "error": repr(exc), "path": str(request.url.path)}
+    )
+
+
 # Serve dashboard
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -340,8 +353,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "db_path": DB_PATH}
-
+    return {"ok": True, "db_path": DB_PATH, "version": "2026-02-03-editfix-2"}
 
 @app.get("/debug/db")
 def debug_db():
