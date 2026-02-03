@@ -275,6 +275,10 @@
     <div class="top">
       <div>
         <h1>Registro Gastos</h1>
+
+<div id="jsErrorBox" style="display:none; margin:10px 0; padding:10px; border-radius:10px; font-size:13px; background:rgba(255,0,0,.12); color:#ffb4b4; border:1px solid rgba(255,0,0,.25);">
+</div>
+
         <div class="sub">Filtros arriba + tabla estable (si falla, muestra el HTTP). Dark/Light estable.</div>
       </div>
 
@@ -339,7 +343,75 @@
   </div>
 
 <script>
-  // ===== CONFIG =====
+  
+  // ===========================
+  // SAFETY LAYER (no rompe UI)
+  // ===========================
+  function showJsError(e){
+    try{
+      const box = document.getElementById("jsErrorBox");
+      if(box){
+        box.style.display = "block";
+        box.textContent = "JS error: " + (e?.message || e);
+      } else {
+        // fallback: console only
+        console.error("JS error:", e);
+      }
+    }catch(_){}
+  }
+
+  // Render robusto: intenta varias funciones/targets sin petar
+  function renderAny(rows){
+    rows = rows || [];
+    // intenta funciones típicas si existen
+    try { if (typeof renderTable === "function") return renderTable(rows); } catch(e){ showJsError(e); }
+    try { if (typeof renderRows  === "function") return renderRows(rows);  } catch(e){ showJsError(e); }
+    try { if (typeof render      === "function") return render(rows);      } catch(e){ showJsError(e); }
+    try { if (typeof drawTable   === "function") return drawTable(rows);   } catch(e){ showJsError(e); }
+
+    // fallback directo: pintar tbody si existe
+    try{
+      const tbody = document.querySelector("table tbody");
+      if(!tbody) return;
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.created_at || ""}</td>
+          <td>${r.merchant_clean || r.merchant_raw || ""}</td>
+          <td>${r.category || ""}</td>
+          <td>${r.currency || ""}</td>
+          <td style="text-align:right">${(r.amount ?? "")}</td>
+        </tr>
+      `).join("");
+    }catch(e){ showJsError(e); }
+  }
+
+  // Si applyFilters peta, no te quedas sin filas
+  function safeApplyFilters(){
+    try{
+      if(typeof applyFilters === "function"){
+        safeApplyFilters();
+        return;
+      }
+      // si no hay applyFilters, renderiza todo
+      if(typeof state !== "undefined"){
+        const all = state.view || state.expenses || state.all || [];
+        renderAny(all);
+      }
+    }catch(e){
+      showJsError(e);
+      try{
+        if(typeof state !== "undefined"){
+          const all = state.expenses || state.all || state.view || [];
+          renderAny(all);
+        }
+      }catch(_){}
+    }
+  }
+
+  // Captura errores globales para que no “desaparezcan”
+  window.addEventListener("error", (ev)=>{ showJsError(ev.error || ev.message); });
+  window.addEventListener("unhandledrejection", (ev)=>{ showJsError(ev.reason || ev); });
+// ===== CONFIG =====
   const API_KEY = "ElPortichuelo99";
   const DEFAULT_USER = "pedro";
 
@@ -499,7 +571,7 @@
       state.sortKey = key;
       state.sortDir = (key === "amount") ? "desc" : "desc";
     }
-    applyFilters();
+    safeApplyFilters();
     updateSortIndicators();
   }
 
@@ -656,7 +728,7 @@
     const arr = (j && j.expenses) ? j.expenses : [];
     state.raw = Array.isArray(arr) ? arr : [];
     rebuildSelectOptions();
-    applyFilters();
+    safeApplyFilters();
     updateBalance();
 
     setStatus(`Loaded: ${state.raw.length}`);
@@ -697,7 +769,7 @@
       if($("cat")) $("cat").value="";
       if($("startDate")) $("startDate").value="";
       if($("endDate")) $("endDate").value="";
-      applyFilters();
+      safeApplyFilters();
       clearError();
     });
   }
@@ -815,7 +887,7 @@ if($("toast")) $("toast").style.display="none";
   function setRange(start, end){
     if($("startDate")) $("startDate").value = start || "";
     if($("endDate")) $("endDate").value = end || "";
-    applyFilters();
+    safeApplyFilters();
   }
 
   // Signed amount: expenses negative, income positive
