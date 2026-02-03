@@ -247,25 +247,7 @@
       --border:#e5e7eb;
       --border2:#d1d5db;
     }
-
-    /* Dark background variants */
-    html[data-bg="midnight"]{
-      --bgA:#050816;
-      --bgB:#070b1c;
-      --bgC:#0a0f24;
-    }
-    html[data-bg="graphite"]{
-      --bgA:#07090c;
-      --bgB:#0d1117;
-      --bgC:#0b0d10;
-    }
-    html[data-bg="carbon"]{
-      --bgA:#050505;
-      --bgB:#0a0a0a;
-      --bgC:#111111;
-    }
-
-    /* Theme control UI */
+/* Theme control UI */
     .themeCtl{
       display:flex;
       gap:10px;
@@ -273,12 +255,7 @@
       margin-top:10px;
       flex-wrap:wrap;
     }
-    .themeCtl .miniLbl{
-      color:var(--muted);
-      font-size:12px;
-      font-weight:900;
-    }
-    .themeCtl .miniBtn{
+.themeCtl .miniBtn{
       cursor:pointer;
       background:rgba(255,255,255,.03);
       border:1px solid var(--border);
@@ -292,25 +269,64 @@
     }
     .themeCtl .miniBtn:hover{background:rgba(255,255,255,.05); border-color:var(--border2)}
     .themeCtl .miniBtn:active{transform:translateY(1px)}
-    .themeCtl .miniSel{
-      background:#0b0f14;
-      border:1px solid var(--border);
-      color:var(--text);
-      border-radius:10px;
-      padding:7px 10px;
-      font-size:12px;
-      outline:none;
-      font-weight:900;
-      min-width:160px;
+
+    /* LIGHT THEME FIXES (contrast) */
+    html[data-theme="light"] body{
+      background:linear-gradient(180deg,var(--bgA), var(--bgB) 40%, var(--bgC));
     }
-    html[data-theme="light"] .themeCtl .miniSel{
+    html[data-theme="light"] .panel{
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    html[data-theme="light"] table{
+      background:var(--tableBg);
+    }
+    html[data-theme="light"] thead th{
+      color:#111827;
+      background:#f3f4f6;
+      border-bottom:1px solid var(--border);
+    }
+    html[data-theme="light"] tbody td{
+      border-bottom:1px solid rgba(229,231,235,.9);
+    }
+    html[data-theme="light"] tbody tr:hover td{
+      background:#f9fafb;
+    }
+    /* Inputs / selects */
+    html[data-theme="light"] .pill,
+    html[data-theme="light"] .colFilter,
+    html[data-theme="light"] td .inlineInput,
+    html[data-theme="light"] td .catSel{
+      background:#ffffff !important;
+      color:#0b1220 !important;
+      border-color:var(--border) !important;
+    }
+    html[data-theme="light"] select.pill option,
+    html[data-theme="light"] td .catSel option{
+      background:#ffffff !important;
+      color:#0b1220 !important;
+    }
+    /* Buttons */
+    html[data-theme="light"] .btn,
+    html[data-theme="light"] .themeCtl .miniBtn{
+      background:#ffffff;
+      color:#0b1220;
+      border-color:var(--border);
+    }
+    html[data-theme="light"] .btn:hover,
+    html[data-theme="light"] .themeCtl .miniBtn:hover{
+      background:#f9fafb;
+      border-color:var(--border2);
+    }
+    /* Balance box */
+    html[data-theme="light"] #balanceBox{
       background:#ffffff;
       border-color:var(--border);
-      color:var(--text);
     }
-    .themeCtl .miniSel:focus{border-color:#304156}
-    .themeCtl .miniSel option{background:#0b0f14; color:var(--text)}
-    html[data-theme="light"] .themeCtl .miniSel option{background:#ffffff; color:var(--text)}
+    html[data-theme="light"] .balRow{
+      background:#f9fafb;
+      border-color:var(--border);
+    }
+    html[data-theme="light"] .balCur{ color:#6b7280; }
 
 </style>
 </head>
@@ -322,13 +338,7 @@
         <div class="sub">Estable (no rompe) + Add Category + Balance por divisa + Flags SVG.</div>
         <div class="themeCtl">
           <button class="miniBtn" id="themeToggle">Theme: Dark</button>
-          <span class="miniLbl">Background</span>
-          <select class="miniSel" id="bgSelect">
-            <option value="graphite">Graphite (default)</option>
-            <option value="midnight">Midnight</option>
-            <option value="carbon">Carbon</option>
-          </select>
-        </div>
+</div>
       </div>
 
       <div id="balanceBox" aria-expanded="false" title="Click to expand">
@@ -817,20 +827,10 @@
     if(btn) btn.textContent = "Theme: " + (t === "dark" ? "Dark" : "Light");
   }
 
-  function applyBg(bg){
-    const allowed = new Set(["graphite","midnight","carbon"]);
-    const b = allowed.has(bg) ? bg : "graphite";
-    document.documentElement.setAttribute("data-bg", b);
-    const sel = document.getElementById("bgSelect");
-    if(sel) sel.value = b;
-  }
-
   function loadThemePrefs(){
     const theme = localStorage.getItem("rg_theme") || "dark";
-    const bg = localStorage.getItem("rg_bg") || "graphite";
     applyTheme(theme);
-    applyBg(bg);
-  }
+}
 
   // boot
   loadThemePrefs();
@@ -844,14 +844,6 @@
       const next = (cur === "dark") ? "light" : "dark";
       localStorage.setItem("rg_theme", next);
       applyTheme(next);
-    });
-  }
-  const bgSel = document.getElementById("bgSelect");
-  if(bgSel){
-    bgSel.addEventListener("change", ()=>{
-      const v = bgSel.value || "graphite";
-      localStorage.setItem("rg_bg", v);
-      applyBg(v);
     });
   }
 
