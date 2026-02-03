@@ -185,6 +185,34 @@ th.rg-sel, td.rg-sel { width: 36px; text-align: center; }
 input.rg-rowcb { width: 16px; height: 16px; cursor: pointer; }
 tr.rg-selected { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
 
+
+/* --- RG patch: selection visibility + remove hover dot --- */
+
+/* Checkbox: oculto por defecto */
+td.rg-sel .rg-rowcb { opacity: 0; }
+tbody tr:hover td.rg-sel .rg-rowcb { opacity: 1; }     /* visible al hover para poder seleccionar */
+td.rg-sel .rg-rowcb:checked { opacity: 1; }            /* visible si está seleccionado */
+
+/* Mantén el highlight SOLO si está seleccionado */
+tbody tr.rg-selected { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+
+/* Quitar posibles "dots" / circulitos que aparezcan al hover al final de la fila */
+tbody tr:hover td:last-child::after { content: none !important; display: none !important; }
+tbody tr:hover::after { content: none !important; display: none !important; }
+
+/* Quita elementos típicos de hover-actions tipo dot */
+tbody tr:hover .hover-dot,
+tbody tr:hover .row-dot,
+tbody tr:hover .dot,
+tbody tr:hover .rule-dot,
+tbody tr:hover .action-dot,
+tbody tr:hover .menu-dot,
+tbody tr:hover .kebab,
+tbody tr:hover .ellipsis { display: none !important; }
+
+/* Si el "circulito" es un botón pequeño vacío al final (muy común), lo escondemos */
+tbody tr:hover td:last-child button:empty { display: none !important; }
+
 </style>
 </head>
 <body>
@@ -945,6 +973,60 @@ function rgHookDeleteBtn(){
 }
 document.addEventListener("DOMContentLoaded", rgHookDeleteBtn);
 setTimeout(rgHookDeleteBtn, 800);
+
+
+/* --- RG patch: move Currency right after Amount --- */
+function rgMoveCurrencyAfterAmount(){
+  const table = document.querySelector("table");
+  if (!table) return;
+
+  const ths = Array.from(table.querySelectorAll("thead th"));
+  if (!ths.length) return;
+
+  const norm = (t) => (t || "").trim().toLowerCase();
+  const iAmount = ths.findIndex(th => ["amount","importe"].includes(norm(th.textContent)));
+  const iCurr   = ths.findIndex(th => ["currency","cur","moneda"].includes(norm(th.textContent)));
+
+  // Si no encontramos o ya está justo después, no hacemos nada
+  if (iAmount < 0 || iCurr < 0) return;
+  if (iCurr === iAmount + 1) return;
+
+  // Mover header
+  const theadRow = table.querySelector("thead tr");
+  const thAmount = ths[iAmount];
+  const thCurr   = ths[iCurr];
+  if (!theadRow || !thAmount || !thCurr) return;
+
+  // Insertar currency después de amount
+  theadRow.insertBefore(thCurr, thAmount.nextSibling);
+
+  // Mover celdas en cada fila
+  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  rows.forEach(tr => {
+    const tds = Array.from(tr.children); // incluye td.rg-sel ya
+    const tdAmount = tds[iAmount];
+    const tdCurr   = tds[iCurr];
+    if (!tdAmount || !tdCurr) return;
+    tr.insertBefore(tdCurr, tdAmount.nextSibling);
+  });
+}
+
+// Ejecutar al cargar y tras refrescos (tu tabla se regenera a veces)
+document.addEventListener("DOMContentLoaded", () => {
+  try { rgMoveCurrencyAfterAmount(); } catch(e){}
+  setTimeout(() => { try { rgMoveCurrencyAfterAmount(); } catch(e){} }, 400);
+  setTimeout(() => { try { rgMoveCurrencyAfterAmount(); } catch(e){} }, 1200);
+});
+
+// Si ya tienes MutationObserver por tabla, esto lo refuerza
+(function(){
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+  const obs = new MutationObserver(() => {
+    try { rgMoveCurrencyAfterAmount(); } catch(e){}
+  });
+  obs.observe(tbody, {childList:true, subtree:true});
+})();
 
 </script>
 </body>
