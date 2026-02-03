@@ -1259,5 +1259,176 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 
+
+<!-- RG_PATCH_V3_ALIGN_TAIL_COLUMNS -->
+<style>
+/* Amount a la derecha, Currency centrado */
+table thead th.rg-th-amount, table tbody td.rg-td-amount { text-align: right !important; }
+table thead th.rg-th-currency, table tbody td.rg-td-currency { text-align: center !important; }
+</style>
+
+<script>
+function rg_norm(t){ return (t||"").trim().toLowerCase(); }
+function rg_isNumText(t){
+  const x = (t||"").trim().replace(/,/g,"");
+  return /^-?\d+(\.\d+)?$/.test(x);
+}
+function rg_cellHasCurrency(td){
+  if (!td) return false;
+  const txt = (td.textContent||"").toUpperCase();
+  return txt.includes("KWD") || txt.includes("USD") || txt.includes("EUR") || txt.includes("CUR");
+}
+function rg_cellHasNumber(td){
+  if (!td) return false;
+  // busca números en spans/children primero
+  const kids = Array.from(td.querySelectorAll("*"));
+  for (const el of kids){
+    const t = (el.textContent||"").trim();
+    if (rg_isNumText(t)) return true;
+  }
+  // fallback
+  const t = (td.textContent||"").trim();
+  return rg_isNumText(t);
+}
+
+function rg_findAmountCurrencyCols(table){
+  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  if (!rows.length) return {amountIdx:-1, currencyIdx:-1};
+
+  // contamos por columna "cuántas filas parecen amount/currency"
+  const first = rows[0];
+  const colCount = first.children.length;
+  const numScore = new Array(colCount).fill(0);
+  const curScore = new Array(colCount).fill(0);
+
+  for (const tr of rows.slice(0, Math.min(rows.length, 25))){
+    const tds = Array.from(tr.children);
+    for (let i=0;i<Math.min(colCount, tds.length);i++){
+      if (rg_cellHasNumber(tds[i])) numScore[i] += 1;
+      if (rg_cellHasCurrency(tds[i])) curScore[i] += 1;
+    }
+  }
+
+  // Amount: la columna con más números (y preferimos la más a la derecha si empatan)
+  let amountIdx = -1, bestNum = -1;
+  for (let i=0;i<numScore.length;i++){
+    if (numScore[i] > bestNum || (numScore[i] === bestNum && i > amountIdx)){
+      bestNum = numScore[i]; amountIdx = i;
+    }
+  }
+
+  // Currency: la columna con más currency tokens (y preferimos la más cercana a Amount si empatan)
+  let currencyIdx = -1, bestCur = -1;
+  for (let i=0;i<curScore.length;i++){
+    const score = curScore[i];
+    if (score > bestCur){
+      bestCur = score; currencyIdx = i;
+    } else if (score === bestCur && score > 0 && amountIdx >= 0){
+      // tie-break: más cerca de amount
+      if (currencyIdx < 0 || Math.abs(i-amountIdx) < Math.abs(currencyIdx-amountIdx)){
+        currencyIdx = i;
+      }
+    }
+  }
+
+  // Si no encontramos currency por score, intentamos localizar KWD/EUR/USD explícito
+  if (currencyIdx < 0 || bestCur <= 0){
+    for (let i=0;i<colCount;i++){
+      const td = rows[0].children[i];
+      if (td && rg_cellHasCurrency(td)) { currencyIdx = i; break; }
+    }
+  }
+
+  return {amountIdx, currencyIdx};
+}
+
+function rg_rebuildTail(){
+  const table = document.querySelector("table");
+  if (!table) return;
+
+  const theadRow = table.querySelector("thead tr");
+  if (!theadRow) return;
+
+  const {amountIdx, currencyIdx} = rg_findAmountCurrencyCols(table);
+  if (amountIdx < 0 || currencyIdx < 0 || amountIdx === currencyIdx) return;
+
+  // Header cells actuales
+  const ths = Array.from(theadRow.children);
+
+  // Intentamos identificar los TH "Amount" y "Currency" existentes por texto
+  let thAmount = ths.find(th => ["amount","importe"].includes(rg_norm(th.textContent)));
+  let thCurrency = ths.find(th => ["currency","cur","moneda"].includes(rg_norm(th.textContent)));
+
+  // Si no existen, los creamos para el tail
+  if (!thAmount){
+    thAmount = document.createElement("th");
+    thAmount.textContent = "Amount";
+  }
+  if (!thCurrency){
+    thCurrency = document.createElement("th");
+    thCurrency.textContent = "Currency";
+  }
+
+  // Quitamos los TH existentes de Amount/Currency (si están ya en el header)
+  ths.forEach(th => {
+    const t = rg_norm(th.textContent);
+    if (t === rg_norm(thAmount.textContent) || t === rg_norm(thCurrency.textContent)){
+      // ojo: si thAmount/thCurrency son referencias a esos mismos nodos, esto los quita y luego los reinsertamos
+      if (th.parentNode === theadRow) theadRow.removeChild(th);
+    }
+  });
+
+  // Ahora construimos el final: ... | Amount | Currency (siempre al final)
+  thAmount.classList.add("rg-th-amount");
+  thCurrency.classList.add("rg-th-currency");
+  theadRow.appendChild(thAmount);
+  theadRow.appendChild(thCurrency);
+
+  // Reordenar celdas en cada fila: sacar las columnas detectadas y ponerlas al final en orden
+  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  rows.forEach(tr => {
+    const tds = Array.from(tr.children);
+    if (tds.length <= Math.max(amountIdx, currencyIdx)) return;
+
+    const tdAmount = tds[amountIdx];
+    const tdCurrency = tds[currencyIdx];
+
+    // Importante: si amountIdx > currencyIdx, al quitar uno cambia el índice del otro.
+    // Así que quitamos en orden descendente para no romper.
+    const pairs = [
+      {idx: amountIdx, node: tdAmount},
+      {idx: currencyIdx, node: tdCurrency},
+    ].sort((a,b)=> b.idx - a.idx);
+
+    for (const it of pairs){
+      if (it.node && it.node.parentNode === tr) tr.removeChild(it.node);
+    }
+
+    // Añadimos al final en orden correcto
+    tdAmount.classList.add("rg-td-amount");
+    tdCurrency.classList.add("rg-td-currency");
+    tr.appendChild(tdAmount);
+    tr.appendChild(tdCurrency);
+  });
+}
+
+function rg_runV3(){
+  try { rg_rebuildTail(); } catch(e){}
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  rg_runV3();
+  setTimeout(rg_runV3, 250);
+  setTimeout(rg_runV3, 900);
+});
+
+(function(){
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+  const obs = new MutationObserver(() => rg_runV3());
+  obs.observe(tbody, {childList:true, subtree:true});
+})();
+</script>
+
 </body>
 </html>
