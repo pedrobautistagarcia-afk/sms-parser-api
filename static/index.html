@@ -6,6 +6,14 @@
   <title>Registro Gastos</title>
   <style>
     :root{
+      --bg:#000000;          /* dark */
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#1f2937;
+      --border2:#243041;
+      --green:#22c55e;
+      --red:#ef4444;
+
       --text:#e5e7eb;
       --muted:#9ca3af;
       --border:#1f2937;
@@ -16,7 +24,7 @@
     *{box-sizing:border-box}
     body{
       margin:0; padding:0;
-      background:linear-gradient(180deg,var(--bgA), var(--bgB) 40%, var(--bgC));
+      background: var(--bg);
       color:var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
@@ -771,7 +779,29 @@
       if(save && val !== oldValue){
         try{
           await postJSON("/update/merchant", { id, merchant: val });
-          await load();
+          await initTheme();
+  
+  function initTheme(){
+    const saved = localStorage.getItem("rg_theme");
+    const theme = (saved === "light" || saved === "dark") ? saved : "dark";
+    document.documentElement.setAttribute("data-theme", theme);
+    const ic = document.getElementById("themeIcon");
+    if(ic) ic.textContent = (theme === "dark") ? "🌙" : "☀️";
+  }
+
+  const tbtn = document.getElementById("themeToggle");
+  if(tbtn){
+    tbtn.addEventListener("click", ()=>{
+      const cur = document.documentElement.getAttribute("data-theme") || "dark";
+      const next = (cur === "dark") ? "light" : "dark";
+      localStorage.setItem("rg_theme", next);
+      document.documentElement.setAttribute("data-theme", next);
+      const ic = document.getElementById("themeIcon");
+      if(ic) ic.textContent = (next === "dark") ? "🌙" : "☀️";
+    });
+  }
+
+  load();
         }catch(e){
           showError("Save merchant failed: " + (e?.message || e));
         }
