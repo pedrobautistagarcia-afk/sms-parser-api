@@ -716,17 +716,17 @@
   }
 
   // events filters
-  $("q").addEventListener("input", applyFilters);
-  $("cur").addEventListener("change", applyFilters);
-  $("cat").addEventListener("change", applyFilters);
-  if($("startDate")) $("startDate").addEventListener("change", applyFilters);
-  if($("endDate")) $("endDate").addEventListener("change", applyFilters);
-  $("fCreated").addEventListener("input", applyFilters);
-  $("fMerch").addEventListener("input", applyFilters);
-  $("fCat").addEventListener("input", applyFilters);
-  $("fCur").addEventListener("input", applyFilters);
+  if($("q")) $("q").addEventListener("input", applyFilters);
+  if($("cur")) $("cur").addEventListener("change", applyFilters);
+  if($("cat")) $("cat").addEventListener("change", applyFilters);
+  if($("startDate")) if($("startDate")) $("startDate").addEventListener("change", applyFilters);
+  if($("endDate")) if($("endDate")) $("endDate").addEventListener("change", applyFilters);
+  if($("fCreated")) $("fCreated").addEventListener("input", applyFilters);
+  if($("fMerch")) $("fMerch").addEventListener("input", applyFilters);
+  if($("fCat")) $("fCat").addEventListener("input", applyFilters);
+  if($("fCur")) $("fCur").addEventListener("input", applyFilters);
 
-  $("clear").addEventListener("click", ()=>{
+  if($("clear")) $("clear").addEventListener("click", ()=>{
     $("q").value="";
     $("cur").value="";
     $("cat").value="";
@@ -743,8 +743,8 @@
     btn.addEventListener("click", ()=> setRange(btn.dataset.range));
   });
 
-  $("reload").addEventListener("click", load);
-  $("csv").addEventListener("click", exportCSV);
+  if($("reload")) $("reload").addEventListener("click", load);
+  if($("csv")) $("csv").addEventListener("click", exportCSV);
 
   document.querySelectorAll("th.th-sort").forEach(th=>{
     th.addEventListener("click", ()=>{
@@ -796,8 +796,7 @@
     const saved = localStorage.getItem("rg_theme");
     const theme = (saved === "light" || saved === "dark") ? saved : "dark";
     document.documentElement.setAttribute("data-theme", theme);
-    const t = document.getElementById("themeText");
-    if(t) t.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+    const t = document.getElementById("themeText"); if(t) t.textContent = next.charAt(0).toUpperCase() + next.slice(1);
   }
 
   const tbtn = document.getElementById("themeToggle");
@@ -807,8 +806,7 @@
       const next = (cur === "dark") ? "light" : "dark";
       localStorage.setItem("rg_theme", next);
       document.documentElement.setAttribute("data-theme", next);
-      const t = document.getElementById("themeText");
-      if(t) t.textContent = next.charAt(0).toUpperCase() + next.slice(1);
+      const t = document.getElementById("themeText"); if(t) t.textContent = next.charAt(0).toUpperCase() + next.slice(1);
     });
   }
 
