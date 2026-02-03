@@ -150,6 +150,16 @@ def init_db() -> None:
     cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%credited%'")
     cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND (lower(sms) LIKE '%debited%' OR direction IS NULL OR direction='')")
 
+    # BACKFILL_DIRECTION_ALWAYS_V1
+    # Rellenar direction en registros antiguos
+    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%credit%'")
+    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%deposit%'")
+    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%salary%'")
+    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%received%'")
+    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%debit%'")
+    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%paid%'")
+    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%purchase%'")
+
     conn.commit()
     conn.close()
 
@@ -343,6 +353,15 @@ async def ingest(payload: IngestRequest):
 
     parsed = parse_sms(sms)
     parsed["user_id"] = user_id
+
+    # FALLBACK_DIRECTION_V1
+    # Por si alguna fila antigua o parser raro deja direction vacío
+    if not parsed.get("direction"):
+        low = (sms or "").lower()
+        if ("credit" in low) or ("credited" in low) or ("deposit" in low) or ("salary" in low) or ("received" in low):
+            parsed["direction"] = "income"
+        else:
+            parsed["direction"] = "expense"
 
     # Apply rules
     parsed = apply_rules(user_id, parsed.get("merchant_clean", ""), parsed)
