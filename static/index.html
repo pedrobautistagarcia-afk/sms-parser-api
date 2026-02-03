@@ -1157,5 +1157,107 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 </script>
+
+<!-- RG_PATCH_V2_AMOUNT_CURRENCY_AND_DOT -->
+<style>
+/* 1) Matar la columna final (ahí está el circulito y ahora mismo también el amount) */
+table thead th:last-child,
+table tbody td:last-child {
+  display: none !important;
+}
+
+/* 2) Asegura que Amount se vea bien */
+table td.rg-amount-cell span {
+  font-variant-numeric: tabular-nums;
+}
+</style>
+
+<script>
+/* 3) Mueve el número que ahora está en la última celda visible hacia la columna Amount */
+
+function rg_norm(t){ return (t||"").trim().toLowerCase(); }
+function rg_isNum(t){
+  const x = (t||"").trim().replace(/,/g,"");
+  return /^-?\d+(\.\d+)?$/.test(x);
+}
+function rg_findHeaderIndex(names){
+  const ths = Array.from(document.querySelectorAll("table thead th"));
+  for (let i=0;i<ths.length;i++){
+    if (names.includes(rg_norm(ths[i].textContent))) return i;
+  }
+  return -1;
+}
+function rg_extractNumberNode(td){
+  if (!td) return null;
+  // busca algún elemento cuyo texto sea número (span rojo/verde)
+  const nodes = Array.from(td.querySelectorAll("*"));
+  for (const el of nodes){
+    const txt = (el.textContent||"").trim();
+    if (rg_isNum(txt)) return el;
+  }
+  // fallback con text
+  const txt = (td.textContent||"").trim();
+  const m = txt.match(/-?\d+(?:\.\d+)?/);
+  if (!m) return null;
+  const sp = document.createElement("span");
+  sp.textContent = m[0];
+  return sp;
+}
+
+function rg_fixAmountFromLastColumn(){
+  const table = document.querySelector("table");
+  if (!table) return;
+
+  // Importante: calculamos índices sobre el DOM actual (incluye la columna select)
+  const idxAmount = rg_findHeaderIndex(["amount","importe"]);
+  const idxCurrency = rg_findHeaderIndex(["currency","cur","moneda"]);
+  if (idxAmount < 0 || idxCurrency < 0) return;
+
+  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  rows.forEach(tr => {
+    const tds = Array.from(tr.children);
+    if (tds.length < 3) return;
+
+    const tdAmount = tds[idxAmount];
+    if (!tdAmount) return;
+
+    // si ya hay un número en Amount, no tocamos
+    const amountTxt = (tdAmount.textContent||"").trim();
+    if (rg_isNum(amountTxt)) {
+      tdAmount.classList.add("rg-amount-cell");
+      return;
+    }
+
+    // El número está en la última columna (la del circulito). Aunque la ocultemos por CSS,
+    // sigue existiendo en el DOM, así que lo cogemos de ahí:
+    const tdLast = tds[tds.length - 1];
+    const numNode = rg_extractNumberNode(tdLast);
+    if (!numNode) return;
+
+    tdAmount.innerHTML = "";
+    tdAmount.appendChild(numNode);
+    tdAmount.classList.add("rg-amount-cell");
+  });
+}
+
+function rg_runV2(){
+  try { rg_fixAmountFromLastColumn(); } catch(e){}
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  rg_runV2();
+  setTimeout(rg_runV2, 300);
+  setTimeout(rg_runV2, 900);
+});
+
+// si tu tabla se refresca, lo re-ejecutamos
+(function(){
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+  const obs = new MutationObserver(() => rg_runV2());
+  obs.observe(tbody, {childList:true, subtree:true});
+})();
+</script>
+
 </body>
 </html>
