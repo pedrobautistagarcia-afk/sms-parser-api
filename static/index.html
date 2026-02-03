@@ -231,21 +231,7 @@
     td .catSel:focus{border-color:#304156}
     td .catSel option{background:#0b0f14; color:var(--text)}
 
-    td .catInput{
-      width:100%;
-      background:#0b0f14;
-      color:var(--text);
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:6px 8px;
-      font-size:12px;
-      outline:none;
-      font-weight:900;
-    }
-    td .catInput:focus{border-color:#304156}
-
-  
-/* FLAGS_SVG */
+    /* FLAGS_SVG */
 .flagSvg{width:16px;height:12px;display:inline-block;vertical-align:-2px;margin-right:6px;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.10) inset;}
 
 </style>
@@ -431,26 +417,35 @@
       return t.includes("credit") || t.includes("credited") || t.includes("deposit") || t.includes("salary") || t.includes("received") || t.includes("refund");
     }
 
+    
     function fmtCat(x){
-      const t = String(x||"other");
-      return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Other";
+      const raw = String(x||"other").trim();
+      const t = raw ? raw : "other";
+      const nice = t.replaceAll("_"," ").replaceAll("-"," ").toLowerCase();
+      return nice.split(" ").filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
     }
+
 
     function setLoading(text){
       $("loading").textContent = text || "";
     }
 
+    
     function catOptions(selected){
       const sel = String(selected || "other").toLowerCase();
       const cats = Array.from(state.cats || []).map(x=>String(x||"").toLowerCase()).filter(Boolean);
       if(!cats.includes("other")) cats.push("other");
       if(sel && !cats.includes(sel)) cats.push(sel);
       cats.sort();
-      return cats.map(c=>{
+
+      const opts = cats.map(c=>{
         const label = fmtCat(c);
         const isSel = c === sel ? "selected" : "";
         return `<option value="${c}" ${isSel}>${label}</option>`;
       }).join("");
+
+      // opción premium para añadir nueva categoría
+      return opts + `<option value="__add__">+ Add category…</option>`;
     }
 
     async function postJSON(url, body){
@@ -575,7 +570,7 @@ function syncCategoryDropdown(){
               <span class="merchText">${String(e.merchant_clean||"")}</span>
             </td>
             <td class="category">
-              <input class="catInput" list="catlist" data-id="${e.id}" value="${fmtCat(String(e.category||"other"))}" />
+              <select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select>
             </td>
             <td class="currency muted">${flagForCur(e.currency)} ${String(e.currency||"")}</td>
             <td class="amt ${amtClass}">${amtTxt}</td>
@@ -754,9 +749,43 @@ function syncCategoryDropdown(){
       input.addEventListener("blur", ()=>finish(true));
     });
 
-    // Category select save
+    
+    // Category select save (+ Add category…)
     document.addEventListener("change", async (ev)=>{
       const sel = ev.target.closest("select.catSel");
+      if(!sel) return;
+
+      const id = Number(sel.dataset.id||0);
+      if(!id) return;
+
+      let category = String(sel.value||"other").toLowerCase();
+
+      if(category === "__add__"){
+        // Volver temporalmente a "other" hasta que el usuario escriba
+        const userText = prompt("New category name (e.g. coffee shop, rent, groceries):");
+        if(!userText){
+          // cancelar → recargamos fila desde server
+          await load();
+          return;
+        }
+        // normalizamos igual que backend: lowercase + espacios a _
+        category = userText.trim().toLowerCase().replaceAll(" ","_");
+        category = category.replace(/[^a-z0-9_-]/g, "")
+        category = category.replaceAll("__","_").strip("_-") or "other";
+
+        // añadimos al set local para que aparezca en todos los desplegables
+        state.cats.add(category);
+        syncCategoryDropdown();
+      }
+
+      try{
+        await postJSON("/update/category", { id, category });
+        await load();
+      }catch(e){
+        showError("Save category failed: " + (e?.message || e));
+        await load();
+      }
+    });
       if(!sel) return;
       const id = Number(sel.dataset.id||0);
       if(!id) return;
