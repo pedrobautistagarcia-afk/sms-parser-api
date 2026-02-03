@@ -7,15 +7,12 @@
   <style>
     :root{
       --bg:#0b0d10;
-      --panel:#0f1318;
-      --panel2:#0c1015;
       --text:#e5e7eb;
       --muted:#9ca3af;
       --border:#1f2937;
       --border2:#243041;
       --green:#22c55e;
       --red:#ef4444;
-      --amber:#f59e0b;
     }
     *{box-sizing:border-box}
     body{
@@ -26,7 +23,6 @@
     }
     .wrap{max-width:1100px; margin:24px auto; padding:0 18px;}
     .top{
-      position:relative;
       display:flex;
       align-items:flex-end;
       justify-content:space-between;
@@ -36,21 +32,64 @@
     h1{margin:0; font-size:22px; letter-spacing:.2px;}
     .sub{margin:6px 0 0 0; color:var(--muted); font-size:12px}
 
+    /* Balance dropdown */
     #balanceBox{
       display:inline-flex;
-      align-items:center;
-      gap:8px;
+      flex-direction:column;
+      gap:0;
       padding:8px 12px;
       border-radius:10px;
       background:rgba(255,255,255,.03);
       border:1px solid var(--border);
-      font-weight:700;
       font-size:13px;
       white-space:nowrap;
+      cursor:pointer;
+      user-select:none;
+      min-width:170px;
     }
-    #balanceBox.positive{color:var(--green)}
-    #balanceBox.negative{color:var(--red)}
-    #balanceBox .mini{color:var(--muted); font-weight:600; font-size:12px}
+    #balanceBox .balTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:900;
+    }
+    #balanceBox .balChevron{
+      color:var(--muted);
+      font-weight:900;
+      font-size:12px;
+      transition:transform .15s ease;
+    }
+    #balanceBox[aria-expanded="true"] .balChevron{ transform: rotate(180deg); }
+    #balanceBox .balDrop{
+      display:none;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid rgba(31,41,55,.7);
+      gap:8px;
+    }
+    #balanceBox[aria-expanded="true"] .balDrop{
+      display:flex;
+      flex-direction:column;
+    }
+    .balRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      padding:6px 8px;
+      border-radius:10px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(31,41,55,.8);
+      font-weight:900;
+    }
+    .balLeft{display:flex; align-items:center; gap:8px;}
+    .balFlag{width:18px; text-align:center;}
+    .balCur{color:var(--muted); width:44px;}
+    .balAmt{font-variant-numeric: tabular-nums; font-weight:900;}
+    .pos{color:var(--green)}
+    .neg{color:var(--red)}
 
     #errBanner{
       display:none;
@@ -104,9 +143,7 @@
     .btn:hover{background:rgba(255,255,255,.05); border-color:var(--border2)}
     .btn:active{transform:translateY(1px)}
     .btn.ghost{background:transparent}
-    .btn.primary{border-color:#2b3647}
     .btn.small{padding:6px 9px; font-size:12px}
-
     .loading{color:var(--muted); font-size:12px; padding:6px 2px}
 
     table{
@@ -147,17 +184,14 @@
     .sort-ind{display:inline-block; min-width:14px; opacity:.8}
 
     td.amt{font-variant-numeric: tabular-nums; text-align:right}
-    .amt-income{color:var(--green); font-weight:700}
-    .amt-expense{color:var(--red); font-weight:700}
+    .amt-income{color:var(--green); font-weight:900}
+    .amt-expense{color:var(--red); font-weight:900}
 
     td.currency{color:#cbd5e1}
-    td.category{color:#e5e7eb}
-
     .muted{color:var(--muted)}
     .tight{max-width:260px}
     .tight2{max-width:170px}
 
-    /* filter row inside header */
     .filterRow th{padding:8px 10px; background:rgba(255,255,255,.02)}
     .colFilter{
       width:100%;
@@ -171,163 +205,31 @@
     }
     .colFilter:focus{border-color:#304156}
 
-    /* select dark */
-    select.colFilter option{background:#0b0f14; color:var(--text)}
-  
-    /* INLINE_EDIT_V1 */
-    td .inlineInput {
-      width: 100%;
-      background: #0b0f14;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 8px;
-      font-size: 12px;
-      outline: none;
-    }
-    td .inlineInput:focus {
-      border-color: #304156;
-    }
-    td .catSel {
-      width: 100%;
-      background: #0b0f14;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 8px;
-      font-size: 12px;
-      outline: none;
-    }
-    td .catSel:focus {
-      border-color: #304156;
-    }
-    td .catSel option {
-      background: #0b0f14;
-      color: var(--text);
-    }
-
-  
-    /* BALANCE_DROPDOWN_V1 */
-    #balanceBox {
-      cursor: pointer;
-      user-select: none;
-      position: relative;
-      min-width: 140px;
-    }
-    #balanceBox .balTop {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    #balanceBox .balTitle {
-      font-weight: 800;
-      letter-spacing: .2px;
-    }
-    #balanceBox .balChevron {
-      color: var(--muted);
-      font-weight: 800;
-      font-size: 12px;
-      transform: translateY(-1px);
-      transition: transform .15s ease;
-    }
-    #balanceBox[aria-expanded="true"] .balChevron {
-      transform: rotate(180deg);
-    }
-    #balanceBox .balDrop {
-      display:none;
-      margin-top:10px;
-      padding-top:10px;
-      border-top: 1px solid rgba(31,41,55,.7);
-      gap:8px;
-    }
-    #balanceBox[aria-expanded="true"] .balDrop {
-      display:flex;
-      flex-direction:column;
-    }
-    .balRow {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-size:12px;
-      padding:6px 8px;
-      border-radius:10px;
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(31,41,55,.8);
-    }
-    .balLeft {
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .balFlag { width: 18px; text-align:center; }
-    .balCur { color: var(--muted); font-weight: 700; width: 42px; }
-    .balAmt { font-variant-numeric: tabular-nums; font-weight: 900; }
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
-
-  
-    /* BALANCE_DROPDOWN_V2 */
-    #balanceBox{
-      display:inline-flex;
-      flex-direction:column;
-      gap:0;
-      padding:8px 12px;
-      border-radius:10px;
-      background:rgba(255,255,255,.03);
+    /* inline edit */
+    td .inlineInput{
+      width:100%;
+      background:#0b0f14;
+      color:var(--text);
       border:1px solid var(--border);
-      font-size:13px;
-      white-space:nowrap;
-      cursor:pointer;
-      user-select:none;
-      min-width: 150px;
-    }
-    #balanceBox .balTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-weight:800;
-    }
-    #balanceBox .balChevron{
-      color:var(--muted);
-      font-weight:900;
-      font-size:12px;
-      transition:transform .15s ease;
-    }
-    #balanceBox[aria-expanded="true"] .balChevron{
-      transform: rotate(180deg);
-    }
-    #balanceBox .balDrop{
-      display:none;
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px solid rgba(31,41,55,.7);
-      gap:8px;
-    }
-    #balanceBox[aria-expanded="true"] .balDrop{
-      display:flex;
-      flex-direction:column;
-    }
-    .balRow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-size:12px;
-      padding:6px 8px;
       border-radius:10px;
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(31,41,55,.8);
-      font-weight:800; /* <-- negrita dentro del desplegable */
+      padding:6px 8px;
+      font-size:12px;
+      outline:none;
     }
-    .balFlag{ width: 18px; text-align:center; }
-    .balCur{ color: var(--muted); width: 44px; }
-    .balAmt{ font-variant-numeric: tabular-nums; font-weight:900; }
-    .pos{ color: var(--green); }
-    .neg{ color: var(--red); }
-
+    td .inlineInput:focus{border-color:#304156}
+    td .catSel{
+      width:100%;
+      background:#0b0f14;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:6px 8px;
+      font-size:12px;
+      outline:none;
+      font-weight:900;
+    }
+    td .catSel:focus{border-color:#304156}
+    td .catSel option{background:#0b0f14; color:var(--text)}
   </style>
 </head>
 <body>
@@ -335,20 +237,28 @@
     <div class="top">
       <div>
         <h1>Registro Gastos</h1>
-        <div class="sub">Dashboard/table (dark) — estable y sin “Loading infinito”.</div>
+        <div class="sub">Tabla (dark) — estable. Edit merchant + category. Balance por divisa.</div>
       </div>
+
       <div id="balanceBox" aria-expanded="false" title="Click to expand">
         <div class="balTop">
           <span class="balTitle">Balance</span>
           <span class="balChevron">▾</span>
         </div>
         <div class="balDrop" id="balDrop">
-          <div class="balRow" id="balKWD"><span class="balFlag">🇰🇼</span><span class="balCur">KWD</span><span class="balAmt">+0.000</span></div>
-          <div class="balRow" id="balUSD"><span class="balFlag">🇺🇸</span><span class="balCur">USD</span><span class="balAmt">+0.000</span></div>
-          <div class="balRow" id="balEUR"><span class="balFlag">🇪🇺</span><span class="balCur">EUR</span><span class="balAmt">+0.000</span></div>
+          <div class="balRow" id="balKWD">
+            <span class="balLeft"><span class="balFlag">🇰🇼</span><span class="balCur">KWD</span></span>
+            <span class="balAmt">+0.000</span>
+          </div>
+          <div class="balRow" id="balUSD">
+            <span class="balLeft"><span class="balFlag">🇺🇸</span><span class="balCur">USD</span></span>
+            <span class="balAmt">+0.000</span>
+          </div>
+          <div class="balRow" id="balEUR">
+            <span class="balLeft"><span class="balFlag">🇪🇺</span><span class="balCur">EUR</span></span>
+            <span class="balAmt">+0.000</span>
+          </div>
         </div>
-      </div>
-    </div>
       </div>
     </div>
 
@@ -371,10 +281,10 @@
         </div>
 
         <div class="right">
-          <button class="btn small primary" data-range="today">Today</button>
-          <button class="btn small primary" data-range="week">Last week</button>
-          <button class="btn small primary" data-range="month">Last month</button>
-          <button class="btn small primary" data-range="year">This year</button>
+          <button class="btn small" data-range="today">Today</button>
+          <button class="btn small" data-range="week">Last week</button>
+          <button class="btn small" data-range="month">Last month</button>
+          <button class="btn small" data-range="year">This year</button>
           <button class="btn small" id="reload">Reload</button>
           <button class="btn small" id="csv">Export CSV</button>
         </div>
@@ -404,425 +314,366 @@
     </div>
   </div>
 
-<script>
-(function(){
-  const $ = (id)=>document.getElementById(id);
+  <script>
+  (function(){
+    const $ = (id)=>document.getElementById(id);
 
-  const errBanner = $("errBanner");
-  function showError(msg){
-    errBanner.style.display="block";
-    errBanner.textContent = String(msg || "Unknown error");
-  }
-  function clearError(){
-    errBanner.style.display="none";
-    errBanner.textContent="";
-  }
-
-  window.addEventListener("error", (e)=>showError("JS error: " + (e?.message || e)));
-  window.addEventListener("unhandledrejection", (e)=>showError("Promise error: " + (e?.reason?.message || e?.reason || e)));
-
-  const state = {
-    user_id: "pedro",
-    raw: [],
-    view: [],
-    sort: { key:"created_at", dir:"desc" }, // default newest first
-    cats: new Set()
-  };
-
-  function isIncomeFromSms(sms){
-    const t = String(sms||"").toLowerCase();
-    return t.includes("credit") || t.includes("credited") || t.includes("deposit") || t.includes("salary") || t.includes("received") || t.includes("refund");
-  }
-
-  function flagForCur(cur){
-    const c = String(cur||"").toUpperCase();
-    if(c==="KWD") return "🇰🇼";
-    if(c==="USD") return "🇺🇸";
-    if(c==="EUR") return "🇪🇺";
-    return "";
-  }
-
-  function fmtCat(x){
-    const t = String(x||"other");
-    return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Other";
-  }
-
-  function setLoading(text){
-    const el = $("loading");
-    el.textContent = text || "";
-  }
-
-  async function load(){
-    clearError();
-    setLoading("Loading…");
-    try{
-      const r = await fetch(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`);
-      if(!r.ok) throw new Error("HTTP " + r.status);
-      const j = await r.json();
-      state.raw = Array.isArray(j.expenses) ? j.expenses : [];
-      state.cats = new Set(state.raw.map(x=>String(x.category||"other").toLowerCase()));
-      syncCategoryDropdown();
-      applyFilters();
-    }catch(e){
-      showError(e?.message || e);
-    }finally{
-      setLoading("");
+    const errBanner = $("errBanner");
+    function showError(msg){
+      errBanner.style.display="block";
+      errBanner.textContent = String(msg || "Unknown error");
     }
-  }
+    function clearError(){
+      errBanner.style.display="none";
+      errBanner.textContent="";
+    }
+    window.addEventListener("error", (e)=>showError("JS error: " + (e?.message || e)));
+    window.addEventListener("unhandledrejection", (e)=>showError("Promise error: " + (e?.reason?.message || e?.reason || e)));
 
-  function syncCategoryDropdown(){
-    const sel = $("cat");
-    const keep = sel.value;
-    const arr = Array.from(state.cats).sort();
-    // reset
-    sel.innerHTML = '<option value="">All categories</option>' + arr.map(c=>`<option value="${c}">${fmtCat(c)}</option>`).join("");
-    sel.value = keep;
-  }
-
-  function applyFilters(){
-    const q = $("q").value.trim().toLowerCase();
-    const cur = $("cur").value.trim().toUpperCase();
-    const cat = $("cat").value.trim().toLowerCase();
-
-    const fCreated = $("fCreated").value.trim().toLowerCase();
-    const fMerch = $("fMerch").value.trim().toLowerCase();
-    const fCat = $("fCat").value.trim().toLowerCase();
-    const fCur = $("fCur").value.trim().toLowerCase();
-
-    let v = state.raw.filter(e=>{
-      const merch = String(e.merchant_clean||"").toLowerCase();
-      const category = String(e.category||"other").toLowerCase();
-      const currency = String(e.currency||"").toUpperCase();
-      const created = String(e.created_at||"");
-
-      if(cur && currency !== cur) return false;
-      if(cat && category !== cat) return false;
-
-      if(q){
-        const hay = (merch + " " + category + " " + currency).toLowerCase();
-        if(!hay.includes(q)) return false;
-      }
-
-      if(fCreated && !created.toLowerCase().includes(fCreated)) return false;
-      if(fMerch && !merch.includes(fMerch)) return false;
-      if(fCat && !category.includes(fCat)) return false;
-      if(fCur && !currency.toLowerCase().includes(fCur)) return false;
-
-      return true;
-    });
-
-    // sort
-    const {key, dir} = state.sort;
-    const mul = dir === "asc" ? 1 : -1;
-    v.sort((a,b)=>{
-      let av = a?.[key], bv = b?.[key];
-      if(key === "amount"){
-        av = Number(av||0); bv = Number(bv||0);
-        return (av===bv?0:(av>bv?1:-1))*mul;
-      }
-      if(key === "created_at"){
-        const ad = new Date(av||0).getTime();
-        const bd = new Date(bv||0).getTime();
-        return (ad===bd?0:(ad>bd?1:-1))*mul;
-      }
-      av = String(av||"").toLowerCase();
-      bv = String(bv||"").toLowerCase();
-      return (av===bv?0:(av>bv?1:-1))*mul;
-    });
-
-    state.view = v;
-    render();
-  }
-
-  function updateSortIndicators(){
-    document.querySelectorAll(".sort-ind").forEach(el=>el.textContent="");
-    const ind = document.querySelector(`.sort-ind[data-ind="${state.sort.key}"]`);
-    if(ind) ind.textContent = state.sort.dir === "asc" ? "↑" : "↓";
-  }
-
-  function render(){
-    updateSortIndicators();
-    const tb = $("tbody");
-    tb.innerHTML = state.view.map(e=>{
-      const income = isIncomeFromSms(e.sms);
-      const amt = Number(e.amount||0);
-      const amtTxt = (income?"+":"") + amt.toFixed(3);
-      const amtClass = income ? "amt-income" : "amt-expense";
-      return `
-        <tr>
-          <td class="muted tight2">${String(e.created_at||"")}</td>
-          <td class="tight merchCell" data-id="${e.id}"><span class="merchText">${String(e.merchant_clean||"")}</span></td>
-          <td class="category"><select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select></td>
-          <td class="currency muted">${flagForCur(e.currency)} ${String(e.currency||"")}</td>
-          <td class="amt ${amtClass}">${amtTxt}</td>
-        </tr>
-      `;
-    }).join("");
-
-    updateBalance();
-  }
-
-  function updateBalance(){
-    const totals = { KWD:0, USD:0, EUR:0 };
-
-    for(const e of state.view){
-      const cur = String(e.currency||"").toUpperCase();
-      if(!(cur in totals)) continue;
-
-      const income = isIncomeFromSms(e.sms);
-      const amt = Number(e.amount||0);
-      totals[cur] += income ? amt : -amt;
+    // balance toggle
+    const bal = $("balanceBox");
+    if(bal){
+      bal.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        const open = bal.getAttribute("aria-expanded") === "true";
+        bal.setAttribute("aria-expanded", open ? "false" : "true");
+      });
+      document.addEventListener("click", ()=> bal.setAttribute("aria-expanded","false"));
     }
 
-    function setRow(rowId, val){
-      const row = document.getElementById(rowId);
-      if(!row) return;
-      const amtEl = row.querySelector(".balAmt");
-      if(!amtEl) return;
-      amtEl.classList.remove("pos","neg");
-      amtEl.classList.add(val >= 0 ? "pos" : "neg");
-      const sign = val >= 0 ? "+" : "";
-      amtEl.textContent = sign + val.toFixed(3);
-    }
-
-    setRow("balKWD", totals.KWD);
-    setRow("balUSD", totals.USD);
-    setRow("balEUR", totals.EUR);
-  }
-
-    // helper
-    function setRow(id, val){
-      const row = document.getElementById(id);
-      if(!row) return;
-      const amtEl = row.querySelector(".balAmt");
-      if(!amtEl) return;
-
-      amtEl.classList.remove("pos","neg");
-      amtEl.classList.add(val >= 0 ? "pos" : "neg");
-      const sign = val >= 0 ? "+" : "";
-      amtEl.textContent = sign + val.toFixed(3);
-    }
-
-    setRow("balKWD", totals.KWD);
-    setRow("balUSD", totals.USD);
-    setRow("balEUR", totals.EUR);
-
-    // el color del cuadro (global) lo dejamos neutral según suma total en todas las monedas conocidas
-    const grand = totals.KWD + totals.USD + totals.EUR;
-    const box = document.getElementById("balanceBox");
-    if(box){
-      box.classList.remove("positive","negative");
-      box.classList.add(grand >= 0 ? "positive" : "negative");
-    }
-  }
-    const box = $("balanceBox");
-    const val = $("balanceVal");
-    box.classList.remove("positive","negative");
-    box.classList.add(total>=0 ? "positive" : "negative");
-    val.textContent = (total>=0?"+":"") + total.toFixed(3);
-  }
-
-  function setRange(range){
-    // nota: filtramos por created_at ISO, recortando al rango
-    const now = new Date();
-    const start = new Date(now);
-    if(range==="today"){
-      start.setHours(0,0,0,0);
-    } else if(range==="week"){
-      start.setDate(start.getDate()-7);
-    } else if(range==="month"){
-      start.setMonth(start.getMonth()-1);
-    } else if(range==="year"){
-      start.setMonth(0,1); start.setHours(0,0,0,0);
-    }
-    const iso = start.toISOString().slice(0,10);
-    $("fCreated").value = iso; // contains YYYY-MM-DD
-    applyFilters();
-  }
-
-  function exportCSV(){
-    const rows = [["created_at","merchant","category","currency","amount"]];
-    for(const e of state.view){
-      rows.push([
-        String(e.created_at||""),
-        String(e.merchant_clean||""),
-        String(e.category||"other"),
-        String(e.currency||""),
-        String(e.amount||"")
-      ]);
-    }
-    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href=url;
-    a.download="expenses.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-
-  /* EDIT_HANDLERS_V1 */
-  function catOptions(selected){
-    const sel = String(selected || "other").toLowerCase();
-    const cats = Array.from(state.cats || []).map(x=>String(x||"").toLowerCase()).filter(Boolean);
-    if(!cats.includes("other")) cats.push("other");
-    if(sel && !cats.includes(sel)) cats.push(sel);
-    cats.sort();
-    return cats.map(c => {
-      const label = fmtCat(c);
-      const isSel = c === sel ? "selected" : "";
-      return `<option value="${c}" ${isSel}>${label}</option>`;
-    }).join("");
-  }
-
-  async function postJSON(url, body){
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    if(!r.ok) throw new Error("HTTP " + r.status);
-    return r.json().catch(()=>({}));
-  }
-
-  // events
-  ["q","cur","cat","fCreated","fMerch","fCat","fCur"].forEach(id=>{
-    $(id).addEventListener("input", applyFilters);
-    $(id).addEventListener("change", applyFilters);
-  });
-
-  $("clear").addEventListener("click", ()=>{
-    $("q").value="";
-    $("cur").value="";
-    $("cat").value="";
-    $("fCreated").value="";
-    $("fMerch").value="";
-    $("fCat").value="";
-    $("fCur").value="";
-    applyFilters();
-  });
-
-  $("reload").addEventListener("click", load);
-  $("csv").addEventListener("click", exportCSV);
-
-  document.querySelectorAll("button[data-range]").forEach(b=>{
-    b.addEventListener("click", ()=>setRange(b.getAttribute("data-range")));
-  });
-
-  document.addEventListener("click",(ev)=>{
-    const th = ev.target.closest("th.th-sort");
-    if(!th) return;
-    const key = th.getAttribute("data-sort");
-    if(!key) return;
-    if(state.sort.key === key){
-      state.sort.dir = (state.sort.dir==="asc") ? "desc" : "asc";
-    } else {
-      state.sort.key = key;
-      state.sort.dir = (key==="created_at" || key==="amount") ? "desc" : "asc";
-    }
-    applyFilters();
-  });
-
-
-  /* ROW_EDIT_EVENTS_V1 */
-  // Merchant inline edit (click)
-  document.addEventListener("click", (ev)=>{
-    const cell = ev.target.closest("td.merchCell");
-    if(!cell) return;
-
-    // si clicas dentro del input, no reiniciar
-    if(cell.querySelector("input.inlineInput")) return;
-
-    const id = Number(cell.dataset.id || 0);
-    if(!id) return;
-
-    const span = cell.querySelector(".merchText");
-    const oldValue = span ? span.textContent : "";
-
-    const input = document.createElement("input");
-    input.className = "inlineInput";
-    input.type = "text";
-    input.value = oldValue;
-
-    if(span) span.replaceWith(input);
-    else cell.appendChild(input);
-
-    input.focus();
-    input.select();
-
-    const finish = async (save)=>{
-      const val = input.value.trim();
-      const finalVal = save ? val : oldValue;
-
-      const sp = document.createElement("span");
-      sp.className = "merchText";
-      sp.textContent = finalVal;
-      input.replaceWith(sp);
-
-      if(save && val !== oldValue){
-        try {
-          await postJSON("/update/merchant", { id, merchant: val });
-          await load(); // recarga para mantener consistencia
-        } catch(e) {
-          showError("Save merchant failed: " + (e?.message || e));
-        }
-      }
+    const state = {
+      user_id: "pedro",
+      raw: [],
+      view: [],
+      sort: { key:"created_at", dir:"desc" },
+      cats: new Set()
     };
 
-    input.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter") finish(true);
-      if(e.key === "Escape") finish(false);
-    });
-    input.addEventListener("blur", ()=>finish(true));
-  });
-
-  // Category select save
-  document.addEventListener("change", async (ev)=>{
-    const sel = ev.target.closest("select.catSel");
-    if(!sel) return;
-    const id = Number(sel.dataset.id || 0);
-    if(!id) return;
-    const category = String(sel.value || "other").toLowerCase();
-    try {
-      await postJSON("/update/category", { id, category });
-      await load();
-    } catch(e) {
-      showError("Save category failed: " + (e?.message || e));
+    function flagForCur(cur){
+      const c = String(cur||"").toUpperCase();
+      if(c==="KWD") return "🇰🇼";
+      if(c==="USD") return "🇺🇸";
+      if(c==="EUR") return "🇪🇺";
+      return "";
     }
-  });
 
+    function isIncomeFromSms(sms){
+      const t = String(sms||"").toLowerCase();
+      return t.includes("credit") || t.includes("credited") || t.includes("deposit") || t.includes("salary") || t.includes("received") || t.includes("refund");
+    }
 
-  /* BALANCE_TOGGLE_V1 */
-  const balBox = document.getElementById("balanceBox");
-  if(balBox){
-    balBox.addEventListener("click", (ev)=>{
-      ev.stopPropagation();
-      const isOpen = balBox.getAttribute("aria-expanded") === "true";
-      balBox.setAttribute("aria-expanded", isOpen ? "false" : "true");
+    function fmtCat(x){
+      const t = String(x||"other");
+      return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Other";
+    }
+
+    function setLoading(text){
+      $("loading").textContent = text || "";
+    }
+
+    function catOptions(selected){
+      const sel = String(selected || "other").toLowerCase();
+      const cats = Array.from(state.cats || []).map(x=>String(x||"").toLowerCase()).filter(Boolean);
+      if(!cats.includes("other")) cats.push("other");
+      if(sel && !cats.includes(sel)) cats.push(sel);
+      cats.sort();
+      return cats.map(c=>{
+        const label = fmtCat(c);
+        const isSel = c === sel ? "selected" : "";
+        return `<option value="${c}" ${isSel}>${label}</option>`;
+      }).join("");
+    }
+
+    async function postJSON(url, body){
+      const r = await fetch(url, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+      });
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      return r.json().catch(()=> ({}));
+    }
+
+    async function load(){
+      clearError();
+      setLoading("Loading…");
+      try{
+        const r = await fetch(`/expenses?user_id=${encodeURIComponent(state.user_id)}&limit=500`);
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        const j = await r.json();
+        state.raw = Array.isArray(j.expenses) ? j.expenses : [];
+        state.cats = new Set(state.raw.map(x=>String(x.category||"other").toLowerCase()));
+        syncCategoryDropdown();
+        applyFilters();
+      }catch(e){
+        showError(e?.message || e);
+      }finally{
+        setLoading("");
+      }
+    }
+
+    function syncCategoryDropdown(){
+      const sel = $("cat");
+      const keep = sel.value;
+      const arr = Array.from(state.cats).sort();
+      sel.innerHTML = '<option value="">All categories</option>' + arr.map(c=>`<option value="${c}">${fmtCat(c)}</option>`).join("");
+      sel.value = keep;
+    }
+
+    function applyFilters(){
+      const q = $("q").value.trim().toLowerCase();
+      const cur = $("cur").value.trim().toUpperCase();
+      const cat = $("cat").value.trim().toLowerCase();
+
+      const fCreated = $("fCreated").value.trim().toLowerCase();
+      const fMerch = $("fMerch").value.trim().toLowerCase();
+      const fCat = $("fCat").value.trim().toLowerCase();
+      const fCur = $("fCur").value.trim().toLowerCase();
+
+      let v = state.raw.filter(e=>{
+        const merch = String(e.merchant_clean||"").toLowerCase();
+        const category = String(e.category||"other").toLowerCase();
+        const currency = String(e.currency||"").toUpperCase();
+        const created = String(e.created_at||"");
+
+        if(cur && currency !== cur) return false;
+        if(cat && category !== cat) return false;
+
+        if(q){
+          const hay = (merch + " " + category + " " + currency).toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+
+        if(fCreated && !created.toLowerCase().includes(fCreated)) return false;
+        if(fMerch && !merch.includes(fMerch)) return false;
+        if(fCat && !category.includes(fCat)) return false;
+        if(fCur && !currency.toLowerCase().includes(fCur)) return false;
+
+        return true;
+      });
+
+      const {key, dir} = state.sort;
+      const mul = dir === "asc" ? 1 : -1;
+      v.sort((a,b)=>{
+        let av = a?.[key], bv = b?.[key];
+        if(key === "amount"){
+          av = Number(av||0); bv = Number(bv||0);
+          return (av===bv?0:(av>bv?1:-1))*mul;
+        }
+        if(key === "created_at"){
+          const ad = new Date(av||0).getTime();
+          const bd = new Date(bv||0).getTime();
+          return (ad===bd?0:(ad>bd?1:-1))*mul;
+        }
+        av = String(av||"").toLowerCase();
+        bv = String(bv||"").toLowerCase();
+        return (av===bv?0:(av>bv?1:-1))*mul;
+      });
+
+      state.view = v;
+      render();
+    }
+
+    function updateSortIndicators(){
+      document.querySelectorAll(".sort-ind").forEach(el=>el.textContent="");
+      const ind = document.querySelector(`.sort-ind[data-ind="${state.sort.key}"]`);
+      if(ind) ind.textContent = state.sort.dir === "asc" ? "↑" : "↓";
+    }
+
+    function render(){
+      updateSortIndicators();
+      const tb = $("tbody");
+      tb.innerHTML = state.view.map(e=>{
+        const income = isIncomeFromSms(e.sms);
+        const amt = Number(e.amount||0);
+        const amtTxt = (income?"+":"") + amt.toFixed(3);
+        const amtClass = income ? "amt-income" : "amt-expense";
+        return `
+          <tr>
+            <td class="muted tight2">${String(e.created_at||"")}</td>
+            <td class="tight merchCell" data-id="${e.id}">
+              <span class="merchText">${String(e.merchant_clean||"")}</span>
+            </td>
+            <td class="category">
+              <select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select>
+            </td>
+            <td class="currency muted">${flagForCur(e.currency)} ${String(e.currency||"")}</td>
+            <td class="amt ${amtClass}">${amtTxt}</td>
+          </tr>
+        `;
+      }).join("");
+
+      updateBalance();
+    }
+
+    function updateBalance(){
+      const totals = { KWD:0, USD:0, EUR:0 };
+      for(const e of state.view){
+        const cur = String(e.currency||"").toUpperCase();
+        if(!(cur in totals)) continue;
+        const income = isIncomeFromSms(e.sms);
+        const amt = Number(e.amount||0);
+        totals[cur] += income ? amt : -amt;
+      }
+      function setRow(rowId, val){
+        const row = document.getElementById(rowId);
+        if(!row) return;
+        const amtEl = row.querySelector(".balAmt");
+        if(!amtEl) return;
+        amtEl.classList.remove("pos","neg");
+        amtEl.classList.add(val >= 0 ? "pos" : "neg");
+        const sign = val >= 0 ? "+" : "";
+        amtEl.textContent = sign + val.toFixed(3);
+      }
+      setRow("balKWD", totals.KWD);
+      setRow("balUSD", totals.USD);
+      setRow("balEUR", totals.EUR);
+    }
+
+    function setRange(range){
+      const now = new Date();
+      const start = new Date(now);
+      if(range==="today"){
+        start.setHours(0,0,0,0);
+      } else if(range==="week"){
+        start.setDate(start.getDate()-7);
+      } else if(range==="month"){
+        start.setMonth(start.getMonth()-1);
+      } else if(range==="year"){
+        start.setMonth(0,1);
+        start.setHours(0,0,0,0);
+      }
+      $("fCreated").value = start.toISOString().slice(0,10);
+      applyFilters();
+    }
+
+    function exportCSV(){
+      const rows = [["created_at","merchant","category","currency","amount"]];
+      for(const e of state.view){
+        rows.push([String(e.created_at||""), String(e.merchant_clean||""), String(e.category||"other"), String(e.currency||""), String(e.amount||"")]);
+      }
+      const csv = rows.map(r=>r.map(x=>{
+        const t = String(x).replaceAll('"','""');
+        return `"${t}"`;
+      }).join(",")).join("\n");
+      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "expenses.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // events
+    $("q").addEventListener("input", applyFilters);
+    $("cur").addEventListener("change", applyFilters);
+    $("cat").addEventListener("change", applyFilters);
+    $("fCreated").addEventListener("input", applyFilters);
+    $("fMerch").addEventListener("input", applyFilters);
+    $("fCat").addEventListener("input", applyFilters);
+    $("fCur").addEventListener("input", applyFilters);
+
+    $("clear").addEventListener("click", ()=>{
+      $("q").value="";
+      $("cur").value="";
+      $("cat").value="";
+      $("fCreated").value="";
+      $("fMerch").value="";
+      $("fCat").value="";
+      $("fCur").value="";
+      applyFilters();
     });
 
-    document.addEventListener("click", ()=>{
-      balBox.setAttribute("aria-expanded", "false");
+    document.querySelectorAll('[data-range]').forEach(btn=>{
+      btn.addEventListener("click", ()=> setRange(btn.dataset.range));
     });
-  }
 
-/* BALANCE_TOGGLE_V2 */
-  const _bal = document.getElementById("balanceBox");
-  if(_bal){
-    _bal.addEventListener("click", (ev)=>{
-      ev.stopPropagation();
-      const open = _bal.getAttribute("aria-expanded") === "true";
-      _bal.setAttribute("aria-expanded", open ? "false" : "true");
+    $("reload").addEventListener("click", load);
+    $("csv").addEventListener("click", exportCSV);
+
+    document.querySelectorAll("th.th-sort").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const key = th.dataset.sort;
+        if(state.sort.key === key){
+          state.sort.dir = (state.sort.dir === "asc") ? "desc" : "asc";
+        }else{
+          state.sort.key = key;
+          state.sort.dir = "asc";
+        }
+        applyFilters();
+      });
     });
-    document.addEventListener("click", ()=> _bal.setAttribute("aria-expanded","false"));
-  }
 
-  // boot
-  load();
-})();
-</script>
+    // Merchant inline edit
+    document.addEventListener("click", (ev)=>{
+      const cell = ev.target.closest("td.merchCell");
+      if(!cell) return;
+      if(cell.querySelector("input.inlineInput")) return;
+
+      const id = Number(cell.dataset.id||0);
+      if(!id) return;
+
+      const span = cell.querySelector(".merchText");
+      const oldValue = span ? span.textContent : "";
+
+      const input = document.createElement("input");
+      input.className = "inlineInput";
+      input.type = "text";
+      input.value = oldValue;
+
+      if(span) span.replaceWith(input);
+      else cell.appendChild(input);
+
+      input.focus();
+      input.select();
+
+      const finish = async (save)=>{
+        const val = input.value.trim();
+        const finalVal = save ? val : oldValue;
+
+        const sp = document.createElement("span");
+        sp.className = "merchText";
+        sp.textContent = finalVal;
+        input.replaceWith(sp);
+
+        if(save && val !== oldValue){
+          try{
+            await postJSON("/update/merchant", { id, merchant: val });
+            await load();
+          }catch(e){
+            showError("Save merchant failed: " + (e?.message || e));
+          }
+        }
+      };
+
+      input.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter") finish(true);
+        if(e.key === "Escape") finish(false);
+      });
+      input.addEventListener("blur", ()=>finish(true));
+    });
+
+    // Category select save
+    document.addEventListener("change", async (ev)=>{
+      const sel = ev.target.closest("select.catSel");
+      if(!sel) return;
+      const id = Number(sel.dataset.id||0);
+      if(!id) return;
+      const category = String(sel.value||"other").toLowerCase();
+      try{
+        await postJSON("/update/category", { id, category });
+        await load();
+      }catch(e){
+        showError("Save category failed: " + (e?.message || e));
+      }
+    });
+
+    // boot
+    load();
+  })();
+  </script>
 </body>
 </html>
