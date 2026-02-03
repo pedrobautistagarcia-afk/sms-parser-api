@@ -272,7 +272,13 @@ tr.selected-row { outline: 1px solid rgba(255,255,255,.18); background: rgba(255
 </div>
 
 <script>
-  // =============== CONFIG ===============
+  
+function addApiKey(url){
+  const u = new URL(url, window.location.origin);
+  u.searchParams.set("api_key", 'ElPortichuelo99');
+  return u.pathname + u.search;
+}
+// =============== CONFIG ===============
   const USER_ID = "pedro";
   const API_KEY = "ElPortichuelo99";
   const LIMIT = 500;
