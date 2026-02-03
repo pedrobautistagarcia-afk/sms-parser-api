@@ -267,6 +267,67 @@
     .pos { color: var(--green); }
     .neg { color: var(--red); }
 
+  
+    /* BALANCE_DROPDOWN_V2 */
+    #balanceBox{
+      display:inline-flex;
+      flex-direction:column;
+      gap:0;
+      padding:8px 12px;
+      border-radius:10px;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      font-size:13px;
+      white-space:nowrap;
+      cursor:pointer;
+      user-select:none;
+      min-width: 150px;
+    }
+    #balanceBox .balTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:800;
+    }
+    #balanceBox .balChevron{
+      color:var(--muted);
+      font-weight:900;
+      font-size:12px;
+      transition:transform .15s ease;
+    }
+    #balanceBox[aria-expanded="true"] .balChevron{
+      transform: rotate(180deg);
+    }
+    #balanceBox .balDrop{
+      display:none;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid rgba(31,41,55,.7);
+      gap:8px;
+    }
+    #balanceBox[aria-expanded="true"] .balDrop{
+      display:flex;
+      flex-direction:column;
+    }
+    .balRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      padding:6px 8px;
+      border-radius:10px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(31,41,55,.8);
+      font-weight:800; /* <-- negrita dentro del desplegable */
+    }
+    .balFlag{ width: 18px; text-align:center; }
+    .balCur{ color: var(--muted); width: 44px; }
+    .balAmt{ font-variant-numeric: tabular-nums; font-weight:900; }
+    .pos{ color: var(--green); }
+    .neg{ color: var(--red); }
+
   </style>
 </head>
 <body>
@@ -276,7 +337,7 @@
         <h1>Registro Gastos</h1>
         <div class="sub">Dashboard/table (dark) — estable y sin “Loading infinito”.</div>
       </div>
-      <div id="balanceBox" class="positive" aria-expanded="false" title="Click to expand">
+      <div id="balanceBox" aria-expanded="false" title="Click to expand">
         <div class="balTop">
           <span class="balTitle">Balance</span>
           <span class="balChevron">▾</span>
@@ -286,6 +347,8 @@
           <div class="balRow" id="balUSD"><span class="balFlag">🇺🇸</span><span class="balCur">USD</span><span class="balAmt">+0.000</span></div>
           <div class="balRow" id="balEUR"><span class="balFlag">🇪🇺</span><span class="balCur">EUR</span><span class="balAmt">+0.000</span></div>
         </div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -369,6 +432,14 @@
   function isIncomeFromSms(sms){
     const t = String(sms||"").toLowerCase();
     return t.includes("credit") || t.includes("credited") || t.includes("deposit") || t.includes("salary") || t.includes("received") || t.includes("refund");
+  }
+
+  function flagForCur(cur){
+    const c = String(cur||"").toUpperCase();
+    if(c==="KWD") return "🇰🇼";
+    if(c==="USD") return "🇺🇸";
+    if(c==="EUR") return "🇪🇺";
+    return "";
   }
 
   function fmtCat(x){
@@ -482,7 +553,7 @@
           <td class="muted tight2">${String(e.created_at||"")}</td>
           <td class="tight merchCell" data-id="${e.id}"><span class="merchText">${String(e.merchant_clean||"")}</span></td>
           <td class="category"><select class="catSel" data-id="${e.id}">${catOptions(e.category)}</select></td>
-          <td class="currency muted">${String(e.currency||"")}</td>
+          <td class="currency muted">${flagForCur(e.currency)} ${String(e.currency||"")}</td>
           <td class="amt ${amtClass}">${amtTxt}</td>
         </tr>
       `;
@@ -492,7 +563,7 @@
   }
 
   function updateBalance(){
-    let totals = { KWD:0, USD:0, EUR:0 };
+    const totals = { KWD:0, USD:0, EUR:0 };
 
     for(const e of state.view){
       const cur = String(e.currency||"").toUpperCase();
@@ -500,9 +571,24 @@
 
       const income = isIncomeFromSms(e.sms);
       const amt = Number(e.amount||0);
-
       totals[cur] += income ? amt : -amt;
     }
+
+    function setRow(rowId, val){
+      const row = document.getElementById(rowId);
+      if(!row) return;
+      const amtEl = row.querySelector(".balAmt");
+      if(!amtEl) return;
+      amtEl.classList.remove("pos","neg");
+      amtEl.classList.add(val >= 0 ? "pos" : "neg");
+      const sign = val >= 0 ? "+" : "";
+      amtEl.textContent = sign + val.toFixed(3);
+    }
+
+    setRow("balKWD", totals.KWD);
+    setRow("balUSD", totals.USD);
+    setRow("balEUR", totals.EUR);
+  }
 
     // helper
     function setRow(id, val){
@@ -721,6 +807,17 @@
     document.addEventListener("click", ()=>{
       balBox.setAttribute("aria-expanded", "false");
     });
+  }
+
+/* BALANCE_TOGGLE_V2 */
+  const _bal = document.getElementById("balanceBox");
+  if(_bal){
+    _bal.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      const open = _bal.getAttribute("aria-expanded") === "true";
+      _bal.setAttribute("aria-expanded", open ? "false" : "true");
+    });
+    document.addEventListener("click", ()=> _bal.setAttribute("aria-expanded","false"));
   }
 
   // boot
