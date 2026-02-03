@@ -795,24 +795,77 @@ class UpdateFieldRequest(BaseModel):
         populate_by_name = True
 
 @app.post("/update_field")
-def update_field(req: UpdateFieldRequest, request: Request):
-    require_key(request)
+def update_field(req: UpdateFieldRequest, api_key: str = Query(None)):
+    # ---- API KEY ----
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
 
-    allowed = {"merchant_clean", "category"}
+    # ---- validate field ----
+    allowed = {
+        "merchant_clean": "TEXT",
+        "merchant_raw": "TEXT",
+        "category": "TEXT",
+        "amount": "REAL",
+        "currency": "TEXT",
+        "direction": "TEXT",
+        "created_at": "TEXT",
+        "date_raw": "TEXT",
+        "date_iso": "TEXT",
+        "sms_raw": "TEXT",
+        "sms": "TEXT",
+    }
     field = (req.field or "").strip()
+
     if field not in allowed:
-        raise HTTPException(status_code=400, detail="Field not allowed")
+        raise HTTPException(status_code=400, detail=f"Field not allowed: {field}")
 
-    conn = db()
-    cur = conn.cursor()
+    value = req.value
 
-    cur.execute("SELECT id FROM expenses WHERE id=? AND user_id=?", (req.id, req.user_id))
-    if not cur.fetchone():
-        conn.close()
-        raise HTTPException(status_code=404, detail="Row not found")
+    # normalize some fields
+    if field == "category" and value is not None:
+        value = str(value).strip().lower() or "other"
+    if field == "currency" and value is not None:
+        value = str(value).strip().upper()
+    if field == "amount" and value is not None:
+        try:
+            value = float(value)
+        except Exception:
+            raise HTTPException(status_code=400, detail="amount must be a number")
+    if field == "merchant_clean" and value is not None:
+        value = str(value).strip()
 
-    cur.execute(f"UPDATE expenses SET {field}=? WHERE id=? AND user_id=?", (req.value, req.id, req.user_id))
-    conn.commit()
-    conn.close()
+    try:
+        conn = db()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
 
-    return {"ok": True, "id": req.id, "field": field, "value": req.value}
+        # Make sure column exists (avoid sqlite errors -> 500)
+        cur.execute("PRAGMA table_info(expenses)")
+        cols = {row[1] for row in cur.fetchall()}
+        if field not in cols:
+            raise HTTPException(status_code=400, detail=f"Column not in DB: {field}")
+
+        cur.execute(
+            f"UPDATE expenses SET {field} = ? WHERE id = ? AND user_id = ?",
+            (value, req.id, req.user_id),
+        )
+        conn.commit()
+
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Row not found")
+
+        cur.execute("SELECT * FROM expenses WHERE id = ? AND user_id = ?", (req.id, req.user_id))
+        row = cur.fetchone()
+        return {"ok": True, "id": req.id, "field": field, "value": value, "row": dict(row) if row else None}
+
+    except HTTPException:
+        raise
+    except sqlite3.Error as e:
+        # return a clear error instead of generic 500 with no info
+        raise HTTPException(status_code=500, detail=f"sqlite error: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
