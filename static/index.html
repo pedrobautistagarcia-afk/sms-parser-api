@@ -297,6 +297,13 @@ select, input[type="date"], input[type="text"]{
   color:var(--muted);
 }
 
+
+/* ===== FIX: balance dropdown over sticky filters ===== */
+.top{ position: relative; z-index: 60; }
+.balance{ position: relative; z-index: 2000; }
+.balance .dropdown{ z-index: 3000 !important; }
+.row{ z-index: 30; } /* por debajo del dropdown */
+
 </style>
 </head>
 
@@ -424,6 +431,28 @@ select, input[type="date"], input[type="text"]{
   </div>
 
 </div>
+
+
+  <div class="roadmap" id="roadmap">
+    <h2>Roadmap</h2>
+    <div class="rmGrid">
+      <div class="rmCard">
+        <b>Insights</b>
+        <div class="small">Month-over-month changes, recurring merchants, top categories.</div>
+        <div style="margin-top:10px;"><span class="rmTag">Planned</span></div>
+      </div>
+      <div class="rmCard">
+        <b>Currency conversion</b>
+        <div class="small">Optional FX view (KWD → EUR/USD) for reporting.</div>
+        <div style="margin-top:10px;"><span class="rmTag">Planned</span></div>
+      </div>
+      <div class="rmCard">
+        <b>Subscriptions</b>
+        <div class="small">Detect repeated charges and show a “subscriptions” section.</div>
+        <div style="margin-top:10px;"><span class="rmTag">Planned</span></div>
+      </div>
+    </div>
+  </div>
 
 <script>
   // =============== CONFIG ===============
@@ -755,7 +784,7 @@ function formatDateEnglishISO(iso10){
           <input class="cbRow" type="checkbox" data-id="${id}" ${checked}>
         </td>
 
-        <td title="${dateTxt}">${dateTxt}</td>
+        <td title="${dateTxt}">${formatDateEnglishISO(dateTxt)}</td>
 
         <td>
           <input class="merchantEdit" data-id="${id}" value="${merch.replace(/"/g,'&quot;')}" />
