@@ -171,7 +171,28 @@
 
     tr.selected-row { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
     [data-theme="light"] tr.selected-row { outline: 1px solid rgba(0,0,0,.14); background: rgba(0,0,0,.04); }
-  </style>
+  
+/* ===== Dropdown readability fix (native selects) ===== */
+:root { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+
+/* The CLOSED select control (always fixable) */
+select, input[type="date"], input[type="text"]{
+  color: var(--text);
+  background: var(--panel2);
+}
+
+/* Hint to browsers to render native dropdown menus with dark palette */
+select{ color-scheme: dark; }
+[data-theme="light"] select{ color-scheme: light; }
+
+/* Some browsers use system colors for the popout list; this helps where supported */
+option{ color: var(--text); background: var(--panel2); }
+
+/* If the OS forces light popups, at least make the select itself readable */
+select:focus{ border-color: rgba(122,162,255,.45); }
+
+</style>
 </head>
 
 <body>
