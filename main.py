@@ -977,7 +977,7 @@ init_rules_db()
 
 
 # ================= ADD RULE ENDPOINT =================
-@app.post("/add_rule")
+@app.post("/add_rule_old")
 async def add_rule(req: Request):
     api_key = req.query_params.get("api_key")
     if api_key != API_KEY:
@@ -1065,7 +1065,7 @@ migrate_rules_table()
 
 
 # ================= ADD RULE ENDPOINT (compat) =================
-@app.post("/add_rule")
+@app.post("/add_rule_old")
 async def add_rule(req: Request):
     api_key = req.query_params.get("api_key")
     if api_key != API_KEY:
@@ -1111,7 +1111,7 @@ async def add_rule(req: Request):
 
 
 # ================= ADD RULE ENDPOINT (compat) =================
-@app.post("/add_rule")
+@app.post("/add_rule_old")
 async def add_rule(req: Request):
     api_key = req.query_params.get("api_key")
     if api_key != API_KEY:
@@ -1210,7 +1210,7 @@ migrate_rules_table_v2()
 
 
 # ================= ADD RULE ENDPOINT (v2 robust) =================
-@app.post("/add_rule")
+@app.post("/add_rule_old")
 async def add_rule_v2(req: Request):
     api_key = req.query_params.get("api_key")
     if api_key != API_KEY:
@@ -1234,6 +1234,102 @@ async def add_rule_v2(req: Request):
     created_at = datetime.now(timezone.utc).isoformat()
 
     # Insert seguro (esquema ya garantizado por migrate_rules_table_v2)
+    cur.execute(
+        "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
+        (user_id, merchant, category, match_mode, created_at)
+    )
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+
+    return {"ok": True, "id": rid, "user_id": user_id, "merchant_pattern": merchant, "category": category, "match_mode": match_mode}
+
+
+# ================= RULES MIGRATION (definitivo) =================
+def migrate_rules_table_definitive():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Asegura que exista la tabla (mínimo)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS rules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT
+    )
+    """)
+    conn.commit()
+
+    # Columnas actuales
+    cur.execute("PRAGMA table_info(rules)")
+    cols = [r[1] for r in cur.fetchall()]
+
+    def add_col(name, decl):
+        nonlocal cols
+        if name not in cols:
+            cur.execute(f"ALTER TABLE rules ADD COLUMN {decl}")
+            conn.commit()
+            cur.execute("PRAGMA table_info(rules)")
+            cols = [r[1] for r in cur.fetchall()]
+
+    # Asegura columnas necesarias
+    add_col("user_id", "user_id TEXT")
+    add_col("merchant_pattern", "merchant_pattern TEXT")
+    add_col("category", "category TEXT")
+    add_col("match_mode", "match_mode TEXT DEFAULT 'contains'")
+    add_col("created_at", "created_at TEXT")
+
+    # Compat: si había columna antigua "merchant", copiar a merchant_pattern
+    if "merchant" in cols:
+        cur.execute("""
+          UPDATE rules
+          SET merchant_pattern = merchant
+          WHERE (merchant_pattern IS NULL OR merchant_pattern = '')
+            AND merchant IS NOT NULL AND merchant <> ''
+        """)
+        conn.commit()
+
+    conn.close()
+
+
+# Ejecuta migración al startup (sin romper nada)
+try:
+    migrate_rules_table_definitive()
+except Exception as _e:
+    pass
+
+
+# ================= DEBUG: ver columnas reales en Render =================
+@app.get("/debug_rules")
+def debug_rules():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(rules)")
+    cols = [{"cid":r[0],"name":r[1],"type":r[2]} for r in cur.fetchall()]
+    conn.close()
+    return {"ok": True, "db_path": DB_PATH, "columns": cols}
+
+
+# ================= ADD RULE (NUEVO ÚNICO) =================
+@app.post("/add_rule")
+async def add_rule(req: Request):
+    api_key = req.query_params.get("api_key")
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+
+    body = await req.json()
+    user_id = body.get("userid") or body.get("user_id")
+    merchant = (body.get("merchant") or body.get("merchant_pattern") or "").strip()
+    category = (body.get("category") or "").strip().lower()
+    match_mode = (body.get("match_mode") or "contains").strip().lower()
+
+    if not user_id or not merchant or not category:
+        return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
+
+    migrate_rules_table_definitive()
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    created_at = datetime.now(timezone.utc).isoformat()
+
     cur.execute(
         "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
         (user_id, merchant, category, match_mode, created_at)
