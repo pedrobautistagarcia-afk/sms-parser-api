@@ -383,7 +383,30 @@ select:focus{ border-color: rgba(122,162,255,.45); }
     if(!x) return "";
     return x.charAt(0).toUpperCase() + x.slice(1);
   }
-  function isoDay(s){ return (s||"").slice(0,10); }
+  
+function isoDay(s){ return (s||"").slice(0,10); }
+
+// ===== DATE (ENGLISH) =====
+function enOrdinal(n){
+  const v = n % 100;
+  if(v>=11 && v<=13) return n+"th";
+  switch(n % 10){
+    case 1: return n+"st";
+    case 2: return n+"nd";
+    case 3: return n+"rd";
+    default: return n+"th";
+  }
+}
+function formatDateEnglishISO(iso10){
+  if(!iso10 || iso10.length<10) return iso10;
+  const y = Number(iso10.slice(0,4));
+  const m = Number(iso10.slice(5,7));
+  const d = Number(iso10.slice(8,10));
+  if(!y || !m || !d) return iso10;
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return `${enOrdinal(d)} ${months[m-1]} ${y}`;
+}
+
   function fmtMoney(n){
     if(n===null||n===undefined||n==="") return "";
     const v = Number(n);
@@ -574,7 +597,9 @@ select:focus{ border-color: rgba(122,162,255,.45); }
       const dir = inferDirection(r);
       const signClass = dir==="in" ? "pos" : "neg";
       const amountTxt = fmtMoney(r.amount);
-      const dateTxt = isoDay(r.created_at || r.date_iso || r.date_raw || "");
+      const dateISO = isoDay(r.created_at || r.date_iso || r.date_raw || "");
+      const dateTxt = formatDateEnglishISO(dateISO);
+
       const cur = (r.currency||"").toUpperCase();
       const cat = (r.category||"other");
       const merch = (r.merchant_clean ?? r.merchant_raw ?? "").trim();
