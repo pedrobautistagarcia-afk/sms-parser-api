@@ -7,3 +7,4 @@ transactions.db
 
 # backups
 *.bak.*
+*.bak*
