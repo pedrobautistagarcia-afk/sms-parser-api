@@ -1018,3 +1018,140 @@ async def add_rule(req: Request):
         "match_mode": match_mode
     }
 
+
+# ================= RULES MIGRATION PATCH =================
+def migrate_rules_table():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # ¿Existe la tabla rules?
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rules'")
+    if not cur.fetchone():
+        conn.close()
+        return
+
+    # Columnas actuales
+    cur.execute("PRAGMA table_info(rules)")
+    cols = [r[1] for r in cur.fetchall()]  # name is index 1
+
+    # Si falta merchant_pattern, la añadimos
+    if "merchant_pattern" not in cols:
+        cur.execute("ALTER TABLE rules ADD COLUMN merchant_pattern TEXT")
+        conn.commit()
+
+        # Si hay columna antigua 'merchant', copiamos
+        if "merchant" in cols:
+            cur.execute("UPDATE rules SET merchant_pattern = merchant WHERE merchant_pattern IS NULL")
+            conn.commit()
+
+    # Si falta match_mode, la añadimos con default
+    cur.execute("PRAGMA table_info(rules)")
+    cols2 = [r[1] for r in cur.fetchall()]
+    if "match_mode" not in cols2:
+        cur.execute("ALTER TABLE rules ADD COLUMN match_mode TEXT DEFAULT 'contains'")
+        conn.commit()
+
+    # Si falta created_at, la añadimos (no obligatoria, pero útil)
+    cur.execute("PRAGMA table_info(rules)")
+    cols3 = [r[1] for r in cur.fetchall()]
+    if "created_at" not in cols3:
+        cur.execute("ALTER TABLE rules ADD COLUMN created_at TEXT")
+        conn.commit()
+
+    conn.close()
+
+# Ejecutar migración al arrancar
+migrate_rules_table()
+
+
+# ================= ADD RULE ENDPOINT (compat) =================
+@app.post("/add_rule")
+async def add_rule(req: Request):
+    api_key = req.query_params.get("api_key")
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+
+    body = await req.json()
+    user_id = body.get("userid") or body.get("user_id")
+    merchant = (body.get("merchant") or "").strip()
+    category = (body.get("category") or "").strip().lower()
+    match_mode = (body.get("match_mode") or "contains").strip().lower()
+
+    if not user_id or not merchant or not category:
+        return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Detectar columnas reales de rules
+    cur.execute("PRAGMA table_info(rules)")
+    cols = [r[1] for r in cur.fetchall()]
+
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    # Insert compatible
+    if "merchant_pattern" in cols:
+        cur.execute(
+            "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
+            (user_id, merchant, category, match_mode, created_at)
+        )
+    elif "merchant" in cols:
+        cur.execute(
+            "INSERT INTO rules (user_id, merchant, category, match_mode, created_at) VALUES (?,?,?,?,?)",
+            (user_id, merchant, category, match_mode, created_at)
+        )
+    else:
+        conn.close()
+        return JSONResponse({"ok": False, "error": "rules table has no merchant column"}, status_code=500)
+
+    conn.commit()
+    conn.close()
+
+    return {"ok": True, "user_id": user_id, "merchant": merchant, "category": category, "match_mode": match_mode}
+
+
+# ================= ADD RULE ENDPOINT (compat) =================
+@app.post("/add_rule")
+async def add_rule(req: Request):
+    api_key = req.query_params.get("api_key")
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+
+    body = await req.json()
+    user_id = body.get("userid") or body.get("user_id")
+    merchant = (body.get("merchant") or "").strip()
+    category = (body.get("category") or "").strip().lower()
+    match_mode = (body.get("match_mode") or "contains").strip().lower()
+
+    if not user_id or not merchant or not category:
+        return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Detectar columnas reales de rules
+    cur.execute("PRAGMA table_info(rules)")
+    cols = [r[1] for r in cur.fetchall()]
+
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    # Insert compatible
+    if "merchant_pattern" in cols:
+        cur.execute(
+            "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
+            (user_id, merchant, category, match_mode, created_at)
+        )
+    elif "merchant" in cols:
+        cur.execute(
+            "INSERT INTO rules (user_id, merchant, category, match_mode, created_at) VALUES (?,?,?,?,?)",
+            (user_id, merchant, category, match_mode, created_at)
+        )
+    else:
+        conn.close()
+        return JSONResponse({"ok": False, "error": "rules table has no merchant column"}, status_code=500)
+
+    conn.commit()
+    conn.close()
+
+    return {"ok": True, "user_id": user_id, "merchant": merchant, "category": category, "match_mode": match_mode}
+
