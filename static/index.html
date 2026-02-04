@@ -215,6 +215,88 @@ thead th{
   background: var(--panel);
 }
 
+
+/* ===== Premium UX patch (safe) ===== */
+
+/* Sticky filters bar (sin tocar lógica) */
+.row{
+  position: sticky;
+  top: 10px;
+  z-index: 30;
+}
+
+/* Evita la "tabla dentro de un cuadro con scroll" */
+.tablewrap{
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Si por algún motivo en tu versión había overflow:auto en algún wrapper, esto lo mata */
+html, body { overflow: auto !important; }
+
+/* Subtítulo del header */
+#subtitle{ margin-top:4px; }
+
+/* Dropdowns legibles en dark: el popup del select es del sistema, pero el control sí queda bien */
+select, input[type="date"], input[type="text"]{
+  color: var(--text);
+}
+
+/* ===== Category chips on select (con contraste) ===== */
+:root{
+  --chipCoffee: rgba(255, 179, 71, .16);
+  --chipFood: rgba(61, 220, 151, .14);
+  --chipGroceries: rgba(122, 162, 255, .14);
+  --chipTransport: rgba(159, 122, 234, .14);
+  --chipOther: rgba(255,255,255,.08);
+  --chipBorder: rgba(255,255,255,.14);
+}
+[data-theme="light"]{
+  --chipCoffee: rgba(255, 179, 71, .22);
+  --chipFood: rgba(61, 220, 151, .18);
+  --chipGroceries: rgba(122, 162, 255, .18);
+  --chipTransport: rgba(159, 122, 234, .18);
+  --chipOther: rgba(0,0,0,.06);
+  --chipBorder: rgba(0,0,0,.12);
+}
+.catSel{
+  border:1px solid transparent;
+}
+.catSel[data-cat="coffee"]{ background: var(--chipCoffee); border-color: var(--chipBorder); }
+.catSel[data-cat="food"]{ background: var(--chipFood); border-color: var(--chipBorder); }
+.catSel[data-cat="groceries"]{ background: var(--chipGroceries); border-color: var(--chipBorder); }
+.catSel[data-cat="transport"]{ background: var(--chipTransport); border-color: var(--chipBorder); }
+.catSel[data-cat="other"]{ background: var(--chipOther); border-color: var(--chipBorder); }
+
+/* Roadmap cards */
+.roadmap{ margin-top:14px; }
+.roadmap h2{ margin:0 0 10px 0; font-size:14px; color:var(--muted); letter-spacing:.2px; }
+.rmGrid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap:10px;
+}
+@media (max-width: 900px){
+  .rmGrid{ grid-template-columns: 1fr; }
+}
+.rmCard{
+  border:1px solid var(--line);
+  background:var(--panel);
+  border-radius:14px;
+  padding:12px;
+  box-shadow:var(--shadow);
+}
+.rmCard b{ display:block; margin-bottom:6px; }
+.rmTag{
+  display:inline-flex;
+  border:1px solid var(--line);
+  background:var(--chip);
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  color:var(--muted);
+}
+
 </style>
 </head>
 
@@ -222,7 +304,10 @@ thead th{
 <div class="wrap" id="app">
   <div class="top">
     <div class="title">
-      <h1>Registro Gastos</h1>
+      <div>
+        <h1>Expense Tracker</h1>
+        <div class="small" id="subtitle">Personal finance dashboard</div>
+      </div>
       <div class="pill" id="statusPill">loading…</div>
       <button class="btn ghost" id="toggleKpi">KPIs</button>
     </div>
@@ -636,7 +721,7 @@ function formatDateEnglishISO(iso10){
       return `<option value="${c}" ${sel}>${titleCase(c)}</option>`;
     }).join("");
     return `
-      <select class="catSel" data-id="${id}">
+      <select class="catSel" data-id="${id}" data-cat="${current}">
         ${options}
         <option value="__add__">+ Add category…</option>
       </select>
@@ -727,6 +812,8 @@ function formatDateEnglishISO(iso10){
       sel.addEventListener("change", async ()=>{
         const id = Number(sel.dataset.id);
         const v = sel.value;
+        // keep chip color synced
+        sel.dataset.cat = (v === '__add__') ? (sel.dataset.cat || 'other') : v;
 
         if(v === "__add__"){
           const name = prompt("New category name:");
