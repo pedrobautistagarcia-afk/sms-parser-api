@@ -340,6 +340,28 @@ tbody td{ padding: var(--td-pad-y) var(--td-pad-x) !important; }
 /* Rule button: intentamos varios IDs comunes */
 #btnRule, #ruleBtn, #ruleButton{ display:none !important; }
 
+
+
+/* === STICKY TABLE HEADER (Date/Merchant/...) === */
+.tablewrap { overflow: visible !important; } /* evita scroll interno raro */
+table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--panel);
+}
+[data-theme="light"] table thead th{
+  background: var(--panel);
+}
+/* línea de separación más clara cuando está sticky */
+table thead th{
+  box-shadow: 0 1px 0 var(--line);
+}
+/* por si hay checkbox/columna select a la izquierda */
+table thead th:first-child{
+  z-index: 31;
+}
+
 </style>
 </head>
 
