@@ -332,6 +332,14 @@ select, input[type="date"], input[type="text"]{
 thead th{ padding: var(--th-pad-y) var(--td-pad-x) !important; }
 tbody td{ padding: var(--td-pad-y) var(--td-pad-x) !important; }
 
+
+/* === SETTINGS: hide original buttons moved into gear === */
+#toggleKpi{ display:none !important; }
+#btnExport{ display:none !important; }
+
+/* Rule button: intentamos varios IDs comunes */
+#btnRule, #ruleBtn, #ruleButton{ display:none !important; }
+
 </style>
 </head>
 
@@ -356,7 +364,16 @@ tbody td{ padding: var(--td-pad-y) var(--td-pad-x) !important; }
           <span id="settingsIcon">⚙️</span>
         </button>
         <div class="dropdown" id="settingsMenu">
-          <div class="setRow">
+          
+          <div class="setRow" id="quickActions">
+            <div class="ttl"><b>Quick actions</b></div>
+            <div class="setBtns">
+              <button class="btn" id="qaKpi" type="button">KPIs</button>
+              <button class="btn" id="qaRule" type="button">Rule</button>
+              <button class="btn" id="qaCsv" type="button">Export CSV</button>
+            </div>
+          </div>
+<div class="setRow">
             <div class="ttl"><b>Row density</b></div>
             <div class="setBtns">
               <button class="btn" id="densCompact" type="button">Compact</button>
@@ -1457,6 +1474,64 @@ function formatDateEnglishISO(iso){
     initSettingsMenu();
     hookRuleModal();
   });
+})();
+
+</script>
+
+<script>
+
+// === SETTINGS: quick actions wiring ===
+(function(){
+  function clickIf(id){
+    const el = document.getElementById(id);
+    if(el) el.click();
+    return !!el;
+  }
+  function findRuleButton(){
+    // Prioridad: IDs típicos
+    const byId = document.getElementById("btnRule") || document.getElementById("ruleBtn") || document.getElementById("ruleButton");
+    if(byId) return byId;
+
+    // Fallback: botón cuyo texto sea "Rule"
+    const btns = Array.from(document.querySelectorAll("button"));
+    return btns.find(b => (b.textContent||"").trim().toLowerCase() === "rule") || null;
+  }
+
+  function initQuickActions(){
+    const k = document.getElementById("qaKpi");
+    const r = document.getElementById("qaRule");
+    const c = document.getElementById("qaCsv");
+    if(!k && !r && !c) return;
+
+    if(k){
+      k.addEventListener("click", ()=>{
+        // Usamos el botón original (aunque esté oculto) para no duplicar lógica
+        if(!clickIf("toggleKpi")){
+          // fallback: toggle directo
+          const row = document.getElementById("kpiRow");
+          if(row) row.classList.toggle("show");
+        }
+      });
+    }
+
+    if(c){
+      c.addEventListener("click", ()=>{
+        if(!clickIf("btnExport")){
+          // fallback: intentar llamar a exportCSV si existe
+          if(typeof window.exportCSV === "function") window.exportCSV();
+        }
+      });
+    }
+
+    if(r){
+      r.addEventListener("click", ()=>{
+        const rb = findRuleButton();
+        if(rb) rb.click();
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initQuickActions);
 })();
 
 </script>
