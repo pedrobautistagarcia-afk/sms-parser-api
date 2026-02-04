@@ -953,3 +953,68 @@ def update_field(payload: dict, api_key: str = Query(None)):
         except Exception:
             pass
 
+
+# ================= RULES DB INIT =================
+def init_rules_db():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            merchant_pattern TEXT NOT NULL,
+            category TEXT NOT NULL,
+            match_mode TEXT NOT NULL DEFAULT 'contains',
+            created_at TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+# Ejecutar init de rules al arrancar
+init_rules_db()
+
+
+# ================= ADD RULE ENDPOINT =================
+@app.post("/add_rule")
+async def add_rule(req: Request):
+    api_key = req.query_params.get("api_key")
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+
+    body = await req.json()
+    user_id = body.get("userid") or body.get("user_id")
+    merchant = (body.get("merchant") or "").strip()
+    category = (body.get("category") or "").strip().lower()
+    match_mode = (body.get("match_mode") or "contains").strip().lower()
+
+    if not user_id or not merchant or not category:
+        return JSONResponse(
+            {"ok": False, "error": "userid, merchant, category required"},
+            status_code=400
+        )
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    cur.execute(
+        """
+        INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (user_id, merchant, category, match_mode, created_at)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "user_id": user_id,
+        "merchant_pattern": merchant,
+        "category": category,
+        "match_mode": match_mode
+    }
+
