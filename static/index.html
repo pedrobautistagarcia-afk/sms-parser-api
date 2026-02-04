@@ -30,18 +30,13 @@
       display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
       margin-bottom:14px;
     }
-    .title{
-      display:flex; align-items:center; gap:10px;
-    }
+    .title{display:flex; align-items:center; gap:10px;}
     h1{margin:0; font-size:20px; letter-spacing:.2px}
     .pill{
       border:1px solid var(--line); background:var(--chip); padding:6px 10px; border-radius:999px;
       color:var(--muted); font-size:12px;
     }
-
-    .right{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
-    }
+    .right{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
 
     .btn{
       border:1px solid var(--line); background:var(--panel2); color:var(--text);
@@ -60,13 +55,8 @@
       background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px;
       box-shadow:var(--shadow);
     }
-
-    .ctrl{
-      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-    }
-    .ctrl label{
-      font-size:12px; color:var(--muted); margin-right:2px;
-    }
+    .ctrl{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+    .ctrl label{font-size:12px; color:var(--muted); margin-right:2px;}
     select, input[type="date"], input[type="text"]{
       border:1px solid var(--line); background:var(--panel2); color:var(--text);
       padding:8px 10px; border-radius:10px; font-size:13px; outline:none;
@@ -74,9 +64,7 @@
     select:focus, input:focus{border-color:rgba(122,162,255,.45)}
     .spacer{flex:1}
 
-    .balance{
-      position:relative;
-    }
+    .balance{position:relative;}
     .dropdown{
       position:absolute; right:0; top:44px; z-index:20;
       min-width:230px;
@@ -86,10 +74,7 @@
       display:none;
     }
     .dropdown.open{display:block}
-    .brow{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:8px 8px; border-radius:10px;
-    }
+    .brow{display:flex; align-items:center; justify-content:space-between; padding:8px 8px; border-radius:10px;}
     .brow:hover{background:var(--chip)}
     .brow b{font-weight:700}
     .pos{color:var(--ok); font-weight:700}
@@ -107,6 +92,7 @@
       user-select:none; cursor:pointer;
       white-space:nowrap;
     }
+    thead th.selcol{cursor:default}
     tbody td{
       padding:10px 12px; border-bottom:1px solid var(--line);
       font-size:13px; vertical-align:middle;
@@ -116,7 +102,7 @@
     [data-theme="light"] tbody tr:hover{background:rgba(0,0,0,.03)}
 
     .amt{text-align:right; font-variant-numeric: tabular-nums}
-    .curcell{display:flex; align-items:center; gap:6px; justify-content:flex-start}
+    .curcell{display:flex; align-items:center; justify-content:center; gap:8px}
     .flag{display:inline-flex; width:18px}
     .flag svg{width:16px; height:12px; border-radius:3px; display:block}
 
@@ -155,6 +141,7 @@
     .err.show{display:block}
 
     .sortHint{opacity:.6; margin-left:6px; font-size:11px}
+
     .kpiRow{
       display:none;
       margin-top:12px;
@@ -171,14 +158,22 @@
     }
     .kpi .v{font-size:18px; font-weight:800; margin-top:6px}
 
-    /* Multi-select checkbox injected by patch: visible on hover OR checked */
-    th.rg-sel, td.rg-sel { width: 36px; text-align: center; }
-    td.rg-sel .rg-rowcb { opacity: 0; transition: opacity .12s ease; }
-    tbody tr:hover td.rg-sel .rg-rowcb { opacity: 1; }
-    td.rg-sel .rg-rowcb:checked { opacity: 1; }
-    tr.rg-selected { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+    /* ===== Row selection checkboxes ===== */
+    th.selcol, td.selcol { width: 44px; text-align: center; }
+    .cbRow, #cbAll{
+      width: 16px; height: 16px; cursor: pointer;
+      accent-color: var(--accent);
+    }
+    td.selcol .cbRow { opacity: 0; transition: opacity .12s ease; }
+    tbody tr:hover td.selcol .cbRow { opacity: 1; }
+    td.selcol .cbRow:checked { opacity: 1; }
+    th.selcol #cbAll { opacity: 1; }
+
+    tr.selected-row { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+    [data-theme="light"] tr.selected-row { outline: 1px solid rgba(0,0,0,.14); background: rgba(0,0,0,.04); }
   </style>
 </head>
+
 <body>
 <div class="wrap" id="app">
   <div class="top">
@@ -256,11 +251,12 @@
     <table id="t">
       <thead>
         <tr>
+          <th class="selcol"><input type="checkbox" id="cbAll" title="Select all"></th>
           <th data-sort="created_at">Date <span class="sortHint" id="sortHintDate"></span></th>
           <th data-sort="merchant_clean">Merchant</th>
           <th data-sort="category">Category</th>
           <th data-sort="amount" style="text-align:right">Amount</th>
-          <th data-sort="currency">Currency</th>
+          <th data-sort="currency" style="text-align:center">Currency</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -371,16 +367,16 @@
     if(n===null||n===undefined||n==="") return "";
     const v = Number(n);
     if(Number.isNaN(v)) return String(n);
-    return v.toFixed(3).replace(/\.000$/,".000").replace(/(\.\d{2})0$/,"$1");
+    return v.toFixed(2);
   }
   function inferDirection(row){
     const d = (row.direction||"").toLowerCase();
-    if(d==="in"||d==="credit"||d==="credited"||d==="income") return "in";
-    if(d==="out"||d==="debit"||d==="debited"||d==="expense") return "out";
+    if(d==="income" || d==="in" || d==="credit" || d==="credited") return "in";
+    if(d==="expense" || d==="out" || d==="debit" || d==="debited") return "out";
     const sms = (row.sms||row.sms_raw||"").toLowerCase();
     if(sms.includes("credited")) return "in";
     if(sms.includes("debited")) return "out";
-    return "out"; // default gasto
+    return "out";
   }
 
   // =============== STATE ===============
@@ -391,7 +387,8 @@
     sortDir: "desc",
     categories: new Set(),
     currencies: new Set(),
-    undoTimer: null
+    undoTimer: null,
+    selected: new Set()
   };
 
   // =============== THEME ===============
@@ -502,23 +499,23 @@
     const rows = state.view;
     const b = computeBalance(rows);
 
-    const fmt = (v)=> (v>=0 ? `<span class="pos">${v.toFixed(3)}</span>` : `<span class="neg">${v.toFixed(3)}</span>`);
+    const fmt = (v)=> (v>=0 ? `<span class="pos">${v.toFixed(2)}</span>` : `<span class="neg">${v.toFixed(2)}</span>`);
     $("balKWD").innerHTML = fmt(b.KWD);
     $("balUSD").innerHTML = fmt(b.USD);
     $("balEUR").innerHTML = fmt(b.EUR);
 
-    const tot = b.KWD + b.USD + b.EUR;
-    $("kpiTotal").textContent = `${tot.toFixed(3)} (mix)`;
+    const mix = b.KWD + b.USD + b.EUR;
+    $("kpiTotal").textContent = `${mix.toFixed(2)} (mix)`;
 
     const t = new Date().toISOString().slice(0,10);
     const todayRows = rows.filter(r => isoDay(r.created_at||"") === t);
     const bt = computeBalance(todayRows);
-    const todayMix = bt.KWD+bt.USD+bt.EUR;
-    $("kpiToday").textContent = `${todayMix.toFixed(3)} (mix)`;
+    const todayMix = bt.KWD + bt.USD + bt.EUR;
+    $("kpiToday").textContent = `${todayMix.toFixed(2)} (mix)`;
 
     const days = new Set(rows.map(r=>isoDay(r.created_at||"")).filter(Boolean));
     const dcount = Math.max(1, days.size);
-    $("kpiAvg").textContent = `${(todayMix/dcount).toFixed(3)} (mix)`;
+    $("kpiAvg").textContent = `${(mix/dcount).toFixed(2)} (mix)`;
 
     const m = new Map();
     for(const r of rows){
@@ -533,6 +530,20 @@
   }
 
   // =============== RENDER ===============
+  function categoryCellHTML(id, current){
+    const cats = Array.from(state.categories).sort();
+    const options = cats.map(c=>{
+      const sel = c===current ? "selected" : "";
+      return `<option value="${c}" ${sel}>${titleCase(c)}</option>`;
+    }).join("");
+    return `
+      <select class="catSel" data-id="${id}">
+        ${options}
+        <option value="__add__">+ Add category…</option>
+      </select>
+    `;
+  }
+
   function render(){
     const tb = $("tbody");
     tb.innerHTML = "";
@@ -550,16 +561,27 @@
       const tr = document.createElement("tr");
       tr.dataset.id = id;
 
+      const checked = state.selected.has(id) ? "checked" : "";
+      if(state.selected.has(id)) tr.classList.add("selected-row");
+
       tr.innerHTML = `
+        <td class="selcol">
+          <input class="cbRow" type="checkbox" data-id="${id}" ${checked}>
+        </td>
+
         <td title="${dateTxt}">${dateTxt}</td>
+
         <td>
           <input class="merchantEdit" data-id="${id}" value="${merch.replace(/"/g,'&quot;')}" />
         </td>
+
         <td>
           ${categoryCellHTML(id, cat)}
         </td>
+
         <td class="amt ${signClass}" title="${amountTxt}">${amountTxt}</td>
-        <td>
+
+        <td style="text-align:center">
           <div class="curcell" title="${cur}">
             <span class="flag">${flagHTML(cur)}</span><span>${cur}</span>
           </div>
@@ -572,23 +594,11 @@
     setStatus(`count ${state.view.length}`);
     updateBalanceAndKpis();
     wireRowInputs();
-  }
-
-  function categoryCellHTML(id, current){
-    const cats = Array.from(state.categories).sort();
-    const options = cats.map(c=>{
-      const sel = c===current ? "selected" : "";
-      return `<option value="${c}" ${sel}>${titleCase(c)}</option>`;
-    }).join("");
-    return `
-      <select class="catSel" data-id="${id}">
-        ${options}
-        <option value="__add__">+ Add category…</option>
-      </select>
-    `;
+    wireSelectionControls();
   }
 
   function wireRowInputs(){
+    // merchant edit
     document.querySelectorAll(".merchantEdit").forEach(inp=>{
       inp.addEventListener("keydown", async (e)=>{
         if(e.key === "Enter"){
@@ -611,10 +621,12 @@
       });
     });
 
+    // category select
     document.querySelectorAll(".catSel").forEach(sel=>{
       sel.addEventListener("change", async ()=>{
         const id = Number(sel.dataset.id);
         const v = sel.value;
+
         if(v === "__add__"){
           const name = prompt("New category name:");
           if(!name){
@@ -633,6 +645,7 @@
           await saveCategory(id, cat);
           return;
         }
+
         await saveCategory(id, v);
       });
     });
@@ -651,7 +664,68 @@
     }
   }
 
-  // =============== DELETE + UNDO (se mantiene tal cual, tu multi-delete ya lo engancha por JS patch si lo tienes) ===============
+  // =============== SELECTION CONTROLS ===============
+  function syncSelectAllCheckbox(){
+    const cbAll = $("cbAll");
+    if(!cbAll) return;
+    const ids = state.view.map(r=>r.id);
+    if(ids.length === 0){
+      cbAll.checked = false;
+      cbAll.indeterminate = false;
+      return;
+    }
+    const selectedCount = ids.filter(id=>state.selected.has(id)).length;
+    cbAll.checked = (selectedCount === ids.length);
+    cbAll.indeterminate = (selectedCount > 0 && selectedCount, selectedCount < ids.length);
+    cbAll.indeterminate = (selectedCount > 0 && selectedCount < ids.length);
+  }
+
+  function wireSelectionControls(){
+    // row checkboxes
+    document.querySelectorAll(".cbRow").forEach(cb=>{
+      cb.addEventListener("change", ()=>{
+        const id = Number(cb.dataset.id);
+        const tr = cb.closest("tr");
+
+        if(cb.checked){
+          state.selected.add(id);
+          tr?.classList.add("selected-row");
+        }else{
+          state.selected.delete(id);
+          tr?.classList.remove("selected-row");
+        }
+
+        $("btnDelete").disabled = (state.selected.size === 0);
+        syncSelectAllCheckbox();
+      });
+    });
+
+    // header select all
+    const cbAll = $("cbAll");
+    if(cbAll){
+      cbAll.onchange = ()=>{
+        const want = cbAll.checked;
+        for(const r of state.view){
+          if(want) state.selected.add(r.id);
+          else state.selected.delete(r.id);
+        }
+        document.querySelectorAll(".cbRow").forEach(cb=>{
+          cb.checked = want;
+          const tr = cb.closest("tr");
+          if(want) tr?.classList.add("selected-row");
+          else tr?.classList.remove("selected-row");
+        });
+
+        $("btnDelete").disabled = (state.selected.size === 0);
+        syncSelectAllCheckbox();
+      };
+    }
+
+    $("btnDelete").disabled = (state.selected.size === 0);
+    syncSelectAllCheckbox();
+  }
+
+  // =============== DELETE + UNDO ===============
   function showToast(msg){
     $("toastMsg").textContent = msg;
     $("toast").classList.add("show");
@@ -660,8 +734,26 @@
   }
 
   async function doDeleteSelected(){
-    // si no hay multi-select, no hacemos nada aquí. Tu delete real lo estás manejando con el hook multi-select.
-    showToast("Use the row checkboxes to delete multiple.");
+    const ids = Array.from(state.selected);
+    if(ids.length === 0) return;
+
+    try{
+      showErr("");
+
+      for(const id of ids){
+        await postJSON("/delete", {userid: USER_ID, id});
+      }
+
+      state.selected.clear();
+      $("btnDelete").disabled = true;
+      $("cbAll").checked = false;
+      $("cbAll").indeterminate = false;
+
+      showToast(`Deleted ${ids.length} row(s)`);
+      await load();
+    }catch(err){
+      showErr("Delete failed: " + err.message);
+    }
   }
 
   async function undoDelete(){
@@ -755,6 +847,7 @@
     $("btnUndo").addEventListener("click", undoDelete);
     $("btnExport").addEventListener("click", exportCSV);
 
+    // sorting headers (skip select column)
     document.querySelectorAll("thead th[data-sort]").forEach(th=>{
       th.addEventListener("click", ()=>{
         const k = th.getAttribute("data-sort");
@@ -770,6 +863,7 @@
     });
   }
 
+  // boot
   bind();
   load();
 </script>
