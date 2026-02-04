@@ -1311,32 +1311,99 @@ def debug_rules():
 # ================= ADD RULE (NUEVO ÚNICO) =================
 @app.post("/add_rule")
 async def add_rule(req: Request):
-    api_key = req.query_params.get("api_key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid api_key")
+    """
+    Add a rule that maps merchant pattern -> category using the *existing* rules schema:
+      pattern (NOT NULL) + match_type + set_category (+ user_id, enabled, priority, created_at)
+    Accepts body:
+      { "userid": "...", "merchant": "starb", "category": "coffee", "match_mode": "contains" }
+    """
+    try:
+        api_key = req.query_params.get("api_key")
+        if api_key != API_KEY:
+            raise HTTPException(status_code=401, detail="Invalid api_key")
 
-    body = await req.json()
-    user_id = body.get("userid") or body.get("user_id")
-    merchant = (body.get("merchant") or body.get("merchant_pattern") or "").strip()
-    category = (body.get("category") or "").strip().lower()
-    match_mode = (body.get("match_mode") or "contains").strip().lower()
+        body = await req.json()
+        user_id = body.get("userid") or body.get("user_id")
+        merchant = (body.get("merchant") or body.get("merchant_pattern") or "").strip()
+        category = (body.get("category") or "").strip().lower()
+        match_mode = (body.get("match_mode") or body.get("match_type") or "contains").strip().lower()
 
-    if not user_id or not merchant or not category:
-        return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
+        if not user_id or not merchant or not category:
+            return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
 
-    migrate_rules_table_definitive()
+        # Ensure rules table has needed columns (safe if already exists)
+        try:
+            migrate_rules_table_definitive()
+        except Exception:
+            pass
 
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    created_at = datetime.now(timezone.utc).isoformat()
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
 
-    cur.execute(
-        "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
-        (user_id, merchant, category, match_mode, created_at)
-    )
-    conn.commit()
-    rid = cur.lastrowid
-    conn.close()
+        # Read existing columns to insert safely
+        cur.execute("PRAGMA table_info(rules)")
+        cols = [r[1] for r in cur.fetchall()]
+        created_at = datetime.now(timezone.utc).isoformat()
 
-    return {"ok": True, "id": rid, "user_id": user_id, "merchant_pattern": merchant, "category": category, "match_mode": match_mode}
+        # Build insert based on real schema present
+        data = {}
+        # Mandatory for your current schema
+        if "pattern" in cols:
+            data["pattern"] = merchant
+        if "match_type" in cols:
+            data["match_type"] = match_mode
+        if "field" in cols:
+            data["field"] = "merchant"
+        if "match_field" in cols:
+            data["match_field"] = "merchant_clean"
+        if "set_category" in cols:
+            data["set_category"] = category
+        if "user_id" in cols:
+            data["user_id"] = user_id
+        if "enabled" in cols:
+            data["enabled"] = 1
+        if "priority" in cols:
+            data["priority"] = 100
+        if "created_at" in cols:
+            data["created_at"] = created_at
+
+        # Back-compat columns (newer)
+        if "merchant_pattern" in cols:
+            data["merchant_pattern"] = merchant
+        if "category" in cols:
+            data["category"] = category
+        if "match_mode" in cols:
+            data["match_mode"] = match_mode
+
+        # Safety: if pattern exists and somehow wasn't set, fail early
+        if "pattern" in cols and not data.get("pattern"):
+            conn.close()
+            return JSONResponse({"ok": False, "error": "rules.pattern is required but missing"}, status_code=500)
+
+        keys = list(data.keys())
+        vals = [data[k] for k in keys]
+
+        cur.execute(
+            f"INSERT INTO rules ({', '.join(keys)}) VALUES ({', '.join(['?']*len(keys))})",
+            vals
+        )
+        conn.commit()
+        rid = cur.lastrowid
+        conn.close()
+
+        return {
+            "ok": True,
+            "id": rid,
+            "user_id": user_id,
+            "merchant_pattern": merchant,
+            "category": category,
+            "match_mode": match_mode
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": repr(e), "path": "/add_rule"}, status_code=500)
+
+
 
