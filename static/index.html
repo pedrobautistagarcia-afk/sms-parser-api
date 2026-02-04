@@ -304,6 +304,34 @@ select, input[type="date"], input[type="text"]{
 .balance .dropdown{ z-index: 3000 !important; }
 .row{ z-index: 30; } /* por debajo del dropdown */
 
+
+/* === SETTINGS (gear) + DENSITY === */
+.settings{ position:relative; }
+#settingsMenu{
+  position:absolute; right:0; top:44px; z-index:40;
+  min-width:240px;
+  border:1px solid var(--line); background:var(--panel2);
+  border-radius:14px; box-shadow:var(--shadow);
+  padding:10px;
+  display:none;
+}
+#settingsMenu.open{display:block}
+.setRow{ padding:8px 8px; border-radius:10px; }
+.setRow:hover{ background:var(--chip); }
+.setRow .ttl{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+.setBtns{ display:flex; gap:8px; flex-wrap:wrap; }
+.setBtns .btn{ padding:7px 10px; border-radius:10px; font-size:12px; }
+.setBtns .btn.active{ border-color:rgba(122,162,255,.55); background:rgba(122,162,255,.18); }
+
+/* Density behavior (table paddings + row height feeling) */
+:root{ --td-pad-y: 10px; --td-pad-x: 12px; --th-pad-y: 12px; }
+[data-density="compact"] { --td-pad-y: 6px;  --td-pad-x: 12px; --th-pad-y: 10px; }
+[data-density="normal"]  { --td-pad-y: 10px; --td-pad-x: 12px; --th-pad-y: 12px; }
+[data-density="comfy"]   { --td-pad-y: 14px; --td-pad-x: 12px; --th-pad-y: 14px; }
+
+thead th{ padding: var(--th-pad-y) var(--td-pad-x) !important; }
+tbody td{ padding: var(--td-pad-y) var(--td-pad-x) !important; }
+
 </style>
 </head>
 
@@ -323,6 +351,22 @@ select, input[type="date"], input[type="text"]{
       <button class="btn iconbtn" id="themeBtn" title="Tema">
         <span id="themeIcon">🌙</span>
       </button>
+      <div class="settings">
+        <button class="btn iconbtn" id="settingsBtn" title="Settings">
+          <span id="settingsIcon">⚙️</span>
+        </button>
+        <div class="dropdown" id="settingsMenu">
+          <div class="setRow">
+            <div class="ttl"><b>Row density</b></div>
+            <div class="setBtns">
+              <button class="btn" id="densCompact" type="button">Compact</button>
+              <button class="btn" id="densNormal" type="button">Normal</button>
+              <button class="btn" id="densComfy" type="button">Comfortable</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       <div class="balance">
         <button class="btn primary" id="balanceBtn">Balance</button>
@@ -422,7 +466,12 @@ select, input[type="date"], input[type="text"]{
 
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
           <button class="btn" id="ruleCancel">Cancel</button>
-          <button class="btn primary" id="ruleSave">Save rule</button>
+          
+            <div style="margin-top:10px;padding:10px;border:1px solid var(--line);background:var(--chip);border-radius:12px;">
+              <div class="small"><b>Rule preview</b></div>
+              <div class="small" id="rulePreviewText">Matches in current table: —</div>
+            </div>
+<button class="btn primary" id="ruleSave">Save rule</button>
         </div>
 
         <div class="small" id="ruleStatus" style="min-height:18px;"></div>
@@ -1302,6 +1351,115 @@ function formatDateEnglishISO(iso){
 })();
 </script>
 
+
+<script>
+
+// === SETTINGS: density + menu (no rompe nada) ===
+(function(){
+  function setDensity(mode){
+    const m = (mode==="compact"||mode==="normal"||mode==="comfy") ? mode : "normal";
+    document.documentElement.setAttribute("data-density", m);
+    localStorage.setItem("density", m);
+
+    const c = document.getElementById("densCompact");
+    const n = document.getElementById("densNormal");
+    const f = document.getElementById("densComfy");
+    [c,n,f].forEach(x=> x && x.classList.remove("active"));
+    if(m==="compact" && c) c.classList.add("active");
+    if(m==="normal"  && n) n.classList.add("active");
+    if(m==="comfy"   && f) f.classList.add("active");
+  }
+
+  function initDensity(){
+    const saved = localStorage.getItem("density") || "normal";
+    setDensity(saved);
+    const c = document.getElementById("densCompact");
+    const n = document.getElementById("densNormal");
+    const f = document.getElementById("densComfy");
+    if(c) c.addEventListener("click", ()=>setDensity("compact"));
+    if(n) n.addEventListener("click", ()=>setDensity("normal"));
+    if(f) f.addEventListener("click", ()=>setDensity("comfy"));
+  }
+
+  function initSettingsMenu(){
+    const btn = document.getElementById("settingsBtn");
+    const menu = document.getElementById("settingsMenu");
+    if(!btn || !menu) return;
+
+    btn.addEventListener("click", ()=>{
+      menu.classList.toggle("open");
+    });
+
+    document.addEventListener("click",(e)=>{
+      if(!e.target.closest(".settings")) menu.classList.remove("open");
+    });
+  }
+
+  // --- Rule preview ---
+  // Busca inputs típicos del modal: merchant pattern (merchant / pattern) y el preview label.
+  function updateRulePreview(){
+    const out = document.getElementById("rulePreviewText");
+    if(!out) return;
+
+    // Intentamos encontrar el input donde escribes el merchant
+    const merchantInp =
+      document.querySelector('#ruleMerchant') ||
+      document.querySelector('input[name="merchant"]') ||
+      document.querySelector('input[name="pattern"]') ||
+      document.querySelector('input[placeholder*="merchant" i]') ||
+      document.querySelector('input[placeholder*="pattern" i]');
+
+    if(!merchantInp) {
+      out.textContent = "Matches in current table: —";
+      return;
+    }
+
+    const pat = String(merchantInp.value||"").trim().toLowerCase();
+    if(!pat){
+      out.textContent = "Matches in current table: —";
+      return;
+    }
+
+    // state.all existe en tu código. Si por lo que sea no existe, no petamos.
+    const rows = (window.state && Array.isArray(window.state.all)) ? window.state.all : [];
+    let n = 0;
+    for(const r of rows){
+      const m = String(r.merchant_clean || r.merchant_raw || r.sms || "").toLowerCase();
+      if(m.includes(pat)) n++;
+    }
+    out.textContent = `Matches in current table: ${n}`;
+  }
+
+  function hookRuleModal(){
+    // Cada vez que se abra el modal o escribas, recalcula.
+    // No conocemos tus ids exactos, así que usamos listeners "generales".
+    document.addEventListener("input", (e)=>{
+      const t = e.target;
+      if(!t) return;
+      // Si estás tocando un input dentro de un modal (o algo cercano), recalcula.
+      if(t.closest && t.closest(".modal")) updateRulePreview();
+      // Si no hay clase modal, igual: si parece el input de merchant/pattern, recalcula.
+      const name = (t.getAttribute && (t.getAttribute("name")||"")) || "";
+      const ph = (t.getAttribute && (t.getAttribute("placeholder")||"")) || "";
+      if(/merchant|pattern/i.test(name) || /merchant|pattern/i.test(ph)) {
+        updateRulePreview();
+      }
+    }, true);
+
+    // También recalculamos al clicar el botón Rule (si existe)
+    const rb = document.getElementById("btnRule") || document.getElementById("ruleBtn") || Array.from(document.querySelectorAll("button")).find(b=>/rule/i.test((b.textContent||"").trim()));
+    if(rb) rb.addEventListener("click", ()=>setTimeout(updateRulePreview, 50));
+  }
+
+  // boot safe
+  document.addEventListener("DOMContentLoaded", ()=>{
+    initDensity();
+    initSettingsMenu();
+    hookRuleModal();
+  });
+})();
+
+</script>
 </body>
 </html>
 
