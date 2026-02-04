@@ -274,6 +274,7 @@ thead th{
     <div class="ctrl">
       <button class="btn danger" id="btnDelete" disabled>Delete selected</button>
       <button class="btn" id="btnExport">Export CSV</button>
+      <button class="btn" id="btnRule">Rule</button>
     </div>
   </div>
 
@@ -916,6 +917,16 @@ function formatDateEnglishISO(iso10){
     $("btnUndo").addEventListener("click", undoDelete);
     $("btnExport").addEventListener("click", exportCSV);
 
+
+    // Rule button + modal handlers
+    if($("btnRule")) $("btnRule").addEventListener("click", openRuleModal);
+
+    if($("ruleCancelBtn")) $("ruleCancelBtn").addEventListener("click", closeRuleModal);
+    if($("ruleCloseBtn")) $("ruleCloseBtn").addEventListener("click", closeRuleModal);
+    if($("ruleModalBackdrop")) $("ruleModalBackdrop").addEventListener("click", closeRuleModal);
+    if($("ruleSaveBtn")) $("ruleSaveBtn").addEventListener("click", saveRule);
+
+
     // sorting headers (skip select column)
     document.querySelectorAll("thead th[data-sort]").forEach(th=>{
       th.addEventListener("click", ()=>{
@@ -1030,6 +1041,118 @@ function formatDateEnglishISO(iso){
   };
 })();
 
+
+  // =============== RULE UI ===============
+  function normalizeCat(x){
+    x = String(x||"").trim().toLowerCase();
+    if(!x) return "";
+    // espacios -> _
+    x = x.replace(/\s+/g, "_");
+    // limpia chars raros
+    x = x.replace(/[^a-z0-9_\-]/g, "");
+    return x;
+  }
+
+  function openRuleModal(){
+    const modal = $("ruleModal");
+    if(!modal) return;
+
+    // rellena categorías actuales
+    const sel = $("ruleCategorySel");
+    const cats = Array.from(state.categories || []).sort();
+    sel.innerHTML = '<option value="">Select…</option>' + cats.map(c=>(
+      `<option value="${c}">${titleCase(c)}</option>`
+    )).join("");
+
+    $("ruleMerchant").value = "";
+    $("ruleCategoryNew").value = "";
+    $("ruleStatus").textContent = "";
+    modal.style.display = "block";
+    setTimeout(()=> $("ruleMerchant").focus(), 0);
+  }
+
+  function closeRuleModal(){
+    const modal = $("ruleModal");
+    if(modal) modal.style.display = "none";
+  }
+
+  async function saveRule(){
+    const merch = String($("ruleMerchant").value||"").trim();
+    const picked = String($("ruleCategorySel").value||"").trim();
+    const typed  = normalizeCat($("ruleCategoryNew").value||"");
+    const cat = typed || picked;
+
+    if(!merch){
+      $("ruleStatus").textContent = "Write a merchant pattern first.";
+      return;
+    }
+    if(!cat){
+      $("ruleStatus").textContent = "Choose or write a category.";
+      return;
+    }
+
+    $("ruleStatus").textContent = "Saving…";
+
+    try{
+      // IMPORTANT: tu apply_rules actual solo evalúa match_field == "merchant"
+      // así que guardamos match_field="merchant" para que funcione ya.
+      await postJSON("/add_rule", {
+        userid: USER_ID,
+        enabled: true,
+        priority: 100,
+        match_field: "merchant",
+        match_type: "contains",
+        pattern: merch,
+        set_category: cat
+      });
+
+      // refresca categorías en UI para que aparezca inmediatamente
+      state.categories.add(cat);
+      buildFilters();
+      applyFilters();
+
+      $("ruleStatus").textContent = "Saved ✅";
+      setTimeout(()=> closeRuleModal(), 450);
+    }catch(err){
+      $("ruleStatus").textContent = "Error: " + err.message;
+    }
+  }
+
+
 </script>
+
+  <!-- RULE MODAL -->
+  <div id="ruleModal" style="display:none; position:fixed; inset:0; z-index:9999;">
+    <div id="ruleModalBackdrop" style="position:absolute; inset:0; background:rgba(0,0,0,.55);"></div>
+    <div style="position:relative; max-width:520px; margin:10vh auto; background:var(--panel2); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="font-weight:800;">Create rule</div>
+        <button class="btn ghost" id="ruleCloseBtn" type="button">✕</button>
+      </div>
+
+      <div style="margin-top:10px; display:grid; gap:10px;">
+        <div>
+          <div class="small" style="margin-bottom:6px;">Merchant contains</div>
+          <input id="ruleMerchant" type="text" placeholder="e.g. starb" style="width:100%;" />
+          <div class="small" style="margin-top:6px; opacity:.8;">Tip: con “starb” te vale para Starbucks y similares.</div>
+        </div>
+
+        <div>
+          <div class="small" style="margin-bottom:6px;">Category</div>
+          <select id="ruleCategorySel" style="width:100%;"></select>
+          <div class="small" style="margin:8px 0 6px;">…or write a new one</div>
+          <input id="ruleCategoryNew" type="text" placeholder="e.g. coffee" style="width:100%;" />
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
+          <button class="btn" id="ruleCancelBtn" type="button">Cancel</button>
+          <button class="btn primary" id="ruleSaveBtn" type="button">Save rule</button>
+        </div>
+
+        <div class="small" id="ruleStatus" style="min-height:18px;"></div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
