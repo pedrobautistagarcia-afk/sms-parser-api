@@ -274,6 +274,7 @@ thead th{
     <div class="ctrl">
       <button class="btn danger" id="btnDelete" disabled>Delete selected</button>
       <button class="btn" id="btnExport">Export CSV</button>
+      <button class="btn" id="btnRule">Rule</button>
     </div>
   </div>
 
@@ -306,6 +307,37 @@ thead th{
       <tbody id="tbody"></tbody>
     </table>
   </div>
+
+  <!-- RULE MODAL -->
+  <div id="ruleModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999;">
+    <div style="max-width:520px; margin:90px auto; background:var(--panel2); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="font-weight:800;">Create rule</div>
+        <button class="btn ghost" id="ruleClose" title="Close">✕</button>
+      </div>
+
+      <div style="margin-top:10px; display:grid; gap:10px;">
+        <div>
+          <div class="small" style="margin-bottom:6px;">Merchant (pattern, contains)</div>
+          <input id="ruleMerchant" type="text" placeholder="e.g. starb, talabat, uber…" style="width:100%;" />
+        </div>
+
+        <div>
+          <div class="small" style="margin-bottom:6px;">Category</div>
+          <select id="ruleCategory" style="width:100%;"></select>
+          <div class="small" style="margin-top:6px; opacity:.9;">Tip: puedes escribir una nueva categoría desde la tabla y luego saldrá aquí.</div>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
+          <button class="btn" id="ruleCancel">Cancel</button>
+          <button class="btn primary" id="ruleSave">Save rule</button>
+        </div>
+
+        <div class="small" id="ruleStatus" style="min-height:18px;"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1031,6 +1063,129 @@ function formatDateEnglishISO(iso){
 })();
 
 </script>
+
+<!-- RULE_BUTTON_WIRE_V1 -->
+<script>
+(function(){
+  const USER_ID = "pedro";
+  const API_KEY = "ElPortichuelo99";
+
+  function $(id){ return document.getElementById(id); }
+
+  function showRuleModal(){
+    const m = $("ruleModal");
+    if(!m) return;
+    m.style.display = "block";
+    $("ruleStatus").textContent = "";
+    // Rellenar categorías desde el filtro (lo más fiable)
+    const catFilter = $("catFilter");
+    const sel = $("ruleCategory");
+    if(sel){
+      sel.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "other";
+      opt0.textContent = "Other";
+      sel.appendChild(opt0);
+
+      if(catFilter){
+        const opts = Array.from(catFilter.querySelectorAll("option"))
+          .map(o => o.value)
+          .filter(v => v && v !== "");
+        const seen = new Set();
+        for(const v of opts){
+          if(seen.has(v)) continue;
+          seen.add(v);
+          const o = document.createElement("option");
+          o.value = v;
+          o.textContent = v.charAt(0).toUpperCase() + v.slice(1);
+          sel.appendChild(o);
+        }
+      }
+    }
+    const inp = $("ruleMerchant");
+    if(inp) inp.focus();
+  }
+
+  function closeRuleModal(){
+    const m = $("ruleModal");
+    if(m) m.style.display = "none";
+  }
+
+  async function postJSON(path, body){
+    const u = new URL(path, window.location.origin);
+    u.searchParams.set("api_key", API_KEY);
+    const r = await fetch(u.pathname + u.search, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body||{})
+    });
+    const t = await r.text().catch(()=> "");
+    if(!r.ok) throw new Error(`${path} => HTTP ${r.status} :: ${t}`);
+    try{ return JSON.parse(t); }catch(_){ return {ok:true}; }
+  }
+
+  async function saveRule(){
+    const merchant = ($("ruleMerchant")?.value || "").trim();
+    const category = ($("ruleCategory")?.value || "other").trim();
+
+    if(!merchant){
+      $("ruleStatus").textContent = "Pon un merchant/pattern (ej: starb).";
+      return;
+    }
+    $("ruleStatus").textContent = "Saving…";
+
+    // IMPORTANTE: tu backend actual espera pattern + set_category (según debug_rules)
+    const payload = {
+      userid: USER_ID,
+      pattern: merchant,
+      match_field: "merchant_clean",
+      match_type: "contains",
+      set_category: category,
+      priority: 100,
+      enabled: true
+    };
+
+    const res = await postJSON("/add_rule", payload);
+    if(res && res.ok){
+      $("ruleStatus").textContent = "Saved ✅";
+      setTimeout(closeRuleModal, 250);
+      // opcional: recargar para que rule aplique al instante al próximo ingest
+      // load();  // NO lo toco para no romper nada
+    }else{
+      $("ruleStatus").textContent = "Error saving rule.";
+    }
+  }
+
+  // Wire
+  document.addEventListener("click", (e)=>{
+    const t = e.target;
+
+    if(t && t.id === "btnRule"){
+      e.preventDefault();
+      showRuleModal();
+    }
+    if(t && (t.id === "ruleClose" || t.id === "ruleCancel")){
+      e.preventDefault();
+      closeRuleModal();
+    }
+    if(t && t.id === "ruleSave"){
+      e.preventDefault();
+      saveRule().catch(err=>{
+        $("ruleStatus").textContent = "Error: " + err.message;
+      });
+    }
+  });
+
+  // click fuera del panel (fondo) cierra
+  document.addEventListener("mousedown", (e)=>{
+    const m = $("ruleModal");
+    if(!m) return;
+    if(e.target === m) closeRuleModal();
+  });
+
+})();
+</script>
+
 </body>
 </html>
 
