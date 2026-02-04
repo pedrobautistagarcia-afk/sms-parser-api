@@ -1074,8 +1074,12 @@ function formatDateEnglishISO(iso){
   function closeRuleModal(){
     const modal = $("ruleModal");
     if(modal) modal.style.display = "none";
+    if($("ruleStatus")) $("ruleStatus").textContent = "";
+    if($("ruleMerchant")) $("ruleMerchant").value = "";
+    if($("ruleCategoryNew")) $("ruleCategoryNew").value = "";
   }
 
+  
   async function saveRule(){
     const merch = String($("ruleMerchant").value||"").trim();
     const picked = String($("ruleCategorySel").value||"").trim();
@@ -1094,11 +1098,9 @@ function formatDateEnglishISO(iso){
     $("ruleStatus").textContent = "Saving…";
 
     try{
-      // IMPORTANT: tu apply_rules actual solo evalúa match_field == "merchant"
-      // así que guardamos match_field="merchant" para que funcione ya.
-      await postJSON("/add_rule", {
+      const res = await postJSON("/add_rule", {
         userid: USER_ID,
-        enabled: true,
+        enabled: true,   // deja esto tal cual (JS lo interpreta como true)
         priority: 100,
         match_field: "merchant",
         match_type: "contains",
@@ -1106,15 +1108,28 @@ function formatDateEnglishISO(iso){
         set_category: cat
       });
 
-      // refresca categorías en UI para que aparezca inmediatamente
+      // Si el backend devuelve {ok:true,...} seguimos. Si no, forzamos error.
+      if(res && res.ok === False){
+        throw new Error(res.error || "Server returned ok:false");
+      }
+
+      // refresca rules desde el backend para confirmar que existe
+      try{
+        const rr = await getJSON(`/rules?user_id=${encodeURIComponent(USER_ID)}`);
+        // no hace falta pintar nada; solo confirmar que responde
+      }catch(_){}
+
+      // refresca categorías y tabla
       state.categories.add(cat);
       buildFilters();
-      applyFilters();
+      await load();        // recarga desde /expenses
+      applyFilters();      // re-aplica filtros y renderiza
 
       $("ruleStatus").textContent = "Saved ✅";
-      setTimeout(()=> closeRuleModal(), 450);
+      setTimeout(()=> closeRuleModal(), 300);
+
     }catch(err){
-      $("ruleStatus").textContent = "Error: " + err.message;
+      $("ruleStatus").textContent = "Error: " + (err?.message || String(err));
     }
   }
 
