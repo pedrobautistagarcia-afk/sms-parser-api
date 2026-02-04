@@ -344,7 +344,7 @@ def apply_rules(user_id: str, merchant: str, current: Dict[str, Any]) -> Dict[st
         match_type = (r["match_type"] or "contains").lower()
         pattern = (r["pattern"] or "")
 
-        target = merch_l if match_field == "merchant" else ""
+        target = merch_l if match_field in ('merchant','merchant_clean','merchant_pattern') else ((current.get('sms_raw') or current.get('sms') or '').lower() if match_field in ('sms','sms_raw') else merch_l)
 
         ok = False
         if match_type == "contains":
@@ -440,9 +440,9 @@ async def ingest(payload: IngestRequest):
         cur.execute(
             """
             INSERT INTO expenses (
-                user_id, sms, amount, currency, merchant_raw, merchant_clean, category,
+                user_id, sms, amount, currency, merchant_raw, merchant_clean, category, direction,
                 hash, created_at, date_raw, date_iso, sms_hash, sms_raw
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
@@ -452,6 +452,7 @@ async def ingest(payload: IngestRequest):
                 parsed.get("merchant_raw"),
                 parsed.get("merchant_clean"),
                 parsed.get("category"),
+                parsed.get("direction"),
                 row_hash,
                 parsed.get("created_at"),
                 parsed.get("date_raw"),
