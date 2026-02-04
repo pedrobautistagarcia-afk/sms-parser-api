@@ -192,6 +192,29 @@ option{ color: var(--text); background: var(--panel2); }
 /* If the OS forces light popups, at least make the select itself readable */
 select:focus{ border-color: rgba(122,162,255,.45); }
 
+
+
+/* ===== AUTO-REFRESH PATCH: TABLE UX ===== */
+
+/* Scroll interno de la tabla (sin romper tu layout) */
+.tablewrap{
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+}
+
+/* Header sticky */
+thead th{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--panel);
+}
+
+/* En light, fondo coherente */
+[data-theme="light"] thead th{
+  background: var(--panel);
+}
+
 </style>
 </head>
 
@@ -912,6 +935,61 @@ function formatDateEnglishISO(iso10){
   // boot
   bind();
   load();
+
+
+// ===== AUTO-REFRESH PATCH: SMART REFRESH =====
+// Refresca solo si NO estás editando, y evita duplicar timers.
+(function(){
+  if (window.__rgAutoRefreshInstalled) return;
+  window.__rgAutoRefreshInstalled = true;
+
+  const REFRESH_MS = 10000; // 10s (cámbialo si quieres)
+
+  function isEditing(){
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = (ae.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (ae.classList && (ae.classList.contains("merchantEdit") || ae.classList.contains("catSel"))) return true;
+    return false;
+  }
+
+  async function tick(){
+    try{
+      // Si la pestaña no está visible, no gastes requests.
+      if (document.hidden) return;
+
+      // Si estás editando algo, no refrescar (para no pisarte).
+      if (isEditing()) return;
+
+      // Si el dropdown del balance está abierto, no refrescar (evita “saltos”).
+      const bm = document.getElementById("balanceMenu");
+      if (bm && bm.classList.contains("open")) return;
+
+      // Si hay un prompt abierto no lo podemos detectar bien, pero con isEditing suele bastar.
+      if (typeof load === "function") {
+        await load();
+      }
+    }catch(e){
+      // No spameamos la UI: si quieres, aquí podríamos loguear
+      // console.warn("Auto-refresh error:", e);
+    }
+  }
+
+  // Evita múltiples intervals si recargas/inyectas
+  if (window.__rgAutoRefreshTimer) clearInterval(window.__rgAutoRefreshTimer);
+  window.__rgAutoRefreshTimer = setInterval(tick, REFRESH_MS);
+
+  // “Primer refresh” a los 2s (por si justo te llega un SMS al abrir)
+  setTimeout(tick, 2000);
+
+  // Cuando vuelves a la pestaña, refresca una vez
+  document.addEventListener("visibilitychange", ()=>{
+    if (!document.hidden) setTimeout(tick, 300);
+  });
+})();
+
+
 
 
 // ===== DATE FORMAT ENGLISH PATCH =====
