@@ -196,10 +196,10 @@ select:focus{ border-color: rgba(122,162,255,.45); }
 
 /* ===== AUTO-REFRESH PATCH: TABLE UX ===== */
 
-/* Scroll interno de la tabla (sin romper tu layout) */
+/* Sin scroll interno: el scroll es de la página */
 .tablewrap{
-  max-height: calc(100vh - 260px);
-  overflow: auto;
+  overflow: visible;
+  max-height: none;
 }
 
 /* Header sticky */
