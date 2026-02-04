@@ -11,3 +11,9 @@ transactions.db
 
 # backups auto
 static/*.bak*
+
+# backups html
+static/*.bak*
+
+# backups html
+static/*.bak*
