@@ -338,13 +338,28 @@ def apply_rules(user_id: str, merchant: str, current: Dict[str, Any]) -> Dict[st
     conn.close()
 
     merch_l = (merchant or "").lower()
+    sms_l = (current.get("sms_raw") or current.get("sms") or "").lower()
 
     for r in rules:
-        match_field = (r["match_field"] or "merchant").lower()
-        match_type = (r["match_type"] or "contains").lower()
-        pattern = (r["pattern"] or "")
+        # Compat: reglas nuevas usan match_field; legacy puede traer field/match_field null
+        match_field = (r["match_field"] if "match_field" in r.keys() else None) or (r["field"] if "field" in r.keys() else None) or "merchant_clean"
+        match_field = (match_field or "merchant_clean").strip().lower()
 
-        target = merch_l if match_field in ('merchant','merchant_clean','merchant_pattern') else ((current.get('sms_raw') or current.get('sms') or '').lower() if match_field in ('sms','sms_raw') else merch_l)
+        match_type = (r["match_type"] if "match_type" in r.keys() else None) or "contains"
+        match_type = (match_type or "contains").strip().lower()
+
+        pattern = (r["pattern"] or "").strip()
+
+        if not pattern:
+            continue
+
+        if match_field in ("merchant", "merchant_clean", "merchant_raw"):
+            target = merch_l
+        elif match_field in ("sms", "sms_raw", "text"):
+            target = sms_l
+        else:
+            # fallback: intenta aplicar sobre merchant
+            target = merch_l
 
         ok = False
         if match_type == "contains":
