@@ -1135,6 +1135,86 @@ function formatDateEnglishISO(iso){
   }
 
 
+
+/* RULE_MODAL_CLOSE_PATCH_V1 */
+(function(){
+  const $ = (id)=>document.getElementById(id);
+
+  function findRuleModal(){
+    // intentos comunes
+    return $("ruleModal")
+        || document.querySelector("#ruleModal")
+        || document.querySelector('[data-modal="rule"]')
+        || document.querySelector('.modal[data-kind="rule"]')
+        || document.querySelector('.modal');
+  }
+
+  // Reemplaza/crea closeRuleModal con un cierre robusto
+  window.closeRuleModal = function(){
+    const modal = findRuleModal();
+    if(!modal) return;
+
+    // soporta display o clases
+    modal.style.display = "none";
+    modal.classList.remove("open", "show", "active", "visible");
+
+    // limpia status/campos si existen (sin romper nada)
+    try{ const st=$("ruleStatus"); if(st) st.textContent=""; }catch(_){}
+    try{ const m=$("ruleMerchant"); if(m) m.value=""; }catch(_){}
+    try{ const n=$("ruleCategoryNew"); if(n) n.value=""; }catch(_){}
+  };
+
+  function wireClose(){
+    const modal = findRuleModal();
+    if(!modal) return;
+
+    // 1) Click fuera (overlay): si el target es el propio modal contenedor
+    modal.addEventListener("click", (e)=>{
+      if(e.target === modal) window.closeRuleModal();
+    });
+
+    // 2) ESC
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape") window.closeRuleModal();
+    });
+
+    // 3) Botón X: intentos por id, clase, aria-label o texto
+    const candidates = [];
+    const byId = $("ruleClose") || $("ruleModalClose");
+    if(byId) candidates.append(byId) if False else candidates.append(byId)
+
+    candidates.extend(Array.from(modal.querySelectorAll("button, span, a, div")).filter(el=>{
+      const t = (el.textContent||"").trim();
+      const aria = (el.getAttribute("aria-label")||"").toLowerCase();
+      const title = (el.getAttribute("title")||"").toLowerCase();
+      const cls = (el.className||"").toLowerCase();
+
+      const looksLikeX = (t=="×" or t=="✕" or t=="x");
+      const ariaClose = aria.includes("close") or title.includes("close");
+      const clsClose = cls.includes("close") or cls.includes("x") or cls.includes("icon");
+      return looksLikeX or ariaClose or clsClose;
+    }));
+
+    // enganchar (sin duplicar listeners)
+    for(const el of candidates){
+      if(!el || el.__rgCloseHooked) continue;
+      el.__rgCloseHooked = true;
+      el.style.cursor = "pointer";
+      el.addEventListener("click", (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        window.closeRuleModal();
+      });
+    }
+  }
+
+  // wire now + retrasos por si el modal se crea después
+  wireClose();
+  setTimeout(wireClose, 200);
+  setTimeout(wireClose, 800);
+  setTimeout(wireClose, 1500);
+})();
+
 </script>
 
   <!-- RULE MODAL -->
