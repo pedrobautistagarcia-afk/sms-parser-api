@@ -1033,3 +1033,33 @@ function formatDateEnglishISO(iso){
 </script>
 </body>
 </html>
+
+<!-- FIX_RULE_MODAL_V1 -->
+<script>
+(function(){
+  function closeRuleModal(){
+    const m = document.getElementById("ruleModal");
+    if(m){
+      m.style.display = "none";
+    }
+  }
+
+  document.addEventListener("click", function(e){
+    if(e.target && e.target.id === "ruleClose"){
+      closeRuleModal();
+    }
+    if(e.target && e.target.id === "ruleSave"){
+      setTimeout(closeRuleModal, 300);
+    }
+  });
+
+  // Cerrar al hacer click fuera
+  document.addEventListener("mousedown", function(e){
+    const m = document.getElementById("ruleModal");
+    if(!m) return;
+    if(e.target === m){
+      closeRuleModal();
+    }
+  });
+})();
+</script>
