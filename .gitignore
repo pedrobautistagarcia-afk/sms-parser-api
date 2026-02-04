@@ -8,3 +8,6 @@ transactions.db
 # backups
 *.bak.*
 *.bak*
+
+# backups auto
+static/*.bak*
