@@ -413,6 +413,74 @@ tr.rg-sep td{
   cursor:pointer;
 }
 
+
+/* ===== Transaction details modal ===== */
+.rgModalOverlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.55);
+  display:none; align-items:center; justify-content:center;
+  z-index:5000;
+}
+.rgModalOverlay.open{ display:flex; }
+.rgModal{
+  width:min(720px, calc(100vw - 28px));
+  max-height:calc(100vh - 28px);
+  overflow:auto;
+  border:1px solid var(--line);
+  background:var(--panel2);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+}
+.rgModalHead{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:14px 14px 10px 14px;
+  border-bottom:1px solid var(--line);
+}
+.rgModalTitle{
+  margin:0; font-size:15px; font-weight:600; letter-spacing:.2px;
+}
+.rgModalSub{
+  margin-top:6px; font-size:12px; color:var(--muted);
+}
+.rgModalClose{
+  border:1px solid var(--line);
+  background:transparent;
+  color:var(--text);
+  width:38px; height:38px;
+  border-radius:12px;
+  cursor:pointer;
+}
+.rgModalBody{ padding:14px; }
+.rgGrid{
+  display:grid;
+  grid-template-columns: 150px 1fr;
+  gap:10px 12px;
+}
+@media (max-width: 520px){
+  .rgGrid{ grid-template-columns: 1fr; }
+}
+.rgK{ font-size:12px; color:var(--muted); }
+.rgV{ font-size:13px; color:var(--text); }
+.rgBig{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  border-radius:14px;
+  font-size:13px;
+  white-space:pre-wrap;
+  word-break:break-word;
+  line-height:1.35;
+}
+.rgPills{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.rgPill{
+  border:1px solid var(--line);
+  background:var(--chip);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  color:var(--muted);
+}
+
 </style>
 </head>
 
@@ -1810,6 +1878,25 @@ function formatDateEnglishISO(iso){
 })();
 </script>
 
+
+<!-- ===== Transaction details modal ===== -->
+<div class="rgModalOverlay" id="txOverlay" aria-hidden="true">
+  <div class="rgModal" role="dialog" aria-modal="true" aria-labelledby="txTitle">
+    <div class="rgModalHead">
+      <div>
+        <div class="rgModalTitle" id="txTitle">Transaction details</div>
+        <div class="rgModalSub" id="txSub">—</div>
+      </div>
+      <button class="rgModalClose" id="txClose" title="Close">✕</button>
+    </div>
+    <div class="rgModalBody">
+      <div class="rgPills" id="txPills"></div>
+      <div class="rgGrid" id="txGrid"></div>
+      <div class="rgBig" id="txSms"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 
@@ -1841,4 +1928,120 @@ function formatDateEnglishISO(iso){
     }
   });
 })();
+
+/* ===== TX MODAL PATCH ===== */
+(function(){
+  const $ = (q)=>document.querySelector(q);
+
+  const overlay = $("#txOverlay");
+  const closeBtn = $("#txClose");
+  const grid = $("#txGrid");
+  const pills = $("#txPills");
+  const smsBox = $("#txSms");
+  const sub = $("#txSub");
+
+  function esc(s){ return (s ?? "").toString(); }
+
+  function fmtMoney(amount, currency){
+    if(amount === null || amount === undefined) return "—";
+    try{
+      const n = Number(amount);
+      if(Number.isNaN(n)) return esc(amount);
+      return n.toFixed(3).replace(/\.000$/,"") + " " + (currency || "");
+    }catch(e){ return esc(amount) + " " + (currency||""); }
+  }
+
+  function fmtDateNice(iso){
+    if(!iso) return "—";
+    try{
+      const d = new Date(iso);
+      if(Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleString("en-GB", { day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    }catch(e){ return iso; }
+  }
+
+  function openTx(item){
+    // pills
+    pills.innerHTML = "";
+    const pillData = [
+      ["ID", item.id],
+      ["Direction", item.direction || "—"],
+      ["Currency", item.currency || "—"],
+      ["Category", item.category || "—"]
+    ];
+    for(const [k,v] of pillData){
+      const el = document.createElement("div");
+      el.className = "rgPill";
+      el.textContent = `${k}: ${v ?? "—"}`;
+      pills.appendChild(el);
+    }
+
+    // sub header
+    sub.textContent = `${fmtDateNice(item.created_at)} • ${fmtMoney(item.amount, item.currency)}`;
+
+    // grid
+    const rows = [
+      ["Merchant", item.merchant_clean || "—"],
+      ["Amount", fmtMoney(item.amount, item.currency)],
+      ["Category", item.category || "—"],
+      ["Direction", item.direction || "—"],
+      ["Created", fmtDateNice(item.created_at)],
+      ["Raw SMS", ""],
+    ];
+    grid.innerHTML = "";
+    rows.forEach(([k,v])=>{
+      const kEl = document.createElement("div"); kEl.className="rgK"; kEl.textContent=k;
+      const vEl = document.createElement("div"); vEl.className="rgV"; vEl.textContent=v || "—";
+      grid.appendChild(kEl); grid.appendChild(vEl);
+    });
+
+    smsBox.textContent = item.sms || "—";
+
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden","false");
+  }
+
+  function closeTx(){
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden","true");
+  }
+
+  closeBtn && closeBtn.addEventListener("click", closeTx);
+  overlay && overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeTx(); });
+  window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && overlay.classList.contains("open")) closeTx(); });
+
+  // Row click: delegate on tbody
+  document.addEventListener("click", (e)=>{
+    const tr = e.target.closest && e.target.closest("tbody tr");
+    if(!tr) return;
+
+    // Do NOT open modal when interacting with controls
+    if(e.target.closest("input, select, button, a, textarea")) return;
+
+    // Expect row has data-id
+    const id = tr.getAttribute("data-id");
+    if(!id) return;
+
+    // Use global lastData if exists (most dashboards keep it)
+    const list = window.__rg_last_rows || window.lastRows || window.rows || null;
+    if(Array.isArray(list)){
+      const item = list.find(x => String(x.id) === String(id));
+      if(item) return openTx(item);
+    }
+
+    // Fallback: fetch single page and find it
+    const user = (document.querySelector("#statusPill")?.dataset?.user) || "pedro";
+    fetch(`/expenses?user_id=${encodeURIComponent(user)}&limit=500`)
+      .then(r=>r.json())
+      .then(j=>{
+        const item = (j.expenses||[]).find(x => String(x.id)===String(id));
+        if(item) openTx(item);
+      })
+      .catch(()=>{});
+  });
+
+  // expose for other parts if needed
+  window.__rgOpenTx = openTx;
+})();
+
 </script>

@@ -17,3 +17,4 @@ static/*.bak*
 
 # backups html
 static/*.bak*
+static/index.html.BACKUP_*.html
