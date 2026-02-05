@@ -913,16 +913,8 @@ function formatDateEnglishISO(iso10){
       const merch = (r.merchant_clean ?? r.merchant_raw ?? "").trim();
 
       const tr = document.createElement("tr");
-        // SAFE: soporta distintos nombres de variable (item/row/r/exp/e)
-        const __it =
-          (typeof item!=="undefined" && item) ? item :
-          (typeof row!=="undefined" && row) ? row :
-          (typeof r!=="undefined" && r) ? r :
-          (typeof exp!=="undefined" && exp) ? exp :
-          (typeof e!=="undefined" && e) ? e :
-          null;
-        if(__it && __it.created_at){
-          tr.dataset.day = String(__it.created_at).slice(0,10);
+        if(item.created_at){
+          tr.dataset.day = item.created_at.slice(0,10);
         }
       tr.dataset.id = id;
 
