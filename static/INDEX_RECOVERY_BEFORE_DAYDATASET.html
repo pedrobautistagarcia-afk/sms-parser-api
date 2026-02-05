@@ -913,9 +913,6 @@ function formatDateEnglishISO(iso10){
       const merch = (r.merchant_clean ?? r.merchant_raw ?? "").trim();
 
       const tr = document.createElement("tr");
-        if(item.created_at){
-          tr.dataset.day = item.created_at.slice(0,10);
-        }
       tr.dataset.id = id;
 
       const checked = state.selected.has(id) ? "checked" : "";
@@ -1728,77 +1725,6 @@ function formatDateEnglishISO(iso){
     setTimeout(rebuildDaySeparators, 350);
   });
 
-})();
-</script>
-
-
-<!-- ===== PATCH: DAY HEADERS FINAL (dataset-based) ===== -->
-<script>
-(function(){
-  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  function label(iso){
-    const d=new Date(iso+"T00:00:00Z");
-    const now=new Date();
-    const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
-    const diff=Math.round((d-today)/86400000);
-    if(diff===0) return "Today";
-    if(diff===1) return "Tomorrow";
-    if(diff===-1) return "Yesterday";
-    return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
-  }
-
-  function rebuild(){
-    const tb=document.querySelector("#t tbody");
-    if(!tb) return;
-
-    tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
-
-    let last=null;
-    for(const r of Array.from(tb.children)){
-      if(!r.dataset.day) continue;
-      if(r.dataset.day!==last){
-        last=r.dataset.day;
-
-        const sep=document.createElement("tr");
-        sep.className="rg-sep";
-        const td=document.createElement("td");
-        td.colSpan=r.children.length;
-        td.className="rg-sep-cell";
-
-        const caret=document.createElement("span");
-        caret.textContent="▾ ";
-        caret.style.opacity=".6";
-
-        const txt=document.createElement("span");
-        txt.textContent=label(last);
-
-        td.appendChild(caret);
-        td.appendChild(txt);
-        sep.appendChild(td);
-        tb.insertBefore(sep,r);
-
-        sep.addEventListener("click",()=>{
-          const c=sep.classList.toggle("collapsed");
-          caret.textContent=c?"▸ ":"▾ ";
-          let n=sep.nextElementSibling;
-          while(n && !n.classList.contains("rg-sep")){
-            n.style.display=c?"none":"table-row";
-            n=n.nextElementSibling;
-          }
-        });
-      }
-    }
-  }
-
-  const _fetch=window.fetch;
-  window.fetch=async function(){
-    const r=await _fetch.apply(this,arguments);
-    setTimeout(rebuild,80);
-    setTimeout(rebuild,300);
-    return r;
-  };
-  window.addEventListener("load",()=>setTimeout(rebuild,150));
 })();
 </script>
 
