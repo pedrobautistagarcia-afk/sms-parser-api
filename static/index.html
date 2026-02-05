@@ -996,6 +996,8 @@ function formatDateEnglishISO(iso10){
           tr.dataset.day = String(__it.created_at).slice(0,10);
         }
       tr.dataset.id = id;
+      // day key for day-headers
+      tr.dataset.day = isoDay(r.created_at || r.date_iso || r.date_raw || "");
 
       const checked = state.selected.has(id) ? "checked" : "";
       if(state.selected.has(id)) tr.classList.add("selected-row");
@@ -1350,6 +1352,32 @@ function formatDateEnglishISO(iso){
     });
   };
 })();
+
+
+// ===== PATCH: call day-headers after render() =====
+(function(){
+  if (window.__rgRenderHookDayHeaders) return;
+  window.__rgRenderHookDayHeaders = true;
+
+  function callRebuild(){
+    try{
+      if (typeof window.__rgRebuildDayHeaders === "function") window.__rgRebuildDayHeaders();
+    }catch(e){}
+  }
+
+  const _render = window.render;
+  if (typeof _render === "function"){
+    window.render = function(){
+      _render();
+      setTimeout(callRebuild, 0);
+      setTimeout(callRebuild, 60);
+    };
+  }else{
+    // fallback: try on load
+    window.addEventListener("load", ()=>setTimeout(callRebuild, 120));
+  }
+})();
+
 
 </script>
 
@@ -1844,6 +1872,9 @@ function formatDateEnglishISO(iso){
     return r;
   };
   window.addEventListener("load",()=>setTimeout(rebuild,150));
+
+  // expose for manual calls
+  window.__rgRebuildDayHeaders = rebuild;
 })();
 </script>
 
