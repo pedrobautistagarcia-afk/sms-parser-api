@@ -394,25 +394,6 @@ body.light table thead th {
   background: #ffffff;
 }
 
-
-/* ===== PATCH: Hide Date column (use day headers instead) ===== */
-#t thead th:nth-child(2){ display:none !important; }
-#t tbody tr:not(.rg-sep) td:nth-child(2){ display:none !important; }
-
-/* Rebalance widths */
-#t thead th:nth-child(3), #t tbody td:nth-child(3){ width:56% !important; }  /* Merchant */
-#t thead th:nth-child(4), #t tbody td:nth-child(4){ width:18% !important; }  /* Category */
-#t thead th:nth-child(5), #t tbody td:nth-child(5){ width:12% !important; }  /* Amount */
-#t thead th:nth-child(6), #t tbody td:nth-child(6){ width:14% !important; }  /* Currency */
-
-/* Day separator row */
-tr.rg-sep td{
-  font-size:12px;
-  color:var(--muted);
-  background:rgba(255,255,255,.03);
-  cursor:pointer;
-}
-
 </style>
 </head>
 
@@ -1608,65 +1589,6 @@ function formatDateEnglishISO(iso){
 })();
 
 </script>
-
-<!-- ===== PATCH: Day headers + collapse ===== -->
-<script>
-(function(){
-  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  function label(iso){
-    if(!iso) return "";
-    const d=new Date(iso+"T00:00:00Z");
-    const now=new Date();
-    const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
-    const diff=Math.round((d-today)/86400000);
-    if(diff===0) return "Today";
-    if(diff===1) return "Tomorrow";
-    if(diff===-1) return "Yesterday";
-    return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
-  }
-
-  function enhance(){
-    document.querySelectorAll("tr.rg-sep").forEach(sep=>{
-      const key=sep.dataset.day;
-      const td=sep.querySelector("td");
-      if(!td) return;
-      td.textContent=label(key);
-      if(!td.dataset.ready){
-        td.dataset.ready="1";
-        const caret=document.createElement("span");
-        caret.textContent="▾ ";
-        caret.style.opacity=".6";
-        td.prepend(caret);
-
-        sep.onclick=()=>{
-          const c=sep.classList.toggle("collapsed");
-          caret.textContent=c?"▸ ":"▾ ";
-          let r=sep.nextElementSibling;
-          while(r && !r.classList.contains("rg-sep")){
-            r.style.display=c?"none":"table-row";
-            r=r.nextElementSibling;
-          }
-        };
-      }
-    });
-  }
-
-  const _fetch=window.fetch;
-  window.fetch=async function(){
-    const r=await _fetch.apply(this,arguments);
-    setTimeout(enhance,50);
-    setTimeout(enhance,250);
-    return r;
-  };
-
-  window.addEventListener("load",()=>{
-    setTimeout(enhance,80);
-    setTimeout(enhance,300);
-  });
-})();
-</script>
-
 </body>
 </html>
 
