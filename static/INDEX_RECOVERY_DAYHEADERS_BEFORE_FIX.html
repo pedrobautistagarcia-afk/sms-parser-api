@@ -1609,22 +1609,14 @@ function formatDateEnglishISO(iso){
 
 </script>
 
-<!-- ===== PATCH: Day headers (create rows) + collapse ===== -->
+<!-- ===== PATCH: Day headers + collapse ===== -->
 <script>
 (function(){
   const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-  function iso10FromCreated(created_at){
-    if(!created_at) return "";
-    // created_at suele venir: 2026-02-04T07:17:10+00:00
-    // o ya en ISO
-    const m = String(created_at).match(/^\d{4}-\d{2}-\d{2}/);
-    return m ? m[0] : "";
-  }
-
-  function label(iso10){
-    if(!iso10) return "";
-    const d=new Date(iso10+"T00:00:00Z");
+  function label(iso){
+    if(!iso) return "";
+    const d=new Date(iso+"T00:00:00Z");
     const now=new Date();
     const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
     const diff=Math.round((d-today)/86400000);
@@ -1634,97 +1626,44 @@ function formatDateEnglishISO(iso){
     return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
   }
 
-  function rebuildDaySeparators(){
-    const table = document.querySelector("#t");
-    if(!table) return;
-    const tb = table.querySelector("tbody");
-    if(!tb) return;
+  function enhance(){
+    document.querySelectorAll("tr.rg-sep").forEach(sep=>{
+      const key=sep.dataset.day;
+      const td=sep.querySelector("td");
+      if(!td) return;
+      td.textContent=label(key);
+      if(!td.dataset.ready){
+        td.dataset.ready="1";
+        const caret=document.createElement("span");
+        caret.textContent="▾ ";
+        caret.style.opacity=".6";
+        td.prepend(caret);
 
-    // borrar separadores existentes
-    tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
-
-    const rows = Array.from(tb.querySelectorAll("tr")).filter(r=>!r.classList.contains("rg-sep"));
-    if(!rows.length) return;
-
-    let lastDay = null;
-
-    for(const r of rows){
-      // la columna Date es la 2 (aunque esté oculta)
-      const tds = r.querySelectorAll("td");
-      if(tds.length < 2) continue;
-
-      const dateCell = tds[1];
-      let iso10 = "";
-
-      // Prioridad: si el row tiene created_at en dataset, úsalo
-      // (si no existe, tiramos del texto de la celda Date)
-      const createdAttr = r.getAttribute("data-created_at") || r.getAttribute("data-created") || "";
-      iso10 = iso10FromCreated(createdAttr) || iso10FromCreated(dateCell.textContent);
-
-      // Si sigue vacío, intenta buscar yyyy-mm-dd dentro del texto
-      if(!iso10){
-        const m = (dateCell.textContent||"").match(/\d{4}-\d{2}-\d{2}/);
-        if(m) iso10 = m[0];
-      }
-
-      // Si aún vacío, no podemos agrupar
-      if(!iso10) continue;
-
-      if(iso10 !== lastDay){
-        lastDay = iso10;
-
-        const sep = document.createElement("tr");
-        sep.className = "rg-sep";
-        sep.dataset.day = iso10;
-
-        const td = document.createElement("td");
-        td.colSpan = (tds.length); // mismo nº de columnas que la fila
-        td.className = "rg-sep-cell";
-        td.style.userSelect = "none";
-
-        const caret = document.createElement("span");
-        caret.textContent = "▾ ";
-        caret.style.opacity = ".6";
-
-        const txt = document.createElement("span");
-        txt.textContent = label(iso10);
-
-        td.appendChild(caret);
-        td.appendChild(txt);
-        sep.appendChild(td);
-
-        // insert before this row
-        tb.insertBefore(sep, r);
-
-        // collapse toggle
-        sep.addEventListener("click", ()=>{
-          const collapsed = sep.classList.toggle("collapsed");
-          caret.textContent = collapsed ? "▸ " : "▾ ";
-
-          let rr = sep.nextElementSibling;
-          while(rr && !rr.classList.contains("rg-sep")){
-            rr.style.display = collapsed ? "none" : "table-row";
-            rr = rr.nextElementSibling;
+        sep.onclick=()=>{
+          const c=sep.classList.toggle("collapsed");
+          caret.textContent=c?"▸ ":"▾ ";
+          let r=sep.nextElementSibling;
+          while(r && !r.classList.contains("rg-sep")){
+            r.style.display=c?"none":"table-row";
+            r=r.nextElementSibling;
           }
-        });
+        };
       }
-    }
+    });
   }
 
-  // Hook: después de cada fetch/render, reconstruimos separadores
-  const _fetch = window.fetch;
-  window.fetch = async function(){
-    const res = await _fetch.apply(this, arguments);
-    setTimeout(rebuildDaySeparators, 50);
-    setTimeout(rebuildDaySeparators, 250);
-    return res;
+  const _fetch=window.fetch;
+  window.fetch=async function(){
+    const r=await _fetch.apply(this,arguments);
+    setTimeout(enhance,50);
+    setTimeout(enhance,250);
+    return r;
   };
 
-  window.addEventListener("load", ()=>{
-    setTimeout(rebuildDaySeparators, 120);
-    setTimeout(rebuildDaySeparators, 350);
+  window.addEventListener("load",()=>{
+    setTimeout(enhance,80);
+    setTimeout(enhance,300);
   });
-
 })();
 </script>
 
