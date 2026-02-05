@@ -1306,57 +1306,9 @@ function formatDateEnglishISO(iso10){
   load();
 
 
-// ===== AUTO-REFRESH PATCH: SMART REFRESH =====
-// Refresca solo si NO estás editando, y evita duplicar timers.
-(function(){
-  if (window.__rgAutoRefreshInstalled) return;
-  window.__rgAutoRefreshInstalled = true;
 
-  const REFRESH_MS = 10000; // 10s (cámbialo si quieres)
 
-  function isEditing(){
-    const ae = document.activeElement;
-    if (!ae) return false;
-    const tag = (ae.tagName || "").toUpperCase();
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
-    if (ae.classList && (ae.classList.contains("merchantEdit") || ae.classList.contains("catSel"))) return true;
-    return false;
-  }
-
-  async function tick(){
-    try{
-      // Si la pestaña no está visible, no gastes requests.
-      if (document.hidden) return;
-
-      // Si estás editando algo, no refrescar (para no pisarte).
-      if (isEditing()) return;
-
-      // Si el dropdown del balance está abierto, no refrescar (evita “saltos”).
-      const bm = document.getElementById("balanceMenu");
-      if (bm && bm.classList.contains("open")) return;
-
-      // Si hay un prompt abierto no lo podemos detectar bien, pero con isEditing suele bastar.
-      if (typeof load === "function") {
-        await load();
-      }
-    }catch(e){
-      // No spameamos la UI: si quieres, aquí podríamos loguear
-      // console.warn("Auto-refresh error:", e);
-    }
-  }
-
-  // Evita múltiples intervals si recargas/inyectas
-  if (window.__rgAutoRefreshTimer) clearInterval(window.__rgAutoRefreshTimer);
-  window.__rgAutoRefreshTimer = setInterval(tick, REFRESH_MS);
-
-  // “Primer refresh” a los 2s (por si justo te llega un SMS al abrir)
-  setTimeout(tick, 2000);
-
-  // Cuando vuelves a la pestaña, refresca una vez
-  document.addEventListener("visibilitychange", ()=>{
-    if (!document.hidden) setTimeout(tick, 300);
-  });
-})();
+// AUTO-REFRESH DISABLED (manual only)
 
 
 
@@ -1656,6 +1608,7 @@ function formatDateEnglishISO(iso){
     const k = document.getElementById("qaKpi");
     const r = document.getElementById("qaRule");
     const c = document.getElementById("qaCsv");
+    const q = document.getElementById("qaRefresh");
     if(!k && !r && !c) return;
 
     if(k){
@@ -1675,6 +1628,19 @@ function formatDateEnglishISO(iso){
           // fallback: intentar llamar a exportCSV si existe
           if(typeof window.exportCSV === "function") window.exportCSV();
         }
+      });
+    }
+
+    if(q){
+      q.addEventListener("click", async ()=>{
+        try{
+          // cerrar el menú para que no moleste visualmente
+          const menu = document.getElementById("settingsMenu");
+          if(menu) menu.classList.remove("open");
+
+          // recargar datos (manual)
+          if(typeof window.load === "function") await window.load();
+        }catch(e){}
       });
     }
 
