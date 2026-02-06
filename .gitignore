@@ -18,3 +18,8 @@ static/*.bak*
 # backups html
 static/*.bak*
 static/index.html.BACKUP_*.html
+
+# ignore UI backups
+static/*BACKUP*.html
+static/*.bak*
+static/*.BACKUP_*.html
