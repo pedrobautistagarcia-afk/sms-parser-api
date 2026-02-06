@@ -515,6 +515,7 @@ tr.rg-sep td{
               <button class="btn" id="qaRule" type="button">Rule</button>
               <button class="btn" id="qaCsv" type="button">Export CSV</button>
               <button class="btn" id="qaRefresh" type="button">🔄 Refresh</button>
+              <button class="btn" id="qaSortDate" type="button">📅 Sort by date</button>
             </div>
           </div>
 <div class="setRow">
@@ -790,7 +791,7 @@ function formatDateEnglishISO(iso10){
     if(n===null||n===undefined||n==="") return "";
     const v = Number(n);
     if(Number.isNaN(v)) return String(n);
-    return v.toFixed(2);
+    return v.toFixed(3);
   }
   function inferDirection(row){
     const d = (row.direction||"").toLowerCase();
@@ -1007,7 +1008,7 @@ function formatDateEnglishISO(iso10){
           ${categoryCellHTML(id, cat)}
         </td>
 
-        <td class="amt ${signClass}" title="${amountTxt}">${amountTxt}</td>
+        <td class="amt ${signClass}" title="${cur} ${amountTxt}">${cur} ${amountTxt}</td>
 
         <td style="text-align:center">
           <div class="curcell" title="${cur}">
@@ -1229,6 +1230,7 @@ function formatDateEnglishISO(iso10){
       const j = await getJSON(`/expenses?user_id=${encodeURIComponent(USER_ID)}&limit=${LIMIT}`);
       const rows = j.expenses || [];
       state.all = rows;
+      window.__rg_last_rows = rows;
 
       state.categories = new Set(rows.map(r => (r.category||"other").toLowerCase()));
       state.currencies = new Set(rows.map(r => (r.currency||"").toUpperCase()).filter(Boolean));
@@ -1388,6 +1390,26 @@ function formatDateEnglishISO(iso){
 
 <script>
 
+
+// ===== SORT BY DATE BUTTON =====
+(function(){
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const b = document.getElementById("qaSortDate");
+    if(!b) return;
+    b.addEventListener("click", ()=>{
+      try{
+        if(window.state){
+          window.state.sortKey = "created_at";
+          window.state.sortDir = "desc";
+        }
+        if(typeof window.sortView === "function") window.sortView();
+        if(typeof window.render === "function") window.render();
+        try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
+      }catch(e){}
+    });
+  });
+})();
+
 // ===== MANUAL REFRESH BUTTON =====
 (function(){
   document.addEventListener("DOMContentLoaded", ()=>{
@@ -1453,7 +1475,7 @@ function formatDateEnglishISO(iso){
     try{
       const n = Number(amount);
       if(Number.isNaN(n)) return esc(amount);
-      return n.toFixed(3).replace(/\.000$/,"") + " " + (currency || "");
+      return (currency||"") + " " + n.toFixed(3);
     }catch(e){ return esc(amount) + " " + (currency||""); }
   }
 
@@ -1517,7 +1539,7 @@ function formatDateEnglishISO(iso){
   window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && overlay.classList.contains("open")) closeTx(); });
 
   // Row click: delegate on tbody
-  document.addEventListener("click", (e)=>{
+  document.addEventListener("dblclick", (e)=>{
     const tr = e.target.closest && e.target.closest("tbody tr");
     if(!tr) return;
 
