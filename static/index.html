@@ -1023,6 +1023,8 @@ tr.dataset.id = id;
     updateBalanceAndKpis();
     wireRowInputs();
     wireSelectionControls();
+    try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
+
     try{ if(typeof window.__rgRebuildDayHeaders==="function") window.__rgRebuildDayHeaders(); }catch(e){}
 
   }
@@ -1236,6 +1238,8 @@ tr.dataset.id = id;
 
       buildFilters();
       applyFilters();
+      try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
+
       setStatus(`count ${state.view.length}`);
     }catch(err){
       showErr(String(err?.message || err));
