@@ -1008,7 +1008,7 @@ function formatDateEnglishISO(iso10){
           ${categoryCellHTML(id, cat)}
         </td>
 
-        <td class="amt ${signClass}" title="${cur} ${amountTxt}">${cur} ${amountTxt}</td>
+        <td class="amt ${signClass}" title="${amountTxt}">${amountTxt}</td>
 
         <td style="text-align:center">
           <div class="curcell" title="${cur}">
@@ -1425,6 +1425,51 @@ function formatDateEnglishISO(iso){
 })();
 
 </script>
+
+<!-- ===== FIX: gear dropdown + tx modal dblclick (robust) ===== -->
+<script id="FIX_GEAR_AND_MODAL_V1">
+(function(){
+  function ready(fn){
+    if(document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
+  }
+
+  // Gear menu: toggle fiable
+  ready(function(){
+    var btn = document.getElementById("settingsBtn");
+    var menu = document.getElementById("settingsMenu");
+    if(btn && menu){
+      btn.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        menu.classList.toggle("open");
+      });
+      document.addEventListener("click", function(e){
+        if(!e.target.closest(".settings")) menu.classList.remove("open");
+      });
+    }
+  });
+
+  // Tx modal: doble click en fila (evita inputs/selects)
+  document.addEventListener("dblclick", function(e){
+    var tr = e.target && e.target.closest ? e.target.closest("#tbody tr") : null;
+    if(!tr) return;
+    if(tr.classList.contains("rg-sep")) return;
+    if(e.target.closest && e.target.closest("input, select, button, a, textarea")) return;
+
+    var id = tr.getAttribute("data-id");
+    if(!id) return;
+
+    var list = window.__rg_last_rows || (window.state && Array.isArray(window.state.all) ? window.state.all : []);
+    var item = Array.isArray(list) ? list.find(function(x){ return String(x.id) === String(id); }) : null;
+
+    if(item && typeof window.__rgOpenTx === "function"){
+      window.__rgOpenTx(item);
+    }
+  }, true);
+})();
+</script>
+
 </body>
 </html>
 
