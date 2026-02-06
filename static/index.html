@@ -984,8 +984,8 @@ function formatDateEnglishISO(iso10){
       const merch = (r.merchant_clean ?? r.merchant_raw ?? "").trim();
 
       const tr = document.createElement("tr");
-      tr.dataset.day = dateISO; // ✅ for day headers grouping
-tr.dataset.id = id;
+      tr.dataset.day = dateISO;   // 👈 clave: agrupación determinista
+      tr.dataset.id = id;
       // day key for day-headers
       tr.dataset.day = isoDay(r.created_at || r.date_iso || r.date_raw || "");
 
@@ -1384,526 +1384,25 @@ function formatDateEnglishISO(iso){
 </script>
 
 <!-- RULE_BUTTON_WIRE_V1 -->
-<script>
-(function(){
-  const USER_ID = "pedro";
-  const API_KEY = "ElPortichuelo99";
-
-  function $(id){ return document.getElementById(id); }
-
-  function showRuleModal(){
-    const m = $("ruleModal");
-    if(!m) return;
-    m.style.display = "block";
-    $("ruleStatus").textContent = "";
-    // Rellenar categorías desde el filtro (lo más fiable)
-    const catFilter = $("catFilter");
-    const sel = $("ruleCategory");
-    if(sel){
-      sel.innerHTML = "";
-      const opt0 = document.createElement("option");
-      opt0.value = "other";
-      opt0.textContent = "Other";
-      sel.appendChild(opt0);
-
-      if(catFilter){
-        const opts = Array.from(catFilter.querySelectorAll("option"))
-          .map(o => o.value)
-          .filter(v => v && v !== "");
-        const seen = new Set();
-        for(const v of opts){
-          if(seen.has(v)) continue;
-          seen.add(v);
-          const o = document.createElement("option");
-          o.value = v;
-          o.textContent = v.charAt(0).toUpperCase() + v.slice(1);
-          sel.appendChild(o);
-        }
-      }
-    }
-    const inp = $("ruleMerchant");
-    if(inp) inp.focus();
-  }
-
-  function closeRuleModal(){
-    const m = $("ruleModal");
-    if(m) m.style.display = "none";
-  }
-
-  async function postJSON(path, body){
-    const u = new URL(path, window.location.origin);
-    u.searchParams.set("api_key", API_KEY);
-    const r = await fetch(u.pathname + u.search, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body||{})
-    });
-    const t = await r.text().catch(()=> "");
-    if(!r.ok) throw new Error(`${path} => HTTP ${r.status} :: ${t}`);
-    try{ return JSON.parse(t); }catch(_){ return {ok:true}; }
-  }
-
-  async function saveRule(){
-    const merchant = ($("ruleMerchant")?.value || "").trim();
-    const category = ($("ruleCategory")?.value || "other").trim();
-
-    if(!merchant){
-      $("ruleStatus").textContent = "Pon un merchant/pattern (ej: starb).";
-      return;
-    }
-    $("ruleStatus").textContent = "Saving…";
-
-    // IMPORTANTE: tu backend actual espera pattern + set_category (según debug_rules)
-    const payload = {
-      userid: USER_ID,
-      pattern: merchant,
-      match_field: "merchant_clean",
-      match_type: "contains",
-      set_category: category,
-      priority: 100,
-      enabled: true
-    };
-
-    const res = await postJSON("/add_rule", payload);
-    if(res && res.ok){
-      $("ruleStatus").textContent = "Saved ✅";
-      setTimeout(closeRuleModal, 250);
-      // opcional: recargar para que rule aplique al instante al próximo ingest
-      // load();  // NO lo toco para no romper nada
-    }else{
-      $("ruleStatus").textContent = "Error saving rule.";
-    }
-  }
-
-  // Wire
-  document.addEventListener("click", (e)=>{
-    const t = e.target;
-
-    if(t && t.id === "btnRule"){
-      e.preventDefault();
-      showRuleModal();
-    }
-    if(t && (t.id === "ruleClose" || t.id === "ruleCancel")){
-      e.preventDefault();
-      closeRuleModal();
-    }
-    if(t && t.id === "ruleSave"){
-      e.preventDefault();
-      saveRule().catch(err=>{
-        $("ruleStatus").textContent = "Error: " + err.message;
-      });
-    }
-  });
-
-  // click fuera del panel (fondo) cierra
-  document.addEventListener("mousedown", (e)=>{
-    const m = $("ruleModal");
-    if(!m) return;
-    if(e.target === m) closeRuleModal();
-  });
-
-})();
-</script>
-
+<!-- DISABLED OLD DAY HEADERS SCRIPT (PATCH: DAY HEADERS FINAL (dataset-based)) -->
 
 <script>
 
-// === SETTINGS: density + menu (no rompe nada) ===
+// ===== MANUAL REFRESH BUTTON =====
 (function(){
-  function setDensity(mode){
-    const m = (mode==="compact"||mode==="normal"||mode==="comfy") ? mode : "normal";
-    document.documentElement.setAttribute("data-density", m);
-    localStorage.setItem("density", m);
-
-    const c = document.getElementById("densCompact");
-    const n = document.getElementById("densNormal");
-    const f = document.getElementById("densComfy");
-    [c,n,f].forEach(x=> x && x.classList.remove("active"));
-    if(m==="compact" && c) c.classList.add("active");
-    if(m==="normal"  && n) n.classList.add("active");
-    if(m==="comfy"   && f) f.classList.add("active");
-  }
-
-  function initDensity(){
-    const saved = localStorage.getItem("density") || "normal";
-    setDensity(saved);
-    const c = document.getElementById("densCompact");
-    const n = document.getElementById("densNormal");
-    const f = document.getElementById("densComfy");
-    if(c) c.addEventListener("click", ()=>setDensity("compact"));
-    if(n) n.addEventListener("click", ()=>setDensity("normal"));
-    if(f) f.addEventListener("click", ()=>setDensity("comfy"));
-  }
-
-  function initSettingsMenu(){
-    const btn = document.getElementById("settingsBtn");
-    const menu = document.getElementById("settingsMenu");
-    if(!btn || !menu) return;
-
-    btn.addEventListener("click", ()=>{
-      menu.classList.toggle("open");
-    });
-
-    document.addEventListener("click",(e)=>{
-      if(!e.target.closest(".settings")) menu.classList.remove("open");
-    });
-  }
-
-  // --- Rule preview ---
-  // Busca inputs típicos del modal: merchant pattern (merchant / pattern) y el preview label.
-  function updateRulePreview(){
-    const out = document.getElementById("rulePreviewText");
-    if(!out) return;
-
-    // Intentamos encontrar el input donde escribes el merchant
-    const merchantInp =
-      document.querySelector('#ruleMerchant') ||
-      document.querySelector('input[name="merchant"]') ||
-      document.querySelector('input[name="pattern"]') ||
-      document.querySelector('input[placeholder*="merchant" i]') ||
-      document.querySelector('input[placeholder*="pattern" i]');
-
-    if(!merchantInp) {
-      out.textContent = "Matches in current table: —";
-      return;
-    }
-
-    const pat = String(merchantInp.value||"").trim().toLowerCase();
-    if(!pat){
-      out.textContent = "Matches in current table: —";
-      return;
-    }
-
-    // state.all existe en tu código. Si por lo que sea no existe, no petamos.
-    const rows = (window.state && Array.isArray(window.state.all)) ? window.state.all : [];
-    let n = 0;
-    for(const r of rows){
-      const m = String(r.merchant_clean || r.merchant_raw || r.sms || "").toLowerCase();
-      if(m.includes(pat)) n++;
-    }
-    out.textContent = `Matches in current table: ${n}`;
-  }
-
-  function hookRuleModal(){
-    // Cada vez que se abra el modal o escribas, recalcula.
-    // No conocemos tus ids exactos, así que usamos listeners "generales".
-    document.addEventListener("input", (e)=>{
-      const t = e.target;
-      if(!t) return;
-      // Si estás tocando un input dentro de un modal (o algo cercano), recalcula.
-      if(t.closest && t.closest(".modal")) updateRulePreview();
-      // Si no hay clase modal, igual: si parece el input de merchant/pattern, recalcula.
-      const name = (t.getAttribute && (t.getAttribute("name")||"")) || "";
-      const ph = (t.getAttribute && (t.getAttribute("placeholder")||"")) || "";
-      if(/merchant|pattern/i.test(name) || /merchant|pattern/i.test(ph)) {
-        updateRulePreview();
-      }
-    }, true);
-
-    // También recalculamos al clicar el botón Rule (si existe)
-    const rb = document.getElementById("btnRule") || document.getElementById("ruleBtn") || Array.from(document.querySelectorAll("button")).find(b=>/rule/i.test((b.textContent||"").trim()));
-    if(rb) rb.addEventListener("click", ()=>setTimeout(updateRulePreview, 50));
-  }
-
-  // boot safe
   document.addEventListener("DOMContentLoaded", ()=>{
-    initDensity();
-    initSettingsMenu();
-    hookRuleModal();
+    const b = document.getElementById("qaRefresh");
+    if(!b) return;
+    b.addEventListener("click", async ()=>{
+      try{
+        if(typeof load === "function") await load();
+        try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
+      }catch(e){}
+    });
   });
 })();
 
 </script>
-
-<script>
-
-// === SETTINGS: quick actions wiring ===
-(function(){
-  function clickIf(id){
-    const el = document.getElementById(id);
-    if(el) el.click();
-    return !!el;
-  }
-  function findRuleButton(){
-    // Prioridad: IDs típicos
-    const byId = document.getElementById("btnRule") || document.getElementById("ruleBtn") || document.getElementById("ruleButton");
-    if(byId) return byId;
-
-    // Fallback: botón cuyo texto sea "Rule"
-    const btns = Array.from(document.querySelectorAll("button"));
-    return btns.find(b => (b.textContent||"").trim().toLowerCase() === "rule") || null;
-  }
-
-  function initQuickActions(){
-    const k = document.getElementById("qaKpi");
-    const r = document.getElementById("qaRule");
-    const c = document.getElementById("qaCsv");
-    const q = document.getElementById("qaRefresh");
-    if(!k && !r && !c) return;
-
-    if(k){
-      k.addEventListener("click", ()=>{
-        // Usamos el botón original (aunque esté oculto) para no duplicar lógica
-        if(!clickIf("toggleKpi")){
-          // fallback: toggle directo
-          const row = document.getElementById("kpiRow");
-          if(row) row.classList.toggle("show");
-        }
-      });
-    }
-
-    if(c){
-      c.addEventListener("click", ()=>{
-        if(!clickIf("btnExport")){
-          // fallback: intentar llamar a exportCSV si existe
-          if(typeof window.exportCSV === "function") window.exportCSV();
-        }
-      });
-    }
-
-    if(q){
-      q.addEventListener("click", async ()=>{
-        try{
-          // cerrar el menú para que no moleste visualmente
-          const menu = document.getElementById("settingsMenu");
-          if(menu) menu.classList.remove("open");
-
-          // recargar datos (manual)
-          if(typeof window.load === "function") await window.load();
-        }catch(e){}
-      });
-    }
-
-    if(r){
-      r.addEventListener("click", ()=>{
-        const rb = findRuleButton();
-        if(rb) rb.click();
-      });
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", initQuickActions);
-})();
-
-</script>
-
-<!-- DISABLED_DUPLICATE_DAY_HEADERS_START -->
-<!-- ===== PATCH: Day headers (create rows) + collapse ===== -->
-<script>
-(function(){
-  return; // disabled (conflicts with global day headers)
-  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  function iso10FromCreated(created_at){
-    if(!created_at) return "";
-    // created_at suele venir: 2026-02-04T07:17:10+00:00
-    // o ya en ISO
-    const m = String(created_at).match(/^\d{4}-\d{2}-\d{2}/);
-    return m ? m[0] : "";
-  }
-
-  function label(iso10){
-    if(!iso10) return "";
-    const d=new Date(iso10+"T00:00:00Z");
-    const now=new Date();
-    const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
-    const diff=Math.round((d-today)/86400000);
-    if(diff===0) return "Today";
-    if(diff===1) return "Tomorrow";
-    if(diff===-1) return "Yesterday";
-    return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
-  }
-
-  function rebuildDaySeparators(){
-    const table = document.querySelector("#t");
-    if(!table) return;
-    const tb = table.querySelector("tbody");
-    if(!tb) return;
-
-    // borrar separadores existentes
-    tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
-
-    const rows = Array.from(tb.querySelectorAll("tr")).filter(r=>!r.classList.contains("rg-sep"));
-    if(!rows.length) return;
-
-    let lastDay = null;
-
-    for(const r of rows){
-      // la columna Date es la 2 (aunque esté oculta)
-      const tds = r.querySelectorAll("td");
-      if(tds.length < 2) continue;
-
-      const dateCell = tds[1];
-      let iso10 = "";
-
-      // Prioridad: si el row tiene created_at en dataset, úsalo
-      // (si no existe, tiramos del texto de la celda Date)
-      const createdAttr = r.getAttribute("data-created_at") || r.getAttribute("data-created") || "";
-      iso10 = iso10FromCreated(createdAttr) || iso10FromCreated(dateCell.textContent);
-
-      // Si sigue vacío, intenta buscar yyyy-mm-dd dentro del texto
-      if(!iso10){
-        const m = (dateCell.textContent||"").match(/\d{4}-\d{2}-\d{2}/);
-        if(m) iso10 = m[0];
-      }
-
-      // Si aún vacío, no podemos agrupar
-      if(!iso10) continue;
-
-      if(iso10 !== lastDay){
-        lastDay = iso10;
-
-        const sep = document.createElement("tr");
-        sep.className = "rg-sep";
-        sep.dataset.day = iso10;
-
-        const td = document.createElement("td");
-        td.colSpan = (tds.length); // mismo nº de columnas que la fila
-        td.className = "rg-sep-cell";
-        td.style.userSelect = "none";
-
-        const caret = document.createElement("span");
-        caret.textContent = "▾ ";
-        caret.style.opacity = ".6";
-
-        const txt = document.createElement("span");
-        txt.textContent = label(iso10);
-
-        td.appendChild(caret);
-        td.appendChild(txt);
-        sep.appendChild(td);
-
-        // insert before this row
-        tb.insertBefore(sep, r);
-
-        // collapse toggle
-        sep.addEventListener("click", ()=>{
-          const collapsed = sep.classList.toggle("collapsed");
-          caret.textContent = collapsed ? "▸ " : "▾ ";
-
-          let rr = sep.nextElementSibling;
-          while(rr && !rr.classList.contains("rg-sep")){
-            rr.style.display = collapsed ? "none" : "table-row";
-            rr = rr.nextElementSibling;
-          }
-        });
-      }
-    }
-  }
-
-  // Hook: después de cada fetch/render, reconstruimos separadores
-  const _fetch = window.fetch;
-  window.fetch = async function(){
-    const res = await _fetch.apply(this, arguments);
-    setTimeout(rebuildDaySeparators, 50);
-    setTimeout(rebuildDaySeparators, 250);
-    return res;
-  };
-
-  window.addEventListener("load", ()=>{
-    setTimeout(rebuildDaySeparators, 120);
-    setTimeout(rebuildDaySeparators, 350);
-  });
-
-})();
-</script>
-
-
-
-<!-- DISABLED_DUPLICATE_DAY_HEADERS_END -->
-<!-- ===== PATCH: DAY HEADERS FINAL (dataset-based) ===== -->
-<script>
-(function(){
-  return; // disabled (conflicts with global day headers)
-  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  function label(iso){
-    const d=new Date(iso+"T00:00:00Z");
-    const now=new Date();
-    const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
-    const diff=Math.round((d-today)/86400000);
-    if(diff===0) return "Today";
-    if(diff===1) return "Tomorrow";
-    if(diff===-1) return "Yesterday";
-    return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
-  }
-
-  function rebuild(){
-    const tb=document.querySelector("#t tbody");
-    if(!tb) return;
-
-    tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
-
-    let last=null;
-    for(const r of Array.from(tb.children)){
-      if(!r.dataset.day) continue;
-      if(r.dataset.day!==last){
-        last=r.dataset.day;
-
-        const sep=document.createElement("tr");
-        sep.className="rg-sep";
-        const td=document.createElement("td");
-        td.colSpan=r.children.length;
-        td.className="rg-sep-cell";
-
-        const caret=document.createElement("span");
-        caret.textContent="▾ ";
-        caret.style.opacity=".6";
-
-        const txt=document.createElement("span");
-        txt.textContent=label(last);
-
-        td.appendChild(caret);
-        td.appendChild(txt);
-        sep.appendChild(td);
-        tb.insertBefore(sep,r);
-
-        sep.addEventListener("click",()=>{
-          const c=sep.classList.toggle("collapsed");
-          caret.textContent=c?"▸ ":"▾ ";
-          let n=sep.nextElementSibling;
-          while(n && !n.classList.contains("rg-sep")){
-            n.style.display=c?"none":"table-row";
-            n=n.nextElementSibling;
-          }
-        });
-      }
-    }
-  }
-
-  const _fetch=window.fetch;
-  window.fetch=async function(){
-    const r=await _fetch.apply(this,arguments);
-    setTimeout(rebuild,80);
-    setTimeout(rebuild,300);
-    return r;
-  };
-  window.addEventListener("load",()=>setTimeout(rebuild,150));
-
-  // expose for manual calls
-  window.__rgRebuildDayHeaders = rebuild;
-})();
-</script>
-
-
-<!-- ===== Transaction details modal ===== -->
-<div class="rgModalOverlay" id="txOverlay" aria-hidden="true">
-  <div class="rgModal" role="dialog" aria-modal="true" aria-labelledby="txTitle">
-    <div class="rgModalHead">
-      <div>
-        <div class="rgModalTitle" id="txTitle">Transaction details</div>
-        <div class="rgModalSub" id="txSub">—</div>
-      </div>
-      <button class="rgModalClose" id="txClose" title="Close">✕</button>
-    </div>
-    <div class="rgModalBody">
-      <div class="rgPills" id="txPills"></div>
-      <div class="rgGrid" id="txGrid"></div>
-      <div class="rgBig" id="txSms"></div>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
 
@@ -2049,6 +1548,80 @@ function formatDateEnglishISO(iso){
 
   // expose for other parts if needed
   window.__rgOpenTx = openTx;
+})();
+
+</script>
+<script>
+
+// ===== DAY HEADERS ENGINE (single source of truth) =====
+(function(){
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function label(iso){
+    if(!iso) return "";
+    const d=new Date(iso+"T00:00:00Z");
+    const now=new Date();
+    const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
+    const diff=Math.round((d-today)/86400000);
+    if(diff===0) return "Today";
+    if(diff===1) return "Tomorrow";
+    if(diff===-1) return "Yesterday";
+    return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
+  }
+
+  function rebuild(){
+    const tb=document.querySelector("#t tbody");
+    if(!tb) return;
+
+    // limpia separadores previos
+    tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
+
+    let last=null;
+    const rows=Array.from(tb.querySelectorAll("tr")).filter(r=>!r.classList.contains("rg-sep"));
+    for(const r of rows){
+      const day = r.dataset.day || "";
+      if(!day) continue;
+
+      if(day!==last){
+        last=day;
+
+        const sep=document.createElement("tr");
+        sep.className="rg-sep";
+
+        const td=document.createElement("td");
+        td.colSpan = r.children.length;
+        td.className="rg-sep-cell";
+        td.style.cursor="pointer";
+        td.style.userSelect="none";
+
+        const caret=document.createElement("span");
+        caret.textContent="▾ ";
+        caret.style.opacity=".6";
+
+        const txt=document.createElement("span");
+        txt.textContent=label(day);
+
+        td.appendChild(caret);
+        td.appendChild(txt);
+        sep.appendChild(td);
+
+        tb.insertBefore(sep, r);
+
+        // collapse
+        sep.addEventListener("click", ()=>{
+          const c=sep.classList.toggle("collapsed");
+          caret.textContent=c?"▸ ":"▾ ";
+          let n=sep.nextElementSibling;
+          while(n && !n.classList.contains("rg-sep")){
+            n.style.display=c?"none":"table-row";
+            n=n.nextElementSibling;
+          }
+        });
+      }
+    }
+  }
+
+  window.__rgRebuildDayHeaders = rebuild;
 })();
 
 </script>
