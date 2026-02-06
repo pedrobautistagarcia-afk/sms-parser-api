@@ -1301,7 +1301,13 @@ tr.dataset.id = id;
 
   // boot
   bind();
-  load();
+  load().then(()=>{
+    // ✅ ensure day headers appear on FIRST load (deterministic)
+    try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
+    setTimeout(()=>{ try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){} }, 120);
+    setTimeout(()=>{ try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){} }, 350);
+  });
+
 
 
 
@@ -1684,6 +1690,7 @@ function formatDateEnglishISO(iso){
 <!-- ===== PATCH: Day headers (create rows) + collapse ===== -->
 <script>
 (function(){
+  return; // disabled (conflicts with global day headers)
   const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 
   function iso10FromCreated(created_at){
@@ -1804,6 +1811,7 @@ function formatDateEnglishISO(iso){
 <!-- ===== PATCH: DAY HEADERS FINAL (dataset-based) ===== -->
 <script>
 (function(){
+  return; // disabled (conflicts with global day headers)
   const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 
   function label(iso){
