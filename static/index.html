@@ -536,6 +536,7 @@ tr.rg-sep td{
           <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="USD"></span> USD</b><span id="balUSD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="EUR"></span> EUR</b><span id="balEUR" class="small">—</span></div>
+          <div class="brow" style="border-top:1px solid var(--line); margin-top:8px; padding-top:10px;"><b>Total (EUR)</b><span id="balTotalEUR" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="AED"></span> AED</b><span id="balAED" class="small">—</span></div>
         </div>
       </div>
@@ -917,6 +918,69 @@ function formatDateEnglishISO(iso10){
   }
 
   // =============== BALANCE + KPI ===============
+  // ===== FX (live total in EUR) =====
+  const __rgFx = { ts: 0, rates: null };
+
+  async function __rgGetFxRatesEUR(){
+    const now = Date.now();
+    // cache 10 min
+    if(__rgFx.rates && (now - __rgFx.ts) < 10*60*1000) return __rgFx.rates;
+
+    const symbols = "USD,KWD,AED";
+    const urls = [
+      `https://api.frankfurter.app/latest?base=EUR&symbols=${symbols}`,
+      `https://api.exchangerate.host/latest?base=EUR&symbols=${symbols}`
+    ];
+
+    let lastErr = null;
+    for(const url of urls){
+      try{
+        const r = await fetch(url, { cache: "no-store" });
+        if(!r.ok) throw new Error(`FX HTTP ${r.status}`);
+        const j = await r.json();
+        const rates = (j && j.rates) ? j.rates : null;
+        if(rates){
+          __rgFx.rates = rates;
+          __rgFx.ts = now;
+          return rates;
+        }
+      }catch(e){
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error("FX error");
+  }
+
+  function __rgToEUR(amount, cur, rates){
+    cur = String(cur||"").toUpperCase();
+    const n = Number(amount||0);
+    if(cur === "EUR") return n;
+    const r = rates && rates[cur];
+    if(!r) return null;      // if rate missing, skip
+    return n / Number(r);    // because rates are: 1 EUR = r CUR
+  }
+
+  async function __rgUpdateTotalEUR(bal){
+    const el = document.getElementById("balTotalEUR");
+    if(!el) return;
+    el.textContent = "…";
+    try{
+      const rates = await __rgGetFxRatesEUR();
+      const parts = [
+        __rgToEUR(bal.KWD, "KWD", rates),
+        __rgToEUR(bal.USD, "USD", rates),
+        __rgToEUR(bal.AED, "AED", rates),
+        __rgToEUR(bal.EUR, "EUR", rates),
+      ];
+      const total = parts.filter(v => typeof v === "number" && !Number.isNaN(v)).reduce((a,b)=>a+b, 0);
+      // show with 2 decimals (EUR)
+      el.innerHTML = (total>=0) ? `<span class="pos">${total.toFixed(2)}</span>` : `<span class="neg">${total.toFixed(2)}</span>`;
+    }catch(e){
+      el.textContent = "FX error";
+    }
+  }
+
+
   function computeBalance(rows){
     const out = {KWD:0, USD:0, EUR:0, AED:0};
     for(const r of rows){
@@ -934,8 +998,12 @@ function formatDateEnglishISO(iso10){
 
     const fmt = (v)=> (v>=0 ? `<span class="pos">${v.toFixed(2)}</span>` : `<span class="neg">${v.toFixed(2)}</span>`);
     $("balKWD").innerHTML = fmt(b.KWD);
+    const balAED = document.getElementById("balAED"); if(balAED) balAED.innerHTML = fmt(b.AED);
     $("balUSD").innerHTML = fmt(b.USD);
     $("balEUR").innerHTML = fmt(b.EUR);
+
+    // live Total (EUR)
+    try{ __rgUpdateTotalEUR(b); }catch(e){}
     $("balAED").innerHTML = fmt(b.AED);
 
     const mix = b.KWD + b.USD + b.EUR + b.AED;
