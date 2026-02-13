@@ -481,6 +481,58 @@ tr.rg-sep td{
   color:var(--muted);
 }
 
+
+/* ===== INSIGHTS_PANEL_V1 ===== */
+.insWrap{
+  margin-top:14px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:12px;
+}
+.insHead{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:10px;
+}
+.insHead h2{
+  margin:0;
+  font-size:13px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:.2px;
+}
+.insGrid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap:10px;
+}
+@media (max-width: 900px){
+  .insGrid{ grid-template-columns: 1fr; }
+}
+.insCard{
+  border:1px solid var(--line);
+  background:var(--panel2);
+  border-radius:14px;
+  padding:10px;
+}
+.insK{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.insV{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+}
+.insSmall{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+  line-height:1.35;
+}
+
 </style>
 
 <!-- AUTO-REFRESH COMPLETELY DISABLED: manual refresh only -->
@@ -611,7 +663,54 @@ tr.rg-sep td{
       </thead>
       <tbody id="tbody"></tbody>
     </table>
+  
+  <!-- ===== INSIGHTS_PANEL_V1 ===== -->
+  <div class="insWrap" id="insWrap">
+    <div class="insHead">
+      <h2>Insights (filtered view)</h2>
+      <div class="small" id="insSub">Updates automatically</div>
+    </div>
+
+    <div class="insGrid" id="insGrid">
+      <div class="insCard">
+        <div class="insK">Rows</div>
+        <div class="insV" id="insRows">—</div>
+        <div class="insSmall" id="insDays">—</div>
+      </div>
+
+      <div class="insCard">
+        <div class="insK">Totals by currency</div>
+        <div class="insV" id="insTotals">—</div>
+        <div class="insSmall">Sum of amounts shown (no FX)</div>
+      </div>
+
+      <div class="insCard">
+        <div class="insK">Top category</div>
+        <div class="insV" id="insTopCat">—</div>
+        <div class="insSmall" id="insTopCatDetail">—</div>
+      </div>
+
+      <div class="insCard">
+        <div class="insK">Top merchant</div>
+        <div class="insV" id="insTopMerch">—</div>
+        <div class="insSmall" id="insTopMerchDetail">—</div>
+      </div>
+
+      <div class="insCard">
+        <div class="insK">Largest expense</div>
+        <div class="insV" id="insLargest">—</div>
+        <div class="insSmall" id="insLargestDetail">—</div>
+      </div>
+
+      <div class="insCard">
+        <div class="insK">Avg per day</div>
+        <div class="insV" id="insAvgDay">—</div>
+        <div class="insSmall">Based on distinct days in the filtered list</div>
+      </div>
+    </div>
   </div>
+
+</div>
 
   <!-- RULE MODAL -->
   <div id="ruleModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999;">
@@ -1140,6 +1239,7 @@ function formatDateEnglishISO(iso10){
 
     setStatus(`count ${state.view.length}`);
     updateBalanceAndKpis();
+    try{ updateInsights(); }catch(e){}
     wireRowInputs();
     wireSelectionControls();
     try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
@@ -1417,6 +1517,114 @@ function formatDateEnglishISO(iso10){
         render();
       });
     });
+  }
+
+  // ===== INSIGHTS_PANEL_V1 =====
+  function _safeNum(x){
+    const n = Number(x);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function _iso10FromRow(r){
+    return isoDay(r.created_at || r.date_iso || r.date_raw || "");
+  }
+  function _fmt3(n){
+    const v = Number(n);
+    if(!Number.isFinite(v)) return "0.000";
+    return v.toFixed(3);
+  }
+
+  function updateInsights(){
+    try{
+      const rows = Array.isArray(state.view) ? state.view : [];
+      const $rows = document.getElementById("insRows");
+      const $days = document.getElementById("insDays");
+      const $tot  = document.getElementById("insTotals");
+      const $tc   = document.getElementById("insTopCat");
+      const $tcd  = document.getElementById("insTopCatDetail");
+      const $tm   = document.getElementById("insTopMerch");
+      const $tmd  = document.getElementById("insTopMerchDetail");
+      const $lg   = document.getElementById("insLargest");
+      const $lgd  = document.getElementById("insLargestDetail");
+      const $avg  = document.getElementById("insAvgDay");
+
+      if(!$rows) return; // panel no existe
+
+      $rows.textContent = String(rows.length);
+
+      const daySet = new Set();
+      for(const r of rows){
+        const d = _iso10FromRow(r);
+        if(d) daySet.add(d);
+      }
+      const dayCount = Math.max(1, daySet.size);
+      $days.textContent = `Distinct days: ${daySet.size}`;
+
+      // Totals by currency (no FX)
+      const totals = new Map(); // cur -> sum
+      for(const r of rows){
+        const cur = String(r.currency||"").toUpperCase() || "—";
+        totals.set(cur, (totals.get(cur)||0) + _safeNum(r.amount));
+      }
+      const totParts = Array.from(totals.entries())
+        .sort((a,b)=> a[0].localeCompare(b[0]))
+        .map(([c,v])=> `${c} ${_fmt3(v)}`);
+      $tot.textContent = totParts.length ? totParts.join(" · ") : "—";
+
+      // Top category (by count)
+      const catCount = new Map();
+      for(const r of rows){
+        const c = String(r.category||"other").toLowerCase();
+        catCount.set(c, (catCount.get(c)||0) + 1);
+      }
+      let bestCat="—", bestCatN=0;
+      for(const [k,v] of catCount.entries()){
+        if(v>bestCatN){ bestCatN=v; bestCat=k; }
+      }
+      $tc.textContent = titleCase(bestCat);
+      $tcd.textContent = bestCatN ? `${bestCatN} transaction(s)` : "—";
+
+      // Top merchant (by count)
+      const mCount = new Map();
+      for(const r of rows){
+        const m = String((r.merchant_clean ?? r.merchant_raw ?? "")).trim() || "—";
+        mCount.set(m, (mCount.get(m)||0) + 1);
+      }
+      let bestM="—", bestMN=0;
+      for(const [k,v] of mCount.entries()){
+        if(v>bestMN){ bestMN=v; bestM=k; }
+      }
+      $tm.textContent = bestM;
+      $tmd.textContent = bestMN ? `${bestMN} transaction(s)` : "—";
+
+      // Largest expense (by amount, only expense direction)
+      let maxRow = null;
+      let maxAmt = -1;
+      for(const r of rows){
+        const dir = inferDirection(r);
+        if(dir !== "out") continue;
+        const a = _safeNum(r.amount);
+        if(a > maxAmt){
+          maxAmt = a;
+          maxRow = r;
+        }
+      }
+      if(maxRow){
+        const cur = String(maxRow.currency||"").toUpperCase();
+        $lg.textContent = `${cur} ${_fmt3(maxAmt)}`;
+        const m = String((maxRow.merchant_clean ?? maxRow.merchant_raw ?? "")).trim() || "—";
+        const d = _iso10FromRow(maxRow);
+        $lgd.textContent = `${m} · ${formatDateEnglishISO(d)}`;
+      }else{
+        $lg.textContent = "—";
+        $lgd.textContent = "—";
+      }
+
+      // Avg per day (by count)
+      $avg.textContent = (rows.length / dayCount).toFixed(2) + " tx/day";
+
+    }catch(e){
+      // no petamos UI
+    }
   }
 
   // boot
