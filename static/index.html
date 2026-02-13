@@ -536,6 +536,7 @@ tr.rg-sep td{
           <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="USD"></span> USD</b><span id="balUSD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="EUR"></span> EUR</b><span id="balEUR" class="small">—</span></div>
+          <div class="brow"><b><span class="flag" data-cur="AED"></span> AED</b><span id="balAED" class="small">—</span></div>
         </div>
       </div>
     </div>
@@ -715,9 +716,17 @@ tr.rg-sep td{
         <circle cx="5.8" cy="2.7" r=".35"/>
       </g>
     </svg>`;
+    const UAE = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
+      <rect width="16" height="12" fill="#fff"/>
+      <rect x="4" y="0" width="12" height="4" fill="#00732F"/>
+      <rect x="4" y="4" width="12" height="4" fill="#fff"/>
+      <rect x="4" y="8" width="12" height="4" fill="#000"/>
+      <rect x="0" y="0" width="4" height="12" fill="#FF0000"/>
+    </svg>`;
     if(c==="KWD") return KUWAIT;
     if(c==="USD") return USA;
     if(c==="EUR") return EU;
+    if(c==="AED") return UAE;
     return "";
   }
   function initFlags(){
@@ -909,7 +918,7 @@ function formatDateEnglishISO(iso10){
 
   // =============== BALANCE + KPI ===============
   function computeBalance(rows){
-    const out = {KWD:0, USD:0, EUR:0};
+    const out = {KWD:0, USD:0, EUR:0, AED:0};
     for(const r of rows){
       const cur = (r.currency||"").toUpperCase();
       const amt = Number(r.amount||0);
@@ -927,14 +936,15 @@ function formatDateEnglishISO(iso10){
     $("balKWD").innerHTML = fmt(b.KWD);
     $("balUSD").innerHTML = fmt(b.USD);
     $("balEUR").innerHTML = fmt(b.EUR);
+    $("balAED").innerHTML = fmt(b.AED);
 
-    const mix = b.KWD + b.USD + b.EUR;
+    const mix = b.KWD + b.USD + b.EUR + b.AED;
     $("kpiTotal").textContent = `${mix.toFixed(2)} (mix)`;
 
     const t = new Date().toISOString().slice(0,10);
     const todayRows = rows.filter(r => isoDay(r.created_at||"") === t);
     const bt = computeBalance(todayRows);
-    const todayMix = bt.KWD + bt.USD + bt.EUR;
+    const todayMix = bt.KWD + bt.USD + bt.EUR + bt.AED;
     $("kpiToday").textContent = `${todayMix.toFixed(2)} (mix)`;
 
     const days = new Set(rows.map(r=>isoDay(r.created_at||"")).filter(Boolean));
