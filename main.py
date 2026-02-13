@@ -247,7 +247,7 @@ class RuleCreate(BaseModel):
 # ======================================================
 # Parsing
 # ======================================================
-CURRENCY_RE = r"(KWD|USD|EUR)"
+CURRENCY_RE = r"(KWD|USD|EUR|AED|AED|AED)"
 AMOUNT_RE = r"([0-9]+(?:\.[0-9]+)?)"
 DATE_RE = r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
 
