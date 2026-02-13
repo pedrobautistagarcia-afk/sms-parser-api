@@ -533,11 +533,16 @@ tr.rg-sep td{
       <div class="balance">
         <button class="btn primary" id="balanceBtn">Balance</button>
         <div class="dropdown" id="balanceMenu">
-          <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
+          
+          
+          
+          
+          
+        <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="USD"></span> USD</b><span id="balUSD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="EUR"></span> EUR</b><span id="balEUR" class="small">—</span></div>
-          <div class="brow" style="border-top:1px solid var(--line); margin-top:8px; padding-top:10px;"><b>Total (EUR)</b><span id="balTotalEUR" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="AED"></span> AED</b><span id="balAED" class="small">—</span></div>
+          <div class="brow" style="border-top:1px solid var(--line); margin-top:8px; padding-top:10px;"><b>Total (EUR)</b><span id="balTotalEUR" class="small">—</span></div>
         </div>
       </div>
     </div>
@@ -926,28 +931,63 @@ function formatDateEnglishISO(iso10){
     // cache 10 min
     if(__rgFx.rates && (now - __rgFx.ts) < 10*60*1000) return __rgFx.rates;
 
-    const symbols = "USD,KWD,AED";
+    // 1) Fuente principal: fawazahmed0 currency-api (incluye KWD/AED)
     const urls = [
-      `https://api.frankfurter.app/latest?base=EUR&symbols=${symbols}`,
-      `https://api.exchangerate.host/latest?base=EUR&symbols=${symbols}`
+      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json",
+      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@1/latest/currencies/eur.json",
+      "https://api.frankfurter.app/latest?base=EUR&symbols=USD,KWD,AED",
+      "https://api.exchangerate-api.com/v4/latest/EUR"
     ];
 
     let lastErr = null;
+
     for(const url of urls){
       try{
         const r = await fetch(url, { cache: "no-store" });
         if(!r.ok) throw new Error(`FX HTTP ${r.status}`);
         const j = await r.json();
-        const rates = (j && j.rates) ? j.rates : null;
-        if(rates){
-          __rgFx.rates = rates;
-          __rgFx.ts = now;
-          return rates;
+
+        // fawaz: { date: "...", eur: { usd:..., kwd:..., aed:... } }
+        if(j && j.eur){
+          const eur = j.eur;
+          const rates = {
+            USD: eur.usd,
+            KWD: eur.kwd,
+            AED: eur.aed
+          };
+          if(rates.USD && rates.KWD && rates.AED){
+            __rgFx.rates = rates;
+            __rgFx.ts = now;
+            return rates;
+          }
         }
+
+        // frankfurter: { rates: { USD:..., KWD:..., AED:... } }
+        if(j && j.rates){
+          const rates = j.rates;
+          if(rates.USD && rates.KWD && rates.AED){
+            __rgFx.rates = rates;
+            __rgFx.ts = now;
+            return rates;
+          }
+        }
+
+        // exchangerate-api: { rates: { USD:..., KWD:..., AED:... } }
+        if(j && j.rates){
+          const rates = j.rates;
+          if(rates.USD && rates.KWD && rates.AED){
+            __rgFx.rates = rates;
+            __rgFx.ts = now;
+            return rates;
+          }
+        }
+
+        throw new Error("FX: missing rates");
       }catch(e){
         lastErr = e;
       }
     }
+
     throw lastErr || new Error("FX error");
   }
 
