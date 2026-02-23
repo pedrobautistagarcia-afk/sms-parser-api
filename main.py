@@ -17,6 +17,7 @@ import os
 import re
 
 
+from decimal import Decimal, InvalidOperation
 def extract_amount_currency_v2(text: str):
     """
     Robust extractor supporting:
@@ -1514,5 +1515,50 @@ async def add_rule(req: Request):
     except Exception as e:
         return JSONResponse({"ok": False, "error": repr(e), "path": "/add_rule"}, status_code=500)
 
+CURRENCY_CODES = ("KWD", "USD", "EUR", "AED")
 
+def extract_amount_anywhere(sms: str):
+    """
+    Extrae amount y currency de un SMS con formatos tipo:
+      - "with 1,766.000 KWD"
+      - "1,766.000 KWD"
+      - "1766.000 KWD"
+      - "KWD 1,766.000"
+    Devuelve (amount_float, currency) o (None, None)
+    """
+    text = (sms or "").strip()
+
+    # Caso 1: "<num> <CUR>"
+    m = re.search(
+        r'(?<!\d)(\d{1,3}(?:,\d{3})*|\d+)(?:\.(\d{1,3}))?\s*(KWD|USD|EUR|AED)(?!\w)',
+        text,
+        flags=re.IGNORECASE
+    )
+
+    if not m:
+        # Caso 2: "<CUR> <num>"
+        m = re.search(
+            r'(?<!\w)(KWD|USD|EUR|AED)\s*(\d{1,3}(?:,\d{3})*|\d+)(?:\.(\d{1,3}))?(?!\d)',
+            text,
+            flags=re.IGNORECASE
+        )
+        if not m:
+            return None, None
+
+        currency = m.group(1).upper()
+        int_part = m.group(2)
+        dec_part = m.group(3) or "0"
+    else:
+        int_part = m.group(1)
+        dec_part = m.group(2) or "0"
+        currency = m.group(3).upper()
+
+    normalized = f"{int_part.replace(',', '')}.{dec_part}"
+
+    try:
+        amount = float(Decimal(normalized))
+    except (InvalidOperation, ValueError):
+        return None, None
+
+    return amount, currency
 
