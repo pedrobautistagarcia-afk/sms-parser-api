@@ -16,6 +16,37 @@ def _ensure_deleted_table(conn):
 import os
 import re
 
+
+def extract_amount_currency_v2(text: str):
+    """
+    Robust extractor supporting:
+    - KWD 1,766.000
+    - 1,766.000 KWD
+    - USD 120.00
+    - 120.00 USD
+    """
+    if not text:
+        return None, None
+
+    t = text.replace("\u00a0", " ")
+
+    # pattern 1: CUR AMOUNT
+    m = re.search(r"\b([A-Z]{3})\s*([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)", t)
+    if m:
+        cur = m.group(1).upper()
+        amt = m.group(2).replace(",", "")
+        return float(amt), cur
+
+    # pattern 2: AMOUNT CUR
+    m = re.search(r"\b([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*([A-Z]{3})\b", t)
+    if m:
+        amt = m.group(1).replace(",", "")
+        cur = m.group(2).upper()
+        return float(amt), cur
+
+    return None, None
+
+
 def extract_amount_currency(text: str):
     """
     Extracts (amount, currency) from bank SMS supporting BOTH formats:
@@ -288,6 +319,27 @@ def sha256(s: str) -> str:
 
 
 def parse_sms(sms: str) -> Dict[str, Any]:
+
+    # Robust amount extraction (works for credited & debited)
+    amount_extracted, currency_extracted = extract_amount_currency_v2(sms)
+    if amount_extracted is not None:
+        amount = amount_extracted
+    if currency_extracted is not None:
+        currency = currency_extracted
+
+    # Robust amount extraction (works for credited & debited)
+    amount_extracted, currency_extracted = extract_amount_currency_v2(sms)
+    if amount_extracted is not None:
+        amount = amount_extracted
+    if currency_extracted is not None:
+        currency = currency_extracted
+
+    # Robust amount extraction (works for credited & debited)
+    amount_extracted, currency_extracted = extract_amount_currency_v2(sms)
+    if amount_extracted is not None:
+        amount = amount_extracted
+    if currency_extracted is not None:
+        currency = currency_extracted
     # Prefer robust extractor (supports '1,766.000 KWD' and 'KWD 1,766.000')
     _amt, _cur = extract_amount_currency(sms)
     if _amt is not None and _cur is not None:
