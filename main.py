@@ -15,6 +15,37 @@ def _ensure_deleted_table(conn):
 
 import os
 import re
+
+def extract_amount_currency(text: str):
+    """
+    Extracts (amount, currency) from bank SMS supporting BOTH formats:
+      - "KWD 1,766.000"
+      - "1,766.000 KWD"
+    Also removes thousands separators commas before float().
+    """
+    t = (text or "").replace("\u00a0", " ")
+    # Try: CUR AMOUNT  (e.g., KWD 1,766.000)
+    m = re.search(r"\b([A-Z]{3})\s*([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\b", t)
+    if m:
+        cur = m.group(1).upper()
+        amt = m.group(2).replace(",", "")
+        try:
+            return float(str(amt).replace(',', '')), cur
+        except:
+            pass
+
+    # Try: AMOUNT CUR  (e.g., 1,766.000 KWD)  <-- TU CASO
+    m = re.search(r"\b([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*([A-Z]{3})\b", t)
+    if m:
+        amt = m.group(1).replace(",", "")
+        cur = m.group(2).upper()
+        try:
+            return float(str(amt).replace(',', '')), cur
+        except:
+            pass
+
+    return None, None
+
 import sqlite3
 import hashlib
 import json
@@ -257,6 +288,16 @@ def sha256(s: str) -> str:
 
 
 def parse_sms(sms: str) -> Dict[str, Any]:
+    # Prefer robust extractor (supports '1,766.000 KWD' and 'KWD 1,766.000')
+    _amt, _cur = extract_amount_currency(sms)
+    if _amt is not None and _cur is not None:
+        amount = _amt
+        currency = _cur
+    # Prefer robust extractor (supports '1,766.000 KWD' and 'KWD 1,766.000')
+    _amt, _cur = extract_amount_currency(sms)
+    if _amt is not None and _cur is not None:
+        amount = _amt
+        currency = _cur
     txt = sms.strip()
 
     # Detect expense/income keyword (for future, not stored yet)
@@ -925,7 +966,7 @@ def update_field(payload: dict, api_key: str = Query(None)):
         value = (str(value).strip().upper() if value is not None else None)
     if field == "amount" and value is not None:
         try:
-            value = float(value)
+            value = float(str(value).replace(',', ''))
         except Exception:
             raise HTTPException(status_code=400, detail="amount must be a number")
     if field == "merchant_clean" and value is not None:
