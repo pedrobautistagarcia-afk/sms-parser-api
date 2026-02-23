@@ -402,6 +402,22 @@ def parse_sms(sms: str) -> Dict[str, Any]:
     elif any(k in merch_l for k in ["talabat", "pick", "restaurant", "burger", "pizza"]):
         cat = "food"
 
+    # --- INCOME_AMOUNT_RESCUE_V1 (fix salary/credited amount=0) ---
+    try:
+        if (direction == 'income') and (amount is None or float(amount) == 0.0):
+            # Prefer 'with <amount> <CUR>' (salary pattern)
+            m2 = re.search(r"\bwith\s+([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*(KWD|USD|EUR|AED)\b", sms, re.I)
+            if m2:
+                amount = float(m2.group(1).replace(',', ''))
+                currency = m2.group(2).upper()
+            else:
+                # Fallback: any '<amount> <CUR>' anywhere
+                m3 = re.search(r"\b([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*(KWD|USD|EUR|AED)\b", sms, re.I)
+                if m3:
+                    amount = float(m3.group(1).replace(',', ''))
+                    currency = m3.group(2).upper()
+    except Exception:
+        pass
     return {
         "direction": direction,
         "amount": amount,
