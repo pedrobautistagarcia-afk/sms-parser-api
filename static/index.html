@@ -555,6 +555,20 @@ tr.rg-sep td {
 .rg-day-subtotals .exp { color: #dc2626; font-weight: 700; }
 .rg-day-subtotals .net { color: #111827; font-weight: 700; }
 
+
+/* RG_STICKY_DAY_HEADERS_DARK_FIX_V1 */
+html[data-theme="dark"] tr.rg-sep td {
+  background: rgba(17,24,39,0.92) !important; /* dark slate */
+  color: rgba(255,255,255,0.92) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+html[data-theme="dark"] tr.rg-sep td * {
+  color: inherit !important;
+}
+html[data-theme="dark"] .rg-day-subtotals .net {
+  color: rgba(255,255,255,0.92) !important;
+}
+
 </style>
 
 <!-- AUTO-REFRESH COMPLETELY DISABLED: manual refresh only -->
