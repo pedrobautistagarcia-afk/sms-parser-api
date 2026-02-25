@@ -533,6 +533,28 @@ tr.rg-sep td{
   line-height:1.35;
 }
 
+
+/* RG_STICKY_DAY_HEADERS_V2 */
+tr.rg-sep {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+tr.rg-sep td {
+  background: rgba(255,255,255,0.92) !important;
+  backdrop-filter: blur(6px);
+}
+.rg-day-subtotals {
+  float: right;
+  font-size: 12px;
+  display: inline-flex;
+  gap: 10px;
+  opacity: 0.95;
+}
+.rg-day-subtotals .inc { color: #16a34a; font-weight: 700; }
+.rg-day-subtotals .exp { color: #dc2626; font-weight: 700; }
+.rg-day-subtotals .net { color: #111827; font-weight: 700; }
+
 </style>
 
 <!-- AUTO-REFRESH COMPLETELY DISABLED: manual refresh only -->
@@ -1708,6 +1730,99 @@ function formatDateEnglishISO(iso){
   }
 })();
 
+
+
+// RG_DAY_SUBTOTALS_V2
+(function(){
+  if (window.__rgDaySubtotalsInstalled) return;
+  window.__rgDaySubtotalsInstalled = true;
+
+  function computeDayMap(rows){
+    const m = {};
+    for (const r of (rows||[])){
+      const day = (typeof isoDay === "function") ? isoDay(r.created_at||r.date_iso||r.date_raw||"") : "";
+      if(!day) continue;
+      const amt = Number(r.amount||0);
+      const dir = (typeof inferDirection==="function") ? inferDirection(r) : ((r.direction==="income") ? "in" : "out");
+      const sign = (dir==="in") ? 1 : -1;
+      if(!m[day]) m[day] = {inc:0, exp:0, net:0};
+      if(sign>0) m[day].inc += amt;
+      else m[day].exp += amt;
+      m[day].net += sign*amt;
+    }
+    return m;
+  }
+
+  function fmt(n){
+    const v = Number(n||0);
+    // "mix" format: 2 decimals (like your KPI mix)
+    return (Math.round(v*100)/100).toFixed(2);
+  }
+
+  function dayKeyFromSepRow(tr){
+    // Best: next tx row's dataset.day (since your tx rows have tr.dataset.day = isoDay(...))
+    let el = tr.nextElementSibling;
+    while(el && el.classList && el.classList.contains("rg-sep")) el = el.nextElementSibling;
+    if(el && el.dataset && el.dataset.day) return el.dataset.day;
+
+    // Fallback: try parse YYYY-MM-DD from header text
+    const t = (tr.textContent||"");
+    const m = t.match(/\b\d{4}-\d{2}-\d{2}\b/);
+    return m ? m[0] : "";
+  }
+
+  function applyDaySubtotals(){
+    try{
+      if(!window.state || !Array.isArray(state.view)) return;
+      const map = computeDayMap(state.view);
+
+      const seps = document.querySelectorAll("tr.rg-sep");
+      seps.forEach(tr => {
+        const day = dayKeyFromSepRow(tr);
+        if(!day || !map[day]) return;
+
+        const cell = tr.querySelector("td");
+        if(!cell) return;
+
+        // Avoid duplicates
+        if(cell.querySelector(".rg-day-subtotals")) return;
+
+        const s = map[day];
+        const wrap = document.createElement("span");
+        wrap.className = "rg-day-subtotals";
+        wrap.innerHTML = `
+          <span class="inc">+${fmt(s.inc)}</span>
+          <span class="exp">-${fmt(s.exp)}</span>
+          <span class="net">${fmt(s.net)}</span>
+        `;
+        cell.appendChild(wrap);
+      });
+    }catch(e){}
+  }
+
+  // Hook: after day headers rebuild, apply subtotals
+  const orig = window.__rgRebuildDayHeaders;
+  if(typeof orig === "function"){
+    window.__rgRebuildDayHeaders = function(){
+      const r = orig.apply(this, arguments);
+      try{ applyDaySubtotals(); }catch(e){}
+      return r;
+    };
+  } else {
+    // Fallback: try after render
+    const r0 = window.render;
+    if(typeof r0 === "function"){
+      window.render = function(){
+        const r = r0.apply(this, arguments);
+        setTimeout(applyDaySubtotals, 0);
+        return r;
+      }
+    }
+  }
+
+  // Also run once on load (in case headers already rendered)
+  setTimeout(applyDaySubtotals, 250);
+})();
 
 </script>
 
