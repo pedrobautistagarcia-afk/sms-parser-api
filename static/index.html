@@ -569,6 +569,196 @@ html[data-theme="dark"] .rg-day-subtotals .net {
   color: rgba(255,255,255,0.92) !important;
 }
 
+
+/* RG_MODERN_SKIN_V1 */
+/* ===== Modern fintech skin (no layout changes) ===== */
+:root {
+  --rg-bg1: #0b1220;
+  --rg-bg2: #0e1b2e;
+  --rg-card: rgba(255,255,255,0.06);
+  --rg-card2: rgba(255,255,255,0.09);
+  --rg-border: rgba(255,255,255,0.10);
+  --rg-text: rgba(255,255,255,0.92);
+  --rg-muted: rgba(255,255,255,0.60);
+  --rg-shadow: 0 14px 40px rgba(0,0,0,0.35);
+  --rg-shadow-soft: 0 10px 24px rgba(0,0,0,0.25);
+  --rg-radius: 16px;
+  --rg-radius-sm: 12px;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  background: radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,0.16), transparent 60%),
+              radial-gradient(1000px 700px at 90% 10%, rgba(16,185,129,0.12), transparent 55%),
+              linear-gradient(180deg, var(--rg-bg1), var(--rg-bg2));
+  color: var(--rg-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: inherit; }
+
+::selection {
+  background: rgba(59,130,246,0.35);
+}
+
+ /* Make your existing main wrappers look like cards without changing DOM */
+.container, .wrap, .page, .app, #app, #root, main {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+ /* Try to “cardify” the main blocks if they exist */
+.panel, .card, .box, .section, .kpis, .filters, .insights, #insightsPanel, #kpis, #toolbar, #controls {
+  background: var(--rg-card);
+  border: 1px solid var(--rg-border);
+  border-radius: var(--rg-radius);
+  box-shadow: var(--rg-shadow-soft);
+  backdrop-filter: blur(10px);
+}
+
+ /* Improve spacing globally (safe) */
+.panel, .card, .box, .section, #insightsPanel, #kpis, #toolbar, #controls {
+  padding: 14px 14px;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+ /* Inputs / selects / buttons */
+input, select, textarea {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: var(--rg-text) !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  outline: none !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255,255,255,0.45) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(59,130,246,0.65) !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.20) !important;
+}
+
+button {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  background: rgba(255,255,255,0.10) !important;
+  color: var(--rg-text) !important;
+  padding: 10px 12px !important;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.14) !important;
+  border-color: rgba(255,255,255,0.22) !important;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0px) scale(0.99);
+}
+
+ /* Status pill / error box (if present) */
+#statusPill, .statusPill {
+  background: rgba(255,255,255,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: var(--rg-text) !important;
+  border-radius: 999px !important;
+  padding: 6px 10px !important;
+}
+
+#errBox, .errBox {
+  background: rgba(239,68,68,0.10) !important;
+  border: 1px solid rgba(239,68,68,0.22) !important;
+  color: rgba(255,255,255,0.92) !important;
+  border-radius: var(--rg-radius-sm) !important;
+}
+
+ /* Table: keep columns, improve readability */
+table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important; /* creates “rows as cards” without changing columns */
+}
+
+#t thead th, thead th {
+  color: rgba(255,255,255,0.70) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em;
+}
+
+#t tbody tr, tbody tr {
+  background: var(--rg-card2) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+}
+
+#t tbody td, tbody td {
+  padding: 12px 12px !important;
+  border-top: 1px solid rgba(255,255,255,0.08) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+#t tbody tr td:first-child, tbody tr td:first-child {
+  border-left: 1px solid rgba(255,255,255,0.10) !important;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+#t tbody tr td:last-child, tbody tr td:last-child {
+  border-right: 1px solid rgba(255,255,255,0.10) !important;
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+#t tbody tr:hover, tbody tr:hover {
+  background: rgba(255,255,255,0.12) !important;
+  transform: translateY(-1px);
+  transition: transform .12s ease, background .12s ease;
+}
+
+ /* Day separator rows (rg-sep) - keep your fix and make it look premium */
+tr.rg-sep td {
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.92) !important;
+  letter-spacing: -0.01em;
+}
+
+ /* Make positive/negative clearer */
+.pos { color: rgba(34,197,94,0.95) !important; font-weight: 700; }
+.neg { color: rgba(239,68,68,0.95) !important; font-weight: 700; }
+
+ /* Light theme compatibility if you ever switch */
+html[data-theme="light"] body {
+  background: radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,0.10), transparent 60%),
+              radial-gradient(1000px 700px at 90% 10%, rgba(16,185,129,0.08), transparent 55%),
+              linear-gradient(180deg, #f8fafc, #eef2ff);
+  color: #0f172a;
+}
+html[data-theme="light"] .panel,
+html[data-theme="light"] .card,
+html[data-theme="light"] .box,
+html[data-theme="light"] .section,
+html[data-theme="light"] #insightsPanel,
+html[data-theme="light"] #kpis,
+html[data-theme="light"] #toolbar,
+html[data-theme="light"] #controls {
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(15,23,42,0.10);
+}
+
 </style>
 
 <!-- AUTO-REFRESH COMPLETELY DISABLED: manual refresh only -->
