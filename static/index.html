@@ -759,6 +759,45 @@ html[data-theme="light"] #controls {
   border-color: rgba(15,23,42,0.10);
 }
 
+
+/* RG_SKELETON_SPOTLIGHT_V1 */
+/* Skeleton rows */
+.rg-skel {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  height: 14px;
+}
+.rg-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+  animation: rgShimmer 1.05s infinite;
+}
+@keyframes rgShimmer {
+  100% { transform: translateX(100%); }
+}
+/* make skeleton rows look like your table cards */
+tr.rg-skel-row td {
+  padding: 12px 12px !important;
+}
+tr.rg-skel-row {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+}
+
+/* Spotlight row when details open */
+tr.rg-spotlight {
+  outline: 2px solid rgba(59,130,246,0.70);
+  box-shadow: 0 0 0 6px rgba(59,130,246,0.18), 0 16px 40px rgba(0,0,0,0.25);
+  transform: translateY(-1px);
+}
+
 </style>
 
 <!-- AUTO-REFRESH COMPLETELY DISABLED: manual refresh only -->
@@ -2026,6 +2065,165 @@ function formatDateEnglishISO(iso){
 
   // Also run once on load (in case headers already rendered)
   setTimeout(applyDaySubtotals, 250);
+})();
+
+
+// RG_SKELETON_SPOTLIGHT_JS_V1
+(function() {
+  if (window.__rgSkeletonSpotlightInstalled) return;
+  window.__rgSkeletonSpotlightInstalled = true;
+
+  function getTable() {
+    return document.getElementById("t");
+  }
+
+  function makeSkeletonTbody(rowCount=8) {
+    const table = getTable();
+    if (!table) return null;
+
+    const thead = table.querySelector("thead");
+    const ths = thead ? Array.from(thead.querySelectorAll("th")) : [];
+    // count visible cols (ignore display:none)
+    const colCount = Math.max(
+      3,
+      ths.filter(th => getComputedStyle(th).display !== "none").length || ths.length || 6
+    );
+
+    const tbody = document.createElement("tbody");
+    tbody.setAttribute("data-rg-skeleton", "1");
+
+    for (let i=0;i<rowCount;i++) {
+      const tr = document.createElement("tr");
+      tr.className = "rg-skel-row";
+      for (let c=0;c<colCount;c++) {
+        const td = document.createElement("td");
+        const div = document.createElement("div");
+        div.className = "rg-skel";
+        // vary widths a bit
+        const w = [72, 55, 66, 48, 62, 58][c % 6];
+        div.style.width = w + "%";
+        td.appendChild(div);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    return tbody;
+  }
+
+  function showSkeleton(show) {
+    const table = getTable();
+    if (!table) return;
+
+    const existing = table.querySelector('tbody[data-rg-skeleton="1"]');
+    if (show) {
+      if (existing) return;
+      const current = table.querySelector("tbody");
+      if (current) {
+        // stash current tbody HTML (safe)
+        table.setAttribute("data-rg-tbody-html", current.innerHTML);
+        current.remove();
+      }
+      const sk = makeSkeletonTbody(9);
+      if (sk) table.appendChild(sk);
+    } else {
+      if (!existing) return;
+      existing.remove();
+      const tbody = document.createElement("tbody");
+      tbody.innerHTML = table.getAttribute("data-rg-tbody-html") || "";
+      table.appendChild(tbody);
+      table.removeAttribute("data-rg-tbody-html");
+    }
+  }
+
+  // Wrap load() to show skeleton while fetching/rerendering
+  function wrapLoad() {
+    if (typeof window.load !== "function") return false;
+    if (window.load.__rgWrapped) return true;
+
+    const _load = window.load;
+    window.load = async function() {
+      try {
+        showSkeleton(true);
+      } catch(e) {}
+      try {
+        return await _load.apply(this, arguments);
+      } finally {
+        // small delay to avoid flicker
+        setTimeout(() => {
+          try { showSkeleton(false); } catch(e) {}
+        }, 120);
+      }
+    };
+    window.load.__rgWrapped = true;
+    return true;
+  }
+
+  // Spotlight helpers
+  let lastSpot = null;
+  function clearSpotlight() {
+    try {
+      if (lastSpot) lastSpot.classList.remove("rg-spotlight");
+      lastSpot = null;
+    } catch(e) {}
+  }
+  function setSpotlightById(id) {
+    clearSpotlight();
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) {
+      tr.classList.add("rg-spotlight");
+      lastSpot = tr;
+      // ensure visible
+      try { tr.scrollIntoView({ block: "nearest" }); } catch(e) {}
+    }
+  }
+
+  // Wrap openDetails(id) if exists
+  function wrapOpenDetails() {
+    if (typeof window.openDetails !== "function") return false;
+    if (window.openDetails.__rgWrapped) return true;
+
+    const _open = window.openDetails;
+    window.openDetails = function(id) {
+      try { setSpotlightById(id); } catch(e) {}
+      return _open.apply(this, arguments);
+    };
+    window.openDetails.__rgWrapped = true;
+    return true;
+  }
+
+  // Wrap possible close functions to clear spotlight
+  function wrapCloseFn(name) {
+    const fn = window[name];
+    if (typeof fn !== "function") return false;
+    if (fn.__rgWrapped) return true;
+    window[name] = function() {
+      try { clearSpotlight(); } catch(e) {}
+      return fn.apply(this, arguments);
+    };
+    window[name].__rgWrapped = true;
+    return true;
+  }
+
+  // Escape clears spotlight as a fallback
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      clearSpotlight();
+    }
+  });
+
+  // Attempt install now, and retry a few times (in case functions defined later)
+  function install() {
+    wrapLoad();
+    wrapOpenDetails();
+    wrapCloseFn("closeDetails");
+    wrapCloseFn("hideDetails");
+    wrapCloseFn("closePopup");
+    wrapCloseFn("closeModal");
+    wrapCloseFn("hideModal");
+  }
+  install();
+  setTimeout(install, 250);
+  setTimeout(install, 800);
 })();
 
 </script>
