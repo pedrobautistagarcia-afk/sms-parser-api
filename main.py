@@ -1,88 +1,11 @@
-
-def _ensure_deleted_table(conn):
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS deleted_expenses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            original_id INTEGER,
-            row_json TEXT NOT NULL,
-            deleted_at TEXT NOT NULL
-        )
-    """)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_deleted_user_time ON deleted_expenses(user_id, deleted_at)")
-    conn.commit()
-
 import os
 import re
-
-
-from decimal import Decimal, InvalidOperation
-def extract_amount_currency_v2(text: str):
-    """
-    Robust extractor supporting:
-    - KWD 1,766.000
-    - 1,766.000 KWD
-    - USD 120.00
-    - 120.00 USD
-    """
-    if not text:
-        return None, None
-
-    t = text.replace("\u00a0", " ")
-
-    # pattern 1: CUR AMOUNT
-    m = re.search(r"\b([A-Z]{3})\s*([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)", t)
-    if m:
-        cur = m.group(1).upper()
-        amt = m.group(2).replace(",", "")
-        return float(amt), cur
-
-    # pattern 2: AMOUNT CUR
-    m = re.search(r"\b([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*([A-Z]{3})\b", t)
-    if m:
-        amt = m.group(1).replace(",", "")
-        cur = m.group(2).upper()
-        return float(amt), cur
-
-    return None, None
-
-
-def extract_amount_currency(text: str):
-    """
-    Extracts (amount, currency) from bank SMS supporting BOTH formats:
-      - "KWD 1,766.000"
-      - "1,766.000 KWD"
-    Also removes thousands separators commas before float().
-    """
-    t = (text or "").replace("\u00a0", " ")
-    # Try: CUR AMOUNT  (e.g., KWD 1,766.000)
-    m = re.search(r"\b([A-Z]{3})\s*([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\b", t)
-    if m:
-        cur = m.group(1).upper()
-        amt = m.group(2).replace(",", "")
-        try:
-            return float(str(amt).replace(',', '')), cur
-        except:
-            pass
-
-    # Try: AMOUNT CUR  (e.g., 1,766.000 KWD)  <-- TU CASO
-    m = re.search(r"\b([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*([A-Z]{3})\b", t)
-    if m:
-        amt = m.group(1).replace(",", "")
-        cur = m.group(2).upper()
-        try:
-            return float(str(amt).replace(',', '')), cur
-        except:
-            pass
-
-    return None, None
-
+import json
 import sqlite3
 import hashlib
-import json
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from decimal import Decimal, InvalidOperation
+from typing import Optional, Dict, Any
 
 from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
@@ -92,57 +15,354 @@ from pydantic import BaseModel, Field
 # ======================================================
 # CONFIG
 # ======================================================
-# Render disk mounted at /var/data
 DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
-
-
-def detect_direction(sms: str) -> str:
-    low = (sms or "").lower()
-    income_keys = ["credited", "credit", "deposit", "salary", "received", "refund", "transfer received"]
-    expense_keys = ["debited", "debit", "paid", "purchase", "card purchase", "withdrawn"]
-
-    # prioridad: si aparece debit -> expense
-    if any(k in low for k in expense_keys):
-        return "expense"
-    if any(k in low for k in income_keys):
-        return "income"
-    return "expense"
-
-# ======================================================
-# CONFIG
-# ======================================================
 API_KEY = os.getenv("API_KEY", "ElPortichuelo99")
 
 def check_key(api_key):
     if api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid api_key")
 
+app = FastAPI(title="Expense Tracker API")
 
-def require_key(api_key):
-    return check_key(api_key)
-
-app = FastAPI(title="Registro Gastos API (single-user, no api_key)")
-
-
-# --------------------------
-# Global error handler: return JSON instead of plain "Internal Server Error"
-# --------------------------
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    # IMPORTANT: esto es para debug mientras arreglamos /update_field
     return JSONResponse(
         status_code=500,
         content={"ok": False, "error": repr(exc), "path": str(request.url.path)}
     )
 
-
-# Serve dashboard
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # ======================================================
-# DB helpers
+# CATEGORIES — rules applied in order, first match wins
+# ======================================================
+CATEGORY_RULES = [
+    # --- COFFEE ---
+    ("coffee", [
+        "starbucks", "costa coffee", "tim hortons", "caf cafe", "cafe", "coffee",
+        "dunkin", "caribou", "peet", "lavazza", "nespresso", "barista",
+    ]),
+    # --- FOOD / DELIVERY ---
+    ("food", [
+        "talabat", "deliveroo", "carriage", "hunger station", "jahez",
+        "mcdonald", "burger king", "kfc", "hardee", "popeye", "subway",
+        "pizza hut", "domino", "papa john", "little caesar",
+        "restaurant", "resto", "kitchen", "grill", "bbq", "shawarma",
+        "falafel", "sushi", "ramen", "noodle", "chinese", "indian",
+        "pick", "eat", "food", "dining", "bistro", "brasserie",
+        "maki", "wasabi", "wagamama", "nando", "five guys",
+        "shake shack", "smashburger", "johnny rocket",
+    ]),
+    # --- GROCERIES ---
+    ("groceries", [
+        "lulu", "sultan center", "carrefour", "coop", "cooperative",
+        "geant", "hypermarket", "supermarket", "market", "grocery",
+        "spinneys", "waitrose", "danube", "farm fresh", "organic",
+        "al meera", "family food", "sultan", "cold storage",
+    ]),
+    # --- PHARMACY ---
+    ("pharmacy", [
+        "pharmacy", "pharmacie", "zafraan", "al dawaa", "boots",
+        "life pharmacy", "ibn sina", "nahdi", "dawaa", "drugstore",
+        "watson", "guardian", "medical store",
+    ]),
+    # --- TRANSPORT ---
+    ("transport", [
+        "uber", "careem", "bolt", "taxi", "cab", "lyft",
+        "metro", "bus", "train", "transit", "transport",
+        "parking", "salik", "petrol", "fuel", "gas station",
+        "shell", "bp", "total", "adnoc", "q8", "kuwait national",
+    ]),
+    # --- UTILITIES ---
+    ("utilities", [
+        "wamd", "zain", "ooredoo", "viva", "stc", "du ", "etisalat",
+        "electricity", "water", "mew ", "kahramaa", "utility",
+        "internet", "broadband", "telecom", "mobile", "phone bill",
+        "municipality", "baladiya",
+    ]),
+    # --- SHOPPING ---
+    ("shopping", [
+        "amazon", "noon", "namshi", "ounass", "sivvi",
+        "h&m", "zara", "mango", "gap", "uniqlo", "primark",
+        "marks spencer", "next ", "forever 21", "pull bear",
+        "bershka", "stradivarius", "massimo dutti",
+        "nike", "adidas", "puma", "reebok", "under armour",
+        "sun and sand", "decathlon", "sports", "sport",
+        "ikea", "home centre", "pottery barn", "west elm",
+        "virgin megastore", "jarir", "lulu electronics",
+        "apple store", "samsung", "huawei",
+    ]),
+    # --- ENTERTAINMENT ---
+    ("entertainment", [
+        "netflix", "spotify", "apple music", "youtube", "disney",
+        "hulu", "paramount", "hbo", "osn", "shahid", "anghami",
+        "cinema", "cinescape", "vox cinema", "imax",
+        "playstation", "xbox", "steam", "nintendo", "google play",
+        "app store", "itunes",
+    ]),
+    # --- HEALTH ---
+    ("health", [
+        "hospital", "clinic", "doctor", "dr ", "medical",
+        "dental", "dentist", "optician", "optical", "laboratory",
+        "lab ", "radiology", "physiotherapy", "gym", "fitness",
+        "anytime fitness", "gold's gym", "curves", "kuwait hospital",
+    ]),
+    # --- TRAVEL ---
+    ("travel", [
+        "hotel", "marriott", "hilton", "hyatt", "sheraton", "radisson",
+        "holiday inn", "ibis", "novotel", "rotana", "jumeirah",
+        "airbnb", "booking.com", "expedia", "agoda",
+        "airline", "kuwait airways", "emirates", "flydubai", "air arabia",
+        "flynas", "jazeera", "airport", "duty free",
+    ]),
+    # --- EDUCATION ---
+    ("education", [
+        "school", "university", "college", "tuition", "course",
+        "udemy", "coursera", "skillshare", "pluralsight",
+        "book", "bookstore", "jarir bookstore", "virgin books",
+    ]),
+    # --- SALARY / INCOME --- (direction=income handled separately)
+    ("salary", [
+        "salary", "payroll", "wage",
+    ]),
+]
+
+# Flat lookup for fast matching: keyword -> category
+_KW_MAP: Dict[str, str] = {}
+for _cat, _keywords in CATEGORY_RULES:
+    for _kw in _keywords:
+        _KW_MAP[_kw.lower()] = _cat
+
+
+def categorize(merchant: str, sms: str) -> str:
+    """
+    Categorize based on merchant name and SMS text.
+    Returns category string.
+    """
+    targets = [
+        (merchant or "").lower(),
+        (sms or "").lower(),
+    ]
+
+    for target in targets:
+        if not target:
+            continue
+        # exact keyword match (longest first to avoid partial false matches)
+        for kw in sorted(_KW_MAP.keys(), key=len, reverse=True):
+            if kw in target:
+                return _KW_MAP[kw]
+
+    return "other"
+
+
+# ======================================================
+# MERCHANT CLEANING
+# ======================================================
+def clean_merchant(raw: str) -> str:
+    """
+    Strip NBK SMS noise from merchant name.
+    Input:  "THE SULTAN CENTER , SALMIYA.Your Avl. balance is KWD 8,197.004"
+    Output: "THE SULTAN CENTER"
+    """
+    if not raw:
+        return ""
+    m = raw.strip()
+
+    # Remove from "Avl. balance" onwards (with optional "Your" prefix)
+    m = re.sub(r'\.?\s*(?:your\s+)?avl\.?\s*balance.*$', '', m, flags=re.IGNORECASE).strip()
+
+    # Remove trailing city: ", SALMIYA" or ", KUWAIT" etc.
+    m = re.sub(r'\s*,\s*[A-Z][A-Z\s\-]{1,20}$', '', m).strip()
+
+    # Remove trailing punctuation
+    m = m.rstrip('.,- ').strip()
+
+    return m or raw.strip()
+
+
+# ======================================================
+# AMOUNT / CURRENCY EXTRACTION
+# ======================================================
+CURRENCIES = ("KWD", "USD", "EUR", "AED")
+
+def extract_amount_currency(text: str):
+    """
+    Extract (amount, currency) from bank SMS.
+    Supports: "KWD 1,766.000", "1,766.000 KWD", "with 1,766.000 KWD"
+    """
+    if not text:
+        return None, None
+
+    t = text.replace("\u00a0", " ")
+
+    # Pattern 1: CUR AMOUNT
+    m = re.search(r'\b([A-Z]{3})\s*([0-9][0-9,]*\.?[0-9]*)\b', t)
+    if m and m.group(1) in CURRENCIES:
+        try:
+            return float(m.group(2).replace(",", "")), m.group(1).upper()
+        except ValueError:
+            pass
+
+    # Pattern 2: AMOUNT CUR
+    m = re.search(r'\b([0-9][0-9,]*\.?[0-9]*)\s*([A-Z]{3})\b', t)
+    if m and m.group(2) in CURRENCIES:
+        try:
+            return float(m.group(1).replace(",", "")), m.group(2).upper()
+        except ValueError:
+            pass
+
+    return None, None
+
+
+# ======================================================
+# DIRECTION DETECTION
+# ======================================================
+def detect_direction(sms: str) -> str:
+    low = (sms or "").lower()
+    income_keys = ["credited", "credit", "deposit", "salary", "received", "refund"]
+    expense_keys = ["debited", "debit", "paid", "purchase", "withdrawn"]
+    if any(k in low for k in expense_keys):
+        return "expense"
+    if any(k in low for k in income_keys):
+        return "income"
+    return "expense"
+
+
+# ======================================================
+# SMS PARSER
+# ======================================================
+DATE_RE = r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
+
+def sha256(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def parse_sms(sms: str) -> Dict[str, Any]:
+    txt = sms.strip()
+    lower = txt.lower()
+
+    # --- Amount & Currency ---
+    amount, currency = extract_amount_currency(txt)
+
+    # Fallback for salary pattern: "with 1,766.000 KWD"
+    if not amount:
+        m = re.search(r'\bwith\s+([0-9][0-9,]*\.?[0-9]*)\s*(KWD|USD|EUR|AED)\b', txt, re.IGNORECASE)
+        if m:
+            try:
+                amount = float(m.group(1).replace(",", ""))
+                currency = m.group(2).upper()
+            except ValueError:
+                pass
+
+    amount = amount or 0.0
+    currency = currency or "KWD"
+
+    # --- Direction ---
+    direction = detect_direction(txt)
+
+    # --- Merchant ---
+    merchant_raw = ""
+    # Try "for XXX" pattern
+    m = re.search(r'\bfor\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}|\.your\s+avl|,\s*your\s+avl|$)', txt, re.IGNORECASE)
+    if not m:
+        # Try "from XXX" pattern
+        m = re.search(r'\bfrom\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}|\.your\s+avl|,\s*your\s+avl|$)', txt, re.IGNORECASE)
+    if not m:
+        # Try "at XXX" pattern
+        m = re.search(r'\bat\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}|\.your\s+avl|,\s*your\s+avl|$)', txt, re.IGNORECASE)
+
+    if m:
+        merchant_raw = m.group(1).strip().strip(",").strip()
+
+    merchant_clean = clean_merchant(merchant_raw) if merchant_raw else ""
+
+    # --- Category ---
+    category = categorize(merchant_clean or merchant_raw, txt)
+
+    # If income and no specific category, mark as income
+    if direction == "income" and category == "other":
+        category = "income"
+
+    # --- Date ---
+    date_raw = ""
+    date_iso = ""
+    m_date = re.search(DATE_RE, txt)
+    if m_date:
+        date_raw = m_date.group(1)
+        try:
+            dt = datetime.strptime(date_raw, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            date_iso = dt.isoformat()
+        except Exception:
+            date_iso = ""
+    if not date_iso:
+        dt = datetime.now(timezone.utc)
+        date_iso = dt.isoformat()
+        date_raw = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    return {
+        "direction": direction,
+        "amount": amount,
+        "currency": currency,
+        "merchant_raw": merchant_raw,
+        "merchant_clean": merchant_clean,
+        "category": category,
+        "date_raw": date_raw,
+        "date_iso": date_iso,
+        "created_at": date_iso,
+        "sms_raw": txt,
+    }
+
+
+# ======================================================
+# RULES ENGINE (DB rules override parsed category)
+# ======================================================
+def apply_rules(user_id: str, parsed: Dict[str, Any]) -> Dict[str, Any]:
+    conn = db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM rules WHERE enabled=1 AND user_id=? ORDER BY priority ASC, id ASC",
+        (user_id,)
+    )
+    rules = cur.fetchall()
+    conn.close()
+
+    merch_l = (parsed.get("merchant_clean") or parsed.get("merchant_raw") or "").lower()
+    sms_l   = (parsed.get("sms_raw") or "").lower()
+
+    for r in rules:
+        match_field = (r["match_field"] or "merchant_clean").strip().lower()
+        match_type  = (r["match_type"] or "contains").strip().lower()
+        pattern     = (r["pattern"] or "").strip()
+
+        if not pattern:
+            continue
+
+        target = sms_l if match_field in ("sms", "sms_raw") else merch_l
+
+        ok = False
+        if match_type == "contains":
+            ok = pattern.lower() in target
+        elif match_type == "equals":
+            ok = pattern.lower() == target
+        elif match_type == "regex":
+            try:
+                ok = bool(re.search(pattern, target, re.IGNORECASE))
+            except re.error:
+                ok = False
+
+        if ok:
+            if r["set_category"]:
+                parsed["category"] = r["set_category"]
+            if r["set_merchant_clean"]:
+                parsed["merchant_clean"] = r["set_merchant_clean"]
+
+    return parsed
+
+
+# ======================================================
+# DB
 # ======================================================
 def ensure_db_dir(path: str) -> None:
     d = os.path.dirname(path)
@@ -161,9 +381,7 @@ def init_db() -> None:
     conn = db()
     cur = conn.cursor()
 
-    # --- expenses table
-    cur.execute(
-        """
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT NOT NULL,
@@ -181,34 +399,19 @@ def init_db() -> None:
             sms_hash TEXT,
             sms_raw TEXT
         )
-        """
-    )
+    """)
 
-    # Migrations for expenses: add columns if missing
     cur.execute("PRAGMA table_info(expenses)")
     cols = {row[1] for row in cur.fetchall()}
+    for col, coltype in [
+        ("sms","TEXT"), ("sms_raw","TEXT"), ("sms_hash","TEXT"),
+        ("amount","REAL"), ("currency","TEXT"), ("merchant_raw","TEXT"),
+        ("merchant_clean","TEXT"), ("category","TEXT"), ("direction","TEXT"),
+        ("hash","TEXT"), ("created_at","TEXT"), ("date_raw","TEXT"), ("date_iso","TEXT"),
+    ]:
+        if col not in cols:
+            cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} {coltype}")
 
-    def add_col(name: str, coltype: str):
-        nonlocal cols
-        if name not in cols:
-            cur.execute(f"ALTER TABLE expenses ADD COLUMN {name} {coltype}")
-            cols.add(name)
-
-    add_col("sms", "TEXT")
-    add_col("sms_raw", "TEXT")
-    add_col("sms_hash", "TEXT")
-    add_col("amount", "REAL")
-    add_col("currency", "TEXT")
-    add_col("merchant_raw", "TEXT")
-    add_col("merchant_clean", "TEXT")
-    add_col("category", "TEXT")
-    add_col("direction", "TEXT")
-    add_col("hash", "TEXT")
-    add_col("created_at", "TEXT")
-    add_col("date_raw", "TEXT")
-    add_col("date_iso", "TEXT")
-
-    # Indexes for expenses
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
@@ -216,67 +419,46 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
 
-    # --- rules table
-    cur.execute(
-        """
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS rules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT,
             enabled INTEGER NOT NULL DEFAULT 1,
             priority INTEGER NOT NULL DEFAULT 100,
-            match_field TEXT NOT NULL DEFAULT 'merchant',
+            match_field TEXT NOT NULL DEFAULT 'merchant_clean',
             match_type TEXT NOT NULL DEFAULT 'contains',
             pattern TEXT NOT NULL,
             set_category TEXT,
             set_merchant_clean TEXT,
             created_at TEXT NOT NULL
         )
-        """
-    )
+    """)
 
-    # Migrations for rules
     cur.execute("PRAGMA table_info(rules)")
     rcols = {row[1] for row in cur.fetchall()}
+    for col, coltype in [
+        ("user_id","TEXT"), ("enabled","INTEGER"), ("priority","INTEGER"),
+        ("match_field","TEXT"), ("match_type","TEXT"), ("pattern","TEXT"),
+        ("set_category","TEXT"), ("set_merchant_clean","TEXT"), ("created_at","TEXT"),
+    ]:
+        if col not in rcols:
+            cur.execute(f"ALTER TABLE rules ADD COLUMN {col} {coltype}")
 
-    def add_rule_col(name: str, coltype: str):
-        nonlocal rcols
-        if name not in rcols:
-            cur.execute(f"ALTER TABLE rules ADD COLUMN {name} {coltype}")
-            rcols.add(name)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS deleted_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            original_id INTEGER,
+            row_json TEXT NOT NULL,
+            deleted_at TEXT NOT NULL
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_deleted_user_time ON deleted_expenses(user_id, deleted_at)")
 
-    add_rule_col("user_id", "TEXT")
-    add_rule_col("enabled", "INTEGER")
-    add_rule_col("priority", "INTEGER")
-    add_rule_col("match_field", "TEXT")
-    add_rule_col("match_type", "TEXT")
-    add_rule_col("pattern", "TEXT")
-    add_rule_col("set_category", "TEXT")
-    add_rule_col("set_merchant_clean", "TEXT")
-    add_rule_col("created_at", "TEXT")
-
-    # fill user_id for legacy rows
-    cur.execute("UPDATE rules SET user_id = 'pedro' WHERE user_id IS NULL OR TRIM(user_id) = ''")
-
-    # Indexes for rules
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_user ON rules(user_id)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_priority ON rules(priority)")
-
-
-    # BACKFILL_DIRECTION_V1
-    # Si direction está NULL en filas antiguas, lo rellenamos desde sms
+    # Backfill direction for old rows
     cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%credited%'")
-    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND (lower(sms) LIKE '%debited%' OR direction IS NULL OR direction='')")
-
-    # BACKFILL_DIRECTION_ALWAYS_V1
-    # Rellenar direction en registros antiguos
-    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%credit%'")
-    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%deposit%'")
     cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%salary%'")
-    cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%received%'")
-    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%debit%'")
-    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%paid%'")
-    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%purchase%'")
+    cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='')")
 
     conn.commit()
     conn.close()
@@ -286,12 +468,11 @@ init_db()
 
 
 # ======================================================
-# Models
+# MODELS
 # ======================================================
 class IngestRequest(BaseModel):
     user_id: str = Field(..., alias="userid")
     sms: str
-
     class Config:
         populate_by_name = True
 
@@ -300,299 +481,89 @@ class RuleCreate(BaseModel):
     user_id: str = "pedro"
     enabled: bool = True
     priority: int = 100
-    match_field: str = "merchant"   # merchant
-    match_type: str = "contains"    # contains | equals | regex
+    match_field: str = "merchant_clean"
+    match_type: str = "contains"
     pattern: str
     set_category: Optional[str] = None
     set_merchant_clean: Optional[str] = None
 
 
 # ======================================================
-# Parsing
-# ======================================================
-CURRENCY_RE = r"(KWD|USD|EUR|AED|AED|AED)"
-AMOUNT_RE = r"([0-9]+(?:\.[0-9]+)?)"
-DATE_RE = r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
-
-
-def sha256(s: str) -> str:
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
-
-
-def parse_sms(sms: str) -> Dict[str, Any]:
-
-    # Robust amount extraction (works for credited & debited)
-    amount_extracted, currency_extracted = extract_amount_currency_v2(sms)
-    if amount_extracted is not None:
-        amount = amount_extracted
-    if currency_extracted is not None:
-        currency = currency_extracted
-
-    # Robust amount extraction (works for credited & debited)
-    amount_extracted, currency_extracted = extract_amount_currency_v2(sms)
-    if amount_extracted is not None:
-        amount = amount_extracted
-    if currency_extracted is not None:
-        currency = currency_extracted
-
-    # Robust amount extraction (works for credited & debited)
-    amount_extracted, currency_extracted = extract_amount_currency_v2(sms)
-    if amount_extracted is not None:
-        amount = amount_extracted
-    if currency_extracted is not None:
-        currency = currency_extracted
-    # Prefer robust extractor (supports '1,766.000 KWD' and 'KWD 1,766.000')
-    _amt, _cur = extract_amount_currency(sms)
-    if _amt is not None and _cur is not None:
-        amount = _amt
-        currency = _cur
-    # Prefer robust extractor (supports '1,766.000 KWD' and 'KWD 1,766.000')
-    _amt, _cur = extract_amount_currency(sms)
-    if _amt is not None and _cur is not None:
-        amount = _amt
-        currency = _cur
-    txt = sms.strip()
-
-    # Detect expense/income keyword (for future, not stored yet)
-    lower = txt.lower()
-
-    # Currency + amount
-    m_amt = re.search(rf"\b{CURRENCY_RE}\s+{AMOUNT_RE}\b", txt)
-    currency = m_amt.group(1) if m_amt else "KWD"
-    amount = float(m_amt.group(2)) if m_amt else 0.0
-
-    # Merchant: "for XXX" OR "from XXX" (stop at " on YYYY-" if present)
-    merchant_raw = ""
-    m_merch = re.search(r"\bfor\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}\b|$)", txt, flags=re.IGNORECASE)
-    if not m_merch:
-        m_merch = re.search(r"\bfrom\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}\b|$)", txt, flags=re.IGNORECASE)
-
-    if m_merch:
-        merchant_raw = m_merch.group(1).strip().strip(",")
-    merchant_clean = merchant_raw.strip()
-
-    # Date
-    date_raw = ""
-    date_iso = ""
-    m_date = re.search(DATE_RE, txt)
-    if m_date:
-        date_raw = m_date.group(1)
-        try:
-            dt = datetime.strptime(date_raw, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-            date_iso = dt.isoformat()
-        except Exception:
-            date_iso = ""
-    else:
-        dt = datetime.now(timezone.utc)
-        date_iso = dt.isoformat()
-        date_raw = dt.strftime("%Y-%m-%d %H:%M:%S")
-
-    # Direction (expense vs income)
-    direction = "expense"
-    if "credited" in lower:
-        direction = "income"
-    elif "debited" in lower:
-        direction = "expense"
-
-# Category (basic heuristic)
-    cat = "other"
-    merch_l = merchant_clean.lower()
-    if any(k in merch_l for k in ["starbucks", "cafe", "coffee"]):
-        cat = "coffee"
-    elif any(k in merch_l for k in ["talabat", "pick", "restaurant", "burger", "pizza"]):
-        cat = "food"
-
-    # --- INCOME_AMOUNT_RESCUE_V1 (fix salary/credited amount=0) ---
-    try:
-        if (direction == 'income') and (amount is None or float(amount) == 0.0):
-            # Prefer 'with <amount> <CUR>' (salary pattern)
-            m2 = re.search(r"\bwith\s+([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*(KWD|USD|EUR|AED)\b", sms, re.I)
-            if m2:
-                amount = float(m2.group(1).replace(',', ''))
-                currency = m2.group(2).upper()
-            else:
-                # Fallback: any '<amount> <CUR>' anywhere
-                m3 = re.search(r"\b([0-9][0-9,]*\.[0-9]+|[0-9][0-9,]*)\s*(KWD|USD|EUR|AED)\b", sms, re.I)
-                if m3:
-                    amount = float(m3.group(1).replace(',', ''))
-                    currency = m3.group(2).upper()
-    except Exception:
-        pass
-    return {
-        "direction": direction,
-        "amount": amount,
-        "currency": currency,
-        "merchant_raw": merchant_raw,
-        "merchant_clean": merchant_clean,
-        "category": cat,
-        "date_raw": date_raw,
-        "date_iso": date_iso,
-        "created_at": date_iso,
-        "sms_raw": txt,
-    }
-
-
-def apply_rules(user_id: str, merchant: str, current: Dict[str, Any]) -> Dict[str, Any]:
-    """Apply enabled rules for the user to parsed fields."""
-    conn = db()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT * FROM rules
-        WHERE enabled = 1 AND user_id = ?
-        ORDER BY priority ASC, id ASC
-        """,
-        (user_id,),
-    )
-    rules = cur.fetchall()
-    conn.close()
-
-    merch_l = (merchant or "").lower()
-    sms_l = (current.get("sms_raw") or current.get("sms") or "").lower()
-
-    for r in rules:
-        # Compat: reglas nuevas usan match_field; legacy puede traer field/match_field null
-        match_field = (r["match_field"] if "match_field" in r.keys() else None) or (r["field"] if "field" in r.keys() else None) or "merchant_clean"
-        match_field = (match_field or "merchant_clean").strip().lower()
-
-        match_type = (r["match_type"] if "match_type" in r.keys() else None) or "contains"
-        match_type = (match_type or "contains").strip().lower()
-
-        pattern = (r["pattern"] or "").strip()
-
-        if not pattern:
-            continue
-
-        if match_field in ("merchant", "merchant_clean", "merchant_raw"):
-            target = merch_l
-        elif match_field in ("sms", "sms_raw", "text"):
-            target = sms_l
-        else:
-            # fallback: intenta aplicar sobre merchant
-            target = merch_l
-
-        ok = False
-        if match_type == "contains":
-            ok = pattern.lower() in target
-        elif match_type == "equals":
-            ok = pattern.lower() == target
-        elif match_type == "regex":
-            try:
-                ok = re.search(pattern, target, flags=re.IGNORECASE) is not None
-            except re.error:
-                ok = False
-
-        if ok:
-            if r["set_category"]:
-                current["category"] = r["set_category"]
-            if r["set_merchant_clean"]:
-                current["merchant_clean"] = r["set_merchant_clean"]
-
-    return current
-
-
-# ======================================================
-# Routes
+# ROUTES
 # ======================================================
 @app.get("/")
 def root():
-    # Serve dashboard if exists
     index_path = os.path.join("static", "index.html")
     if os.path.isfile(index_path):
         return FileResponse(index_path)
-    return {"ok": True, "message": "API running. Add /static/index.html for dashboard."}
+    return {"ok": True, "message": "API running."}
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "db_path": DB_PATH, "version": "2026-02-03-editfix-2"}
-
-@app.get("/debug/db")
-def debug_db():
-    conn = db()
-    cur = conn.cursor()
-    cur.execute("PRAGMA table_info(expenses)")
-    columns = [{"cid": r[0], "name": r[1], "type": r[2], "notnull": r[3], "dflt": r[4], "pk": r[5]} for r in cur.fetchall()]
-    cur.execute("PRAGMA index_list(expenses)")
-    idxs = []
-    for row in cur.fetchall():
-        name = row[1]
-        unique = bool(row[2])
-        cur.execute(f"PRAGMA index_info({name})")
-        cols = [x[2] for x in cur.fetchall()]
-        idxs.append({"name": name, "unique": unique, "columns": cols})
-    conn.close()
-    return {"db_path": DB_PATH, "columns": columns, "indexes": idxs}
+    return {"ok": True, "db_path": DB_PATH, "version": "2026-05-14-clean"}
 
 
 @app.post("/ingest")
 async def ingest(payload: IngestRequest):
     user_id = payload.user_id.strip()
-    sms = payload.sms.strip()
+    sms     = payload.sms.strip()
+
+    if not sms:
+        return {"inserted": False, "reason": "empty sms"}
 
     parsed = parse_sms(sms)
     parsed["user_id"] = user_id
-    if not parsed.get("direction"):
-        parsed["direction"] = detect_direction(sms)
 
-    # FALLBACK_DIRECTION_V1
-    # Por si alguna fila antigua o parser raro deja direction vacío
-    if not parsed.get("direction"):
-        low = (sms or "").lower()
-        if ("credit" in low) or ("credited" in low) or ("deposit" in low) or ("salary" in low) or ("received" in low):
-            parsed["direction"] = "income"
-        else:
-            parsed["direction"] = "expense"
+    # Apply DB rules (override category/merchant if rules match)
+    parsed = apply_rules(user_id, parsed)
 
-    # Apply rules
-    parsed = apply_rules(user_id, parsed.get("merchant_clean", ""), parsed)
-
-    # Hashes
-    sms_hash = sha256((sms or "").strip())
-    row_hash = sha256(f"{user_id}|{parsed.get('amount')}|{parsed.get('currency')}|{parsed.get('merchant_clean')}|{parsed.get('date_iso')}|{sms_hash}")
+    # Hashes for deduplication
+    sms_hash = sha256(sms)
+    row_hash = sha256(
+        f"{user_id}|{parsed.get('amount')}|{parsed.get('currency')}|"
+        f"{parsed.get('merchant_clean')}|{parsed.get('date_iso')}|{sms_hash}"
+    )
 
     conn = db()
-    cur = conn.cursor()
+    cur  = conn.cursor()
 
-    # If duplicate sms_hash exists, return inserted false + existing row id (if any)
-    cur.execute("SELECT id FROM expenses WHERE sms_hash = ?", (sms_hash,))
+    # Dedup check
+    cur.execute("SELECT id FROM expenses WHERE sms_hash=?", (sms_hash,))
     existing = cur.fetchone()
     if existing:
         conn.close()
-        return {"inserted": False, "id": None, "existing": {"id": existing["id"]}}
+        return {"inserted": False, "reason": "duplicate", "existing_id": existing["id"]}
 
     try:
-        cur.execute(
-            """
-            INSERT INTO expenses (
-                user_id, sms, amount, currency, merchant_raw, merchant_clean, category, direction,
-                hash, created_at, date_raw, date_iso, sms_hash, sms_raw
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                user_id,
-                sms,
-                parsed.get("amount"),
-                parsed.get("currency"),
-                parsed.get("merchant_raw"),
-                parsed.get("merchant_clean"),
-                parsed.get("category"),
-                parsed.get("direction"),
-                row_hash,
-                parsed.get("created_at"),
-                parsed.get("date_raw"),
-                parsed.get("date_iso"),
-                sms_hash,
-                parsed.get("sms_raw"),
-            ),
-        )
+        cur.execute("""
+            INSERT INTO expenses
+              (user_id, sms, amount, currency, merchant_raw, merchant_clean,
+               category, direction, hash, created_at, date_raw, date_iso, sms_hash, sms_raw)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            user_id, sms,
+            parsed["amount"], parsed["currency"],
+            parsed["merchant_raw"], parsed["merchant_clean"],
+            parsed["category"], parsed["direction"],
+            row_hash, parsed["created_at"],
+            parsed["date_raw"], parsed["date_iso"],
+            sms_hash, parsed["sms_raw"],
+        ))
         conn.commit()
         new_id = cur.lastrowid
         conn.close()
-        return {"inserted": True, "id": new_id}
+        return {
+            "inserted": True, "id": new_id,
+            "merchant_clean": parsed["merchant_clean"],
+            "category": parsed["category"],
+            "direction": parsed["direction"],
+            "amount": parsed["amount"],
+            "currency": parsed["currency"],
+        }
     except sqlite3.IntegrityError:
         conn.close()
-        return {"inserted": False, "id": None}
+        return {"inserted": False, "reason": "integrity_error"}
     except Exception as e:
         conn.close()
         raise HTTPException(status_code=500, detail=str(e))
@@ -601,267 +572,28 @@ async def ingest(payload: IngestRequest):
 @app.get("/expenses")
 def list_expenses(
     user_id: str = Query("pedro"),
-    limit: int = Query(50, ge=1, le=500),
+    limit: int = Query(500, ge=1, le=2000),
 ):
     conn = db()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, user_id, sms, amount, currency, merchant_clean, category, direction, created_at
+    cur  = conn.cursor()
+    cur.execute("""
+        SELECT id, user_id, sms, amount, currency, merchant_raw, merchant_clean,
+               category, direction, created_at, date_iso
         FROM expenses
-        WHERE user_id = ?
+        WHERE user_id=?
         ORDER BY datetime(created_at) DESC, id DESC
         LIMIT ?
-        """,
-        (user_id, limit),
-    )
+    """, (user_id, limit))
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return {"count": len(rows), "expenses": rows}
 
 
-@app.delete("/expense/{expense_id}")
-def delete_expense(expense_id: int, user_id: str = Query("pedro")):
-    conn = db()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM expenses WHERE id = ? AND user_id = ?", (expense_id, user_id))
-    conn.commit()
-    deleted = cur.rowcount
-    conn.close()
-    return {"deleted": bool(deleted), "id": expense_id}
-
-
-@app.post("/rules")
-def create_rule(rule: RuleCreate):
-    now = datetime.now(timezone.utc).isoformat()
-    conn = db()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO rules (user_id, enabled, priority, match_field, match_type, pattern, set_category, set_merchant_clean, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            rule.user_id,
-            1 if rule.enabled else 0,
-            rule.priority,
-            rule.match_field,
-            rule.match_type,
-            rule.pattern,
-            rule.set_category,
-            rule.set_merchant_clean,
-            now,
-        ),
-    )
-    conn.commit()
-    new_id = cur.lastrowid
-    conn.close()
-    return {"created": True, "id": new_id}
-
-
-@app.get("/rules")
-def list_rules(user_id: str = Query("pedro")):
-    conn = db()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, user_id, enabled, priority, match_field, match_type, pattern, set_category, set_merchant_clean, created_at
-        FROM rules
-        WHERE user_id = ?
-        ORDER BY priority ASC, id ASC
-        """,
-        (user_id,),
-    )
-    rows = [dict(r) for r in cur.fetchall()]
-    conn.close()
-    return {"count": len(rows), "rules": rows}
-
-
-@app.get("/debug/users")
-def debug_users():
-    conn = db()
-    cur = conn.cursor()
-    cur.execute("SELECT user_id, COUNT(*) as n FROM expenses GROUP BY user_id ORDER BY n DESC")
-    rows = [{"user_id": r[0], "count": r[1]} for r in cur.fetchall()]
-    conn.close()
-    return {"db_path": DB_PATH, "users": rows}
-
-
-@app.post("/debug/backfill_direction")
-def debug_backfill_direction(api_key: str = ""):
-    if api_key and api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Bad api key")
-
-    conn = db()
-    cur = conn.cursor()
-
-    # Detecta si existe sms_raw
-    cur.execute("PRAGMA table_info(expenses)")
-    cols = [r[1] for r in cur.fetchall()]
-    sms_col = "sms_raw" if "sms_raw" in cols else "sms"
-
-    # 1) SQL backfill por LIKE (rápido)
-    cur.execute(f"""
-        UPDATE expenses
-        SET direction='income'
-        WHERE (direction IS NULL OR direction='')
-          AND lower(COALESCE({sms_col}, '')) LIKE '%credit%'
-    """)
-    income_like = cur.rowcount
-
-    cur.execute(f"""
-        UPDATE expenses
-        SET direction='expense'
-        WHERE (direction IS NULL OR direction='')
-          AND lower(COALESCE({sms_col}, '')) LIKE '%debit%'
-    """)
-    expense_like = cur.rowcount
-
-    # 2) Python fallback para lo que siga vacío
-    cur.execute(f"SELECT id, COALESCE({sms_col}, '') FROM expenses WHERE direction IS NULL OR direction=''")
-    rows = cur.fetchall()
-    py_filled = 0
-    for _id, _sms in rows:
-        d = detect_direction(_sms)
-        cur.execute("UPDATE expenses SET direction=? WHERE id=?", (d, _id))
-        py_filled += 1
-
-    conn.commit()
-    conn.close()
-    return {
-        "ok": True,
-        "db_path": DB_PATH,
-        "sms_col_used": sms_col,
-        "income_like_updated": income_like,
-        "expense_like_updated": expense_like,
-        "python_filled": py_filled
-    }
-
-
-# ======================================================
-# UPDATE ENDPOINTS (inline edit from UI)
-# ======================================================
-from pydantic import BaseModel
-
-class UpdateCategoryReq(BaseModel):
-    id: int
-    category: str
-
-class UpdateMerchantReq(BaseModel):
-    id: int
-    merchant: str
-
-def _normalize_category(cat: str) -> str:
-    cat = (cat or "").strip()
-    if not cat:
-        return "other"
-    # normalizamos a lowercase + espacios a _
-    cat = cat.lower().replace(" ", "_")
-    # opcional: recortar chars raros
-    cat = "".join(ch for ch in cat if ch.isalnum() or ch in "_-")
-    return cat or "other"
-
-@app.post("/update/category")
-async def update_category(req: UpdateCategoryReq):
-    try:
-        cat = _normalize_category(req.category)
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("UPDATE expenses SET category=? WHERE id=?", (cat, int(req.id)))
-        conn.commit()
-        updated = cur.rowcount
-        conn.close()
-        if updated == 0:
-            return JSONResponse({"ok": False, "error": "not_found"}, status_code=404)
-        return {"ok": True, "id": int(req.id), "category": cat}
-    except Exception as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
-
-@app.post("/update/merchant")
-async def update_merchant(req: UpdateMerchantReq):
-    try:
-        merchant = (req.merchant or "").strip()
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("UPDATE expenses SET merchant_clean=? WHERE id=?", (merchant, int(req.id)))
-        conn.commit()
-        updated = cur.rowcount
-        conn.close()
-        if updated == 0:
-            return JSONResponse({"ok": False, "error": "not_found"}, status_code=404)
-        return {"ok": True, "id": int(req.id), "merchant_clean": merchant}
-    except Exception as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
-
-# ======================================================
-# DELETE + UNDO (Trash bin simple)
-# ======================================================
-def init_trash():
-    conn = db()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS trash (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            deleted_at TEXT NOT NULL,
-            row_json TEXT NOT NULL
-        )
-    """)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_trash_deleted_at ON trash(deleted_at)")
-    conn.commit()
-    conn.close()
-
-init_trash()
-
-class DeleteRequest(BaseModel):
-    user_id: str = Field(..., alias="userid")
-    id: int
-    class Config:
-        populate_by_name = True
-
-class UndoRequest(BaseModel):
-    user_id: str = Field(..., alias="userid")
-    class Config:
-        populate_by_name = True
-
-# ======================================================
-# DELETE + UNDO (Trash bin simple)
-# ======================================================
-def init_trash():
-    conn = db()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS trash (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            deleted_at TEXT NOT NULL,
-            row_json TEXT NOT NULL
-        )
-    """)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_trash_deleted_at ON trash(deleted_at)")
-    conn.commit()
-    conn.close()
-
-init_trash()
-
-class DeleteRequest(BaseModel):
-    user_id: str = Field(..., alias="userid")
-    id: int
-
-    class Config:
-        populate_by_name = True
-
-class UndoRequest(BaseModel):
-    user_id: str = Field(..., alias="userid")
-
-    class Config:
-        populate_by_name = True
-
 @app.post("/delete")
-def delete_expense(payload: dict, api_key: str = Query(None)):
-    key = api_key or payload.get("api_key") or payload.get("key")
-    check_key(key)
-
+async def delete_expense(payload: dict, api_key: str = Query(None)):
+    check_key(api_key or payload.get("api_key") or payload.get("key"))
     user_id = payload.get("userid") or payload.get("user_id")
-    row_id = payload.get("id")
+    row_id  = payload.get("id")
     if not user_id or row_id is None:
         raise HTTPException(status_code=400, detail="Missing userid or id")
     try:
@@ -869,48 +601,37 @@ def delete_expense(payload: dict, api_key: str = Query(None)):
     except Exception:
         raise HTTPException(status_code=400, detail="id must be int")
 
-    # SIEMPRE usa db() (tu proyecto ya lo tiene)
     conn = db()
-    conn.row_factory = sqlite3.Row
     try:
-        _ensure_deleted_table(conn)
         cur = conn.cursor()
-
         cur.execute("SELECT * FROM expenses WHERE id=? AND user_id=?", (row_id, user_id))
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Row not found")
 
-        row_dict = dict(row)
+        row_dict   = dict(row)
         deleted_at = datetime.now(timezone.utc).isoformat()
-
         cur.execute(
             "INSERT INTO deleted_expenses(user_id, original_id, row_json, deleted_at) VALUES(?,?,?,?)",
             (user_id, row_id, json.dumps(row_dict, ensure_ascii=False), deleted_at)
         )
         cur.execute("DELETE FROM expenses WHERE id=? AND user_id=?", (row_id, user_id))
         conn.commit()
-
         return {"ok": True, "deleted_id": row_id, "deleted_at": deleted_at}
     finally:
-        try: conn.close()
-        except Exception: pass
+        conn.close()
+
 
 @app.post("/undo_delete")
-def undo_delete(payload: dict, api_key: str = Query(None)):
-    key = api_key or payload.get("api_key") or payload.get("key")
-    check_key(key)
-
+async def undo_delete(payload: dict, api_key: str = Query(None)):
+    check_key(api_key or payload.get("api_key") or payload.get("key"))
     user_id = payload.get("userid") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="Missing userid")
 
     conn = db()
-    conn.row_factory = sqlite3.Row
     try:
-        _ensure_deleted_table(conn)
         cur = conn.cursor()
-
         cur.execute(
             "SELECT id, original_id, row_json, deleted_at FROM deleted_expenses WHERE user_id=? ORDER BY id DESC LIMIT 1",
             (user_id,)
@@ -919,20 +640,19 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
         if not d:
             raise HTTPException(status_code=404, detail="Nothing to undo")
 
-        deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z","+00:00"))
+        deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z", "+00:00"))
         age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
-        if age > 10:
-            raise HTTPException(status_code=400, detail="Undo window expired (>10s)")
+        if age > 30:
+            raise HTTPException(status_code=400, detail="Undo window expired (>30s)")
 
         row = json.loads(d["row_json"])
         original_id = row.get("id")
-
         cols = [k for k in row.keys() if k != "id"]
         vals = [row[k] for k in cols]
 
         try:
             cur.execute(
-                f'INSERT INTO expenses (id, {",".join(cols)}) VALUES (?, {",".join(["?"]*len(cols))})',
+                f'INSERT INTO expenses (id, {",".join(cols)}) VALUES (?,{",".join(["?"]*len(cols))})',
                 [original_id] + vals
             )
             restored_id = original_id
@@ -945,75 +665,18 @@ def undo_delete(payload: dict, api_key: str = Query(None)):
 
         cur.execute("DELETE FROM deleted_expenses WHERE id=?", (d["id"],))
         conn.commit()
-
         return {"ok": True, "restored_id": restored_id}
     finally:
-        try: conn.close()
-        except Exception: pass
+        conn.close()
 
-@app.post("/undo_delete")
-def undo_delete(payload: dict, api_key: str = Query(None)):
-    key = api_key or payload.get("api_key") or payload.get("key")
-    check_key(key)
-
-    user_id = payload.get("userid") or payload.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Missing userid")
-
-    conn = db()
-    conn.row_factory = sqlite3.Row
-    try:
-        _ensure_deleted_table(conn)
-        cur = conn.cursor()
-
-        cur.execute(
-            "SELECT id, original_id, row_json, deleted_at FROM deleted_expenses WHERE user_id=? ORDER BY id DESC LIMIT 1",
-            (user_id,)
-        )
-        d = cur.fetchone()
-        if not d:
-            raise HTTPException(status_code=404, detail="Nothing to undo")
-
-        deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z","+00:00"))
-        age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
-        if age > 10:
-            raise HTTPException(status_code=400, detail="Undo window expired (>10s)")
-
-        row = json.loads(d["row_json"])
-        original_id = row.get("id")
-
-        cols = [k for k in row.keys() if k != "id"]
-        vals = [row[k] for k in cols]
-
-        try:
-            cur.execute(
-                f'INSERT INTO expenses (id, {",".join(cols)}) VALUES (?, {",".join(["?"]*len(cols))})',
-                [original_id] + vals
-            )
-            restored_id = original_id
-        except Exception:
-            cur.execute(
-                f'INSERT INTO expenses ({",".join(cols)}) VALUES ({",".join(["?"]*len(cols))})',
-                vals
-            )
-            restored_id = cur.lastrowid
-
-        cur.execute("DELETE FROM deleted_expenses WHERE id=?", (d["id"],))
-        conn.commit()
-
-        return {"ok": True, "restored_id": restored_id}
-    finally:
-        try: conn.close()
-        except Exception: pass
 
 @app.post("/update_field")
-def update_field(payload: dict, api_key: str = Query(None)):
-    check_key(api_key)
-
+async def update_field(payload: dict, api_key: str = Query(None)):
+    check_key(api_key or payload.get("api_key"))
     user_id = payload.get("userid") or payload.get("user_id")
-    row_id = payload.get("id")
-    field = (payload.get("field") or "").strip()
-    value = payload.get("value")
+    row_id  = payload.get("id")
+    field   = (payload.get("field") or "").strip()
+    value   = payload.get("value")
 
     if not user_id:
         raise HTTPException(status_code=400, detail="Missing userid")
@@ -1024,557 +687,170 @@ def update_field(payload: dict, api_key: str = Query(None)):
     except Exception:
         raise HTTPException(status_code=400, detail="id must be int")
 
-    allowed_fields = {"merchant_clean", "category", "currency", "amount", "direction"}
-    if field not in allowed_fields:
+    allowed = {"merchant_clean", "category", "currency", "amount", "direction"}
+    if field not in allowed:
         raise HTTPException(status_code=400, detail=f"Field not allowed: {field}")
 
-    # Normalizaciones
     if field == "category":
-        value = (str(value).strip().lower() if value is not None else "other") or "other"
-    if field == "currency":
-        value = (str(value).strip().upper() if value is not None else None)
-    if field == "amount" and value is not None:
+        value = (str(value).strip().lower() if value else "other") or "other"
+    elif field == "currency":
+        value = str(value).strip().upper() if value else None
+    elif field == "amount":
         try:
-            value = float(str(value).replace(',', ''))
+            value = float(str(value).replace(",", ""))
         except Exception:
             raise HTTPException(status_code=400, detail="amount must be a number")
-    if field == "merchant_clean" and value is not None:
-        value = str(value).strip()
-    if field == "direction" and value is not None:
-        v = str(value).strip().lower()
-        if v not in ("in", "out"):
-            raise HTTPException(status_code=400, detail="direction must be 'in' or 'out'")
-        value = v
+    elif field == "merchant_clean":
+        value = str(value).strip() if value is not None else ""
 
-    # DB (usa tu db() si existe, si no, conecta directo)
+    conn = db()
     try:
-        if "db" in globals():
-            conn = db()
-        else:
-            # fallback por si acaso
-            DB_PATH = os.getenv("DB_PATH", "/var/data/gastos.db")
-            conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-
-        # Verifica columna existe para evitar sqlite errors
         cur.execute("PRAGMA table_info(expenses)")
-        cols = {r[1] for r in cur.fetchall()}
-        if field not in cols:
+        db_cols = {r[1] for r in cur.fetchall()}
+        if field not in db_cols:
             raise HTTPException(status_code=400, detail=f"Column not in DB: {field}")
 
-        cur.execute(f"UPDATE expenses SET {field} = ? WHERE id = ? AND user_id = ?", (value, row_id, user_id))
+        cur.execute(
+            f"UPDATE expenses SET {field}=? WHERE id=? AND user_id=?",
+            (value, row_id, user_id)
+        )
         conn.commit()
-
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Row not found")
 
-        cur.execute("SELECT id, user_id, amount, currency, merchant_clean, category, created_at, direction FROM expenses WHERE id=? AND user_id=?", (row_id, user_id))
+        cur.execute(
+            "SELECT id, user_id, amount, currency, merchant_clean, category, created_at, direction FROM expenses WHERE id=? AND user_id=?",
+            (row_id, user_id)
+        )
         row = cur.fetchone()
         return {"ok": True, "id": row_id, "field": field, "value": value, "row": dict(row) if row else None}
-
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        conn.close()
 
 
-# ================= RULES DB INIT =================
-def init_rules_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS rules (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            merchant_pattern TEXT NOT NULL,
-            category TEXT NOT NULL,
-            match_mode TEXT NOT NULL DEFAULT 'contains',
-            created_at TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-# Ejecutar init de rules al arrancar
-init_rules_db()
-
-
-# ================= ADD RULE ENDPOINT =================
-@app.post("/add_rule_old")
-async def add_rule(req: Request):
-    api_key = req.query_params.get("api_key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid api_key")
-
-    body = await req.json()
-    user_id = body.get("userid") or body.get("user_id")
-    merchant = (body.get("merchant") or "").strip()
-    category = (body.get("category") or "").strip().lower()
-    match_mode = (body.get("match_mode") or "contains").strip().lower()
-
-    if not user_id or not merchant or not category:
-        return JSONResponse(
-            {"ok": False, "error": "userid, merchant, category required"},
-            status_code=400
-        )
-
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    created_at = datetime.now(timezone.utc).isoformat()
-
+@app.get("/rules")
+def list_rules(user_id: str = Query("pedro")):
+    conn = db()
+    cur  = conn.cursor()
     cur.execute(
-        """
-        INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (user_id, merchant, category, match_mode, created_at)
+        "SELECT * FROM rules WHERE user_id=? ORDER BY priority ASC, id ASC",
+        (user_id,)
     )
-
-    conn.commit()
+    rows = [dict(r) for r in cur.fetchall()]
     conn.close()
-
-    return {
-        "ok": True,
-        "user_id": user_id,
-        "merchant_pattern": merchant,
-        "category": category,
-        "match_mode": match_mode
-    }
+    return {"count": len(rows), "rules": rows}
 
 
-# ================= RULES MIGRATION PATCH =================
-def migrate_rules_table():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    # ¿Existe la tabla rules?
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rules'")
-    if not cur.fetchone():
-        conn.close()
-        return
-
-    # Columnas actuales
-    cur.execute("PRAGMA table_info(rules)")
-    cols = [r[1] for r in cur.fetchall()]  # name is index 1
-
-    # Si falta merchant_pattern, la añadimos
-    if "merchant_pattern" not in cols:
-        cur.execute("ALTER TABLE rules ADD COLUMN merchant_pattern TEXT")
-        conn.commit()
-
-        # Si hay columna antigua 'merchant', copiamos
-        if "merchant" in cols:
-            cur.execute("UPDATE rules SET merchant_pattern = merchant WHERE merchant_pattern IS NULL")
-            conn.commit()
-
-    # Si falta match_mode, la añadimos con default
-    cur.execute("PRAGMA table_info(rules)")
-    cols2 = [r[1] for r in cur.fetchall()]
-    if "match_mode" not in cols2:
-        cur.execute("ALTER TABLE rules ADD COLUMN match_mode TEXT DEFAULT 'contains'")
-        conn.commit()
-
-    # Si falta created_at, la añadimos (no obligatoria, pero útil)
-    cur.execute("PRAGMA table_info(rules)")
-    cols3 = [r[1] for r in cur.fetchall()]
-    if "created_at" not in cols3:
-        cur.execute("ALTER TABLE rules ADD COLUMN created_at TEXT")
-        conn.commit()
-
-    conn.close()
-
-# Ejecutar migración al arrancar
-migrate_rules_table()
-
-
-# ================= ADD RULE ENDPOINT (compat) =================
-@app.post("/add_rule_old")
-async def add_rule(req: Request):
-    api_key = req.query_params.get("api_key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid api_key")
-
-    body = await req.json()
-    user_id = body.get("userid") or body.get("user_id")
-    merchant = (body.get("merchant") or "").strip()
-    category = (body.get("category") or "").strip().lower()
-    match_mode = (body.get("match_mode") or "contains").strip().lower()
-
-    if not user_id or not merchant or not category:
-        return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
-
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    # Detectar columnas reales de rules
-    cur.execute("PRAGMA table_info(rules)")
-    cols = [r[1] for r in cur.fetchall()]
-
-    created_at = datetime.now(timezone.utc).isoformat()
-
-    # Insert compatible
-    if "merchant_pattern" in cols:
-        cur.execute(
-            "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
-            (user_id, merchant, category, match_mode, created_at)
-        )
-    elif "merchant" in cols:
-        cur.execute(
-            "INSERT INTO rules (user_id, merchant, category, match_mode, created_at) VALUES (?,?,?,?,?)",
-            (user_id, merchant, category, match_mode, created_at)
-        )
-    else:
-        conn.close()
-        return JSONResponse({"ok": False, "error": "rules table has no merchant column"}, status_code=500)
-
-    conn.commit()
-    conn.close()
-
-    return {"ok": True, "user_id": user_id, "merchant": merchant, "category": category, "match_mode": match_mode}
-
-
-# ================= ADD RULE ENDPOINT (compat) =================
-@app.post("/add_rule_old")
-async def add_rule(req: Request):
-    api_key = req.query_params.get("api_key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid api_key")
-
-    body = await req.json()
-    user_id = body.get("userid") or body.get("user_id")
-    merchant = (body.get("merchant") or "").strip()
-    category = (body.get("category") or "").strip().lower()
-    match_mode = (body.get("match_mode") or "contains").strip().lower()
-
-    if not user_id or not merchant or not category:
-        return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
-
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    # Detectar columnas reales de rules
-    cur.execute("PRAGMA table_info(rules)")
-    cols = [r[1] for r in cur.fetchall()]
-
-    created_at = datetime.now(timezone.utc).isoformat()
-
-    # Insert compatible
-    if "merchant_pattern" in cols:
-        cur.execute(
-            "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
-            (user_id, merchant, category, match_mode, created_at)
-        )
-    elif "merchant" in cols:
-        cur.execute(
-            "INSERT INTO rules (user_id, merchant, category, match_mode, created_at) VALUES (?,?,?,?,?)",
-            (user_id, merchant, category, match_mode, created_at)
-        )
-    else:
-        conn.close()
-        return JSONResponse({"ok": False, "error": "rules table has no merchant column"}, status_code=500)
-
-    conn.commit()
-    conn.close()
-
-    return {"ok": True, "user_id": user_id, "merchant": merchant, "category": category, "match_mode": match_mode}
-
-
-# ================= RULES MIGRATION PATCH V2 =================
-def migrate_rules_table_v2():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    # Crear tabla rules si no existe (esquema nuevo)
+@app.post("/rules")
+def create_rule(rule: RuleCreate):
+    now = datetime.now(timezone.utc).isoformat()
+    conn = db()
+    cur  = conn.cursor()
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS rules (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT,
-      merchant_pattern TEXT,
-      category TEXT,
-      match_mode TEXT DEFAULT 'contains',
-      created_at TEXT
-    )
-    """)
+        INSERT INTO rules (user_id, enabled, priority, match_field, match_type,
+                           pattern, set_category, set_merchant_clean, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
+    """, (
+        rule.user_id, 1 if rule.enabled else 0, rule.priority,
+        rule.match_field, rule.match_type, rule.pattern,
+        rule.set_category, rule.set_merchant_clean, now,
+    ))
     conn.commit()
-
-    # Columnas actuales
-    cur.execute("PRAGMA table_info(rules)")
-    cols = [r[1] for r in cur.fetchall()]
-
-    def add_col(name, decl):
-        nonlocal cols
-        if name not in cols:
-            cur.execute(f"ALTER TABLE rules ADD COLUMN {decl}")
-            conn.commit()
-            cur.execute("PRAGMA table_info(rules)")
-            cols = [r[1] for r in cur.fetchall()]
-
-    # Asegurar columnas mínimas
-    add_col("user_id", "user_id TEXT")
-    add_col("merchant_pattern", "merchant_pattern TEXT")
-    add_col("category", "category TEXT")
-    add_col("match_mode", "match_mode TEXT DEFAULT 'contains'")
-    add_col("created_at", "created_at TEXT")
-
-    # Compat: si existe columna antigua "merchant", copiar a merchant_pattern
-    if "merchant" in cols and "merchant_pattern" in cols:
-        cur.execute("""
-          UPDATE rules
-          SET merchant_pattern = merchant
-          WHERE (merchant_pattern IS NULL OR merchant_pattern = '')
-            AND merchant IS NOT NULL AND merchant <> ''
-        """)
-        conn.commit()
-
+    new_id = cur.lastrowid
     conn.close()
-
-# Ejecutar migración al arrancar (v2)
-migrate_rules_table_v2()
+    return {"created": True, "id": new_id}
 
 
-# ================= ADD RULE ENDPOINT (v2 robust) =================
-@app.post("/add_rule_old")
-async def add_rule_v2(req: Request):
+@app.post("/add_rule")
+async def add_rule(req: Request):
     api_key = req.query_params.get("api_key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid api_key")
-
-    body = await req.json()
-    user_id = body.get("userid") or body.get("user_id")
-    merchant = (body.get("merchant") or body.get("merchant_pattern") or "").strip()
+    check_key(api_key)
+    body     = await req.json()
+    user_id  = body.get("userid") or body.get("user_id")
+    merchant = (body.get("merchant") or body.get("pattern") or "").strip()
     category = (body.get("category") or "").strip().lower()
-    match_mode = (body.get("match_mode") or "contains").strip().lower()
+    match_type = (body.get("match_mode") or body.get("match_type") or "contains").strip().lower()
 
     if not user_id or not merchant or not category:
         return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
 
-    # asegurar migración
-    migrate_rules_table_v2()
-
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    created_at = datetime.now(timezone.utc).isoformat()
-
-    # Insert seguro (esquema ya garantizado por migrate_rules_table_v2)
-    cur.execute(
-        "INSERT INTO rules (user_id, merchant_pattern, category, match_mode, created_at) VALUES (?,?,?,?,?)",
-        (user_id, merchant, category, match_mode, created_at)
-    )
+    now = datetime.now(timezone.utc).isoformat()
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute("""
+        INSERT INTO rules (user_id, enabled, priority, match_field, match_type,
+                           pattern, set_category, created_at)
+        VALUES (?,1,100,'merchant_clean',?,?,?,?)
+    """, (user_id, match_type, merchant, category, now))
     conn.commit()
     rid = cur.lastrowid
     conn.close()
+    return {"ok": True, "id": rid, "merchant": merchant, "category": category}
 
-    return {"ok": True, "id": rid, "user_id": user_id, "merchant_pattern": merchant, "category": category, "match_mode": match_mode}
 
-
-# ================= RULES MIGRATION (definitivo) =================
-def migrate_rules_table_definitive():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    # Asegura que exista la tabla (mínimo)
+@app.get("/summary")
+def summary(user_id: str = Query("pedro")):
+    conn = db()
+    cur  = conn.cursor()
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS rules (
-      id INTEGER PRIMARY KEY AUTOINCREMENT
-    )
-    """)
+        SELECT currency, direction, SUM(amount) as total, COUNT(*) as count
+        FROM expenses WHERE user_id=?
+        GROUP BY currency, direction
+    """, (user_id,))
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return {"summary": rows}
+
+
+# ======================================================
+# DEBUG ENDPOINTS
+# ======================================================
+@app.get("/debug/db")
+def debug_db():
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute("PRAGMA table_info(expenses)")
+    columns = [{"name": r[1], "type": r[2]} for r in cur.fetchall()]
+    cur.execute("SELECT user_id, COUNT(*) as n FROM expenses GROUP BY user_id ORDER BY n DESC")
+    users = [{"user_id": r[0], "count": r[1]} for r in cur.fetchall()]
+    conn.close()
+    return {"db_path": DB_PATH, "columns": columns, "users": users}
+
+
+@app.post("/debug/recategorize")
+async def recategorize_all(api_key: str = Query(None)):
+    """Re-run categorization on all existing rows using the new rules."""
+    check_key(api_key)
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute("SELECT id, merchant_clean, merchant_raw, sms FROM expenses")
+    rows = cur.fetchall()
+    updated = 0
+    for row in rows:
+        merchant = row["merchant_clean"] or row["merchant_raw"] or ""
+        sms      = row["sms"] or ""
+        new_cat  = categorize(merchant, sms)
+        cur.execute("UPDATE expenses SET category=? WHERE id=?", (new_cat, row["id"]))
+        updated += 1
     conn.commit()
-
-    # Columnas actuales
-    cur.execute("PRAGMA table_info(rules)")
-    cols = [r[1] for r in cur.fetchall()]
-
-    def add_col(name, decl):
-        nonlocal cols
-        if name not in cols:
-            cur.execute(f"ALTER TABLE rules ADD COLUMN {decl}")
-            conn.commit()
-            cur.execute("PRAGMA table_info(rules)")
-            cols = [r[1] for r in cur.fetchall()]
-
-    # Asegura columnas necesarias
-    add_col("user_id", "user_id TEXT")
-    add_col("merchant_pattern", "merchant_pattern TEXT")
-    add_col("category", "category TEXT")
-    add_col("match_mode", "match_mode TEXT DEFAULT 'contains'")
-    add_col("created_at", "created_at TEXT")
-
-    # Compat: si había columna antigua "merchant", copiar a merchant_pattern
-    if "merchant" in cols:
-        cur.execute("""
-          UPDATE rules
-          SET merchant_pattern = merchant
-          WHERE (merchant_pattern IS NULL OR merchant_pattern = '')
-            AND merchant IS NOT NULL AND merchant <> ''
-        """)
-        conn.commit()
-
     conn.close()
+    return {"ok": True, "recategorized": updated}
 
 
-# Ejecuta migración al startup (sin romper nada)
-try:
-    migrate_rules_table_definitive()
-except Exception as _e:
-    pass
-
-
-# ================= DEBUG: ver columnas reales en Render =================
-@app.get("/debug_rules")
-def debug_rules():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("PRAGMA table_info(rules)")
-    cols = [{"cid":r[0],"name":r[1],"type":r[2]} for r in cur.fetchall()]
+@app.post("/debug/reclean_merchants")
+async def reclean_merchants(api_key: str = Query(None)):
+    """Re-run merchant cleaning on all existing rows."""
+    check_key(api_key)
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute("SELECT id, merchant_raw FROM expenses WHERE merchant_raw IS NOT NULL AND merchant_raw != ''")
+    rows = cur.fetchall()
+    updated = 0
+    for row in rows:
+        cleaned = clean_merchant(row["merchant_raw"])
+        cur.execute("UPDATE expenses SET merchant_clean=? WHERE id=?", (cleaned, row["id"]))
+        updated += 1
+    conn.commit()
     conn.close()
-    return {"ok": True, "db_path": DB_PATH, "columns": cols}
-
-
-# ================= ADD RULE (NUEVO ÚNICO) =================
-@app.post("/add_rule")
-async def add_rule(req: Request):
-    """
-    Add a rule that maps merchant pattern -> category using the *existing* rules schema:
-      pattern (NOT NULL) + match_type + set_category (+ user_id, enabled, priority, created_at)
-    Accepts body:
-      { "userid": "...", "merchant": "starb", "category": "coffee", "match_mode": "contains" }
-    """
-    try:
-        api_key = req.query_params.get("api_key")
-        if api_key != API_KEY:
-            raise HTTPException(status_code=401, detail="Invalid api_key")
-
-        body = await req.json()
-        user_id = body.get("userid") or body.get("user_id")
-        merchant = (body.get("merchant") or body.get("merchant_pattern") or "").strip()
-        category = (body.get("category") or "").strip().lower()
-        match_mode = (body.get("match_mode") or body.get("match_type") or "contains").strip().lower()
-
-        if not user_id or not merchant or not category:
-            return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
-
-        # Ensure rules table has needed columns (safe if already exists)
-        try:
-            migrate_rules_table_definitive()
-        except Exception:
-            pass
-
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-
-        # Read existing columns to insert safely
-        cur.execute("PRAGMA table_info(rules)")
-        cols = [r[1] for r in cur.fetchall()]
-        created_at = datetime.now(timezone.utc).isoformat()
-
-        # Build insert based on real schema present
-        data = {}
-        # Mandatory for your current schema
-        if "pattern" in cols:
-            data["pattern"] = merchant
-        if "match_type" in cols:
-            data["match_type"] = match_mode
-        if "field" in cols:
-            data["field"] = "merchant"
-        if "match_field" in cols:
-            data["match_field"] = "merchant_clean"
-        if "set_category" in cols:
-            data["set_category"] = category
-        if "user_id" in cols:
-            data["user_id"] = user_id
-        if "enabled" in cols:
-            data["enabled"] = 1
-        if "priority" in cols:
-            data["priority"] = 100
-        if "created_at" in cols:
-            data["created_at"] = created_at
-
-        # Back-compat columns (newer)
-        if "merchant_pattern" in cols:
-            data["merchant_pattern"] = merchant
-        if "category" in cols:
-            data["category"] = category
-        if "match_mode" in cols:
-            data["match_mode"] = match_mode
-
-        # Safety: if pattern exists and somehow wasn't set, fail early
-        if "pattern" in cols and not data.get("pattern"):
-            conn.close()
-            return JSONResponse({"ok": False, "error": "rules.pattern is required but missing"}, status_code=500)
-
-        keys = list(data.keys())
-        vals = [data[k] for k in keys]
-
-        cur.execute(
-            f"INSERT INTO rules ({', '.join(keys)}) VALUES ({', '.join(['?']*len(keys))})",
-            vals
-        )
-        conn.commit()
-        rid = cur.lastrowid
-        conn.close()
-
-        return {
-            "ok": True,
-            "id": rid,
-            "user_id": user_id,
-            "merchant_pattern": merchant,
-            "category": category,
-            "match_mode": match_mode
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        return JSONResponse({"ok": False, "error": repr(e), "path": "/add_rule"}, status_code=500)
-
-CURRENCY_CODES = ("KWD", "USD", "EUR", "AED")
-
-def extract_amount_anywhere(sms: str):
-    """
-    Extrae amount y currency de un SMS con formatos tipo:
-      - "with 1,766.000 KWD"
-      - "1,766.000 KWD"
-      - "1766.000 KWD"
-      - "KWD 1,766.000"
-    Devuelve (amount_float, currency) o (None, None)
-    """
-    text = (sms or "").strip()
-
-    # Caso 1: "<num> <CUR>"
-    m = re.search(
-        r'(?<!\d)(\d{1,3}(?:,\d{3})*|\d+)(?:\.(\d{1,3}))?\s*(KWD|USD|EUR|AED)(?!\w)',
-        text,
-        flags=re.IGNORECASE
-    )
-
-    if not m:
-        # Caso 2: "<CUR> <num>"
-        m = re.search(
-            r'(?<!\w)(KWD|USD|EUR|AED)\s*(\d{1,3}(?:,\d{3})*|\d+)(?:\.(\d{1,3}))?(?!\d)',
-            text,
-            flags=re.IGNORECASE
-        )
-        if not m:
-            return None, None
-
-        currency = m.group(1).upper()
-        int_part = m.group(2)
-        dec_part = m.group(3) or "0"
-    else:
-        int_part = m.group(1)
-        dec_part = m.group(2) or "0"
-        currency = m.group(3).upper()
-
-    normalized = f"{int_part.replace(',', '')}.{dec_part}"
-
-    try:
-        amount = float(Decimal(normalized))
-    except (InvalidOperation, ValueError):
-        return None, None
-
-    return amount, currency
-
+    return {"ok": True, "recleaned": updated}
