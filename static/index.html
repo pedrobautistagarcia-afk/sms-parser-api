@@ -140,7 +140,6 @@
       position:sticky; top:0; z-index:5; background:var(--panel);
       box-shadow:0 1px 0 var(--line);
     }
-    thead th.selcol{cursor:default; width:44px; text-align:center;}
     tbody td{
       padding:var(--td-pad-y) var(--td-pad-x); border-bottom:1px solid var(--line);
       font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -155,7 +154,9 @@
     .sortHint{opacity:.6; margin-left:4px; font-size:11px}
 
     /* SELECTION */
-    td.selcol{width:44px; text-align:center;}
+    td.selcol{width:36px; text-align:center; font-size:0;}
+    thead th.selcol{cursor:default; width:36px; font-size:0;}
+    .cbRow, #cbAll{width:16px; height:16px; cursor:pointer; accent-color:var(--accent); font-size:14px;}
     .cbRow, #cbAll{width:16px; height:16px; cursor:pointer; accent-color:var(--accent);}
     td.selcol .cbRow{opacity:0; transition:opacity .12s;}
     tbody tr:hover td.selcol .cbRow, td.selcol .cbRow:checked{opacity:1;}
@@ -176,6 +177,12 @@
     .catSel[data-cat="groceries"]{background:rgba(122,162,255,.14); border-color:rgba(255,255,255,.14);}
     .catSel[data-cat="transport"]{background:rgba(159,122,234,.14); border-color:rgba(255,255,255,.14);}
     .catSel[data-cat="other"]{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.10);}
+
+    /* COLUMN WIDTHS */
+    #t thead th:nth-child(3), #t tbody td:nth-child(3){ width:42%; }
+    #t thead th:nth-child(4), #t tbody td:nth-child(4){ width:20%; }
+    #t thead th:nth-child(5), #t tbody td:nth-child(5){ width:14%; }
+    #t thead th:nth-child(6), #t tbody td:nth-child(6){ width:12%; }
 
     /* DAY HEADERS */
     tr.rg-sep td{
