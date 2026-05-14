@@ -1,34 +1,40 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registro Gastos</title>
+  <title>Expense Tracker</title>
   <style>
     :root{
       --bg:#0b0f14; --panel:#0f1620; --panel2:#111b27; --text:#e6edf3; --muted:#93a4b8;
-      --line:rgba(255,255,255,.10);
-      --chip:rgba(255,255,255,.06);
-      --danger:#ff5c66; --ok:#3ddc97;
-      --accent:#7aa2ff;
+      --line:rgba(255,255,255,.10); --chip:rgba(255,255,255,.06);
+      --danger:#ff5c66; --ok:#3ddc97; --accent:#7aa2ff;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --td-pad-y:10px; --td-pad-x:12px; --th-pad-y:12px;
+      color-scheme: dark;
     }
     [data-theme="light"]{
-      --bg:#ffffff; --panel:#f6f7f9; --panel2:#ffffff; --text:#0b1220; --muted:#516074;
-      --line:rgba(0,0,0,.10);
-      --chip:rgba(0,0,0,.06);
+      --bg:#f6f7f9; --panel:#ffffff; --panel2:#ffffff; --text:#0b1220; --muted:#516074;
+      --line:rgba(0,0,0,.10); --chip:rgba(0,0,0,.06);
       --shadow: 0 10px 30px rgba(0,0,0,.10);
+      color-scheme: light;
     }
-
     *{box-sizing:border-box}
     body{
-      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
       background:var(--bg); color:var(--text);
+      background-image: radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,0.10), transparent 60%),
+                        radial-gradient(1000px 700px at 90% 10%, rgba(16,185,129,0.07), transparent 55%);
+      background-attachment: fixed;
+      min-height:100vh;
     }
     .wrap{max-width:1200px; margin:0 auto; padding:18px}
+
+    /* TOP BAR */
     .top{
       display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-      margin-bottom:14px;
+      margin-bottom:14px; position:relative; z-index:60;
     }
     .title{display:flex; align-items:center; gap:10px;}
     h1{margin:0; font-size:20px; letter-spacing:.2px}
@@ -38,773 +44,246 @@
     }
     .right{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
 
+    /* BUTTONS */
     .btn{
       border:1px solid var(--line); background:var(--panel2); color:var(--text);
-      padding:8px 10px; border-radius:10px; cursor:pointer; box-shadow:none;
-      font-size:13px;
+      padding:8px 12px; border-radius:10px; cursor:pointer; font-size:13px;
+      transition: filter .12s, transform .1s;
     }
-    .btn:hover{filter:brightness(1.05)}
+    .btn:hover{filter:brightness(1.08)}
     .btn:active{transform:translateY(1px)}
     .btn.primary{border-color:rgba(122,162,255,.35); background:rgba(122,162,255,.12)}
-    .btn.danger{border-color:rgba(255,92,102,.35); background:rgba(255,92,102,.10)}
-    .btn.ghost{background:transparent}
-    .iconbtn{width:40px; display:inline-flex; align-items:center; justify-content:center}
+    .btn.danger{border-color:rgba(255,92,102,.35); background:rgba(255,92,102,.10); color:var(--danger);}
+    .btn.ghost{background:transparent; border-color:transparent}
+    .iconbtn{width:40px; display:inline-flex; align-items:center; justify-content:center; padding:8px}
 
+    /* FILTERS ROW */
     .row{
       display:flex; gap:10px; flex-wrap:wrap; align-items:center;
       background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px;
-      box-shadow:var(--shadow);
+      box-shadow:var(--shadow); position:sticky; top:10px; z-index:30;
     }
-    .ctrl{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-    .ctrl label{font-size:12px; color:var(--muted); margin-right:2px;}
-    select, input[type="date"], input[type="text"]{
+    .ctrl{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+    .ctrl label{font-size:12px; color:var(--muted);}
+    select, input[type="date"]{
       border:1px solid var(--line); background:var(--panel2); color:var(--text);
-      padding:8px 10px; border-radius:10px; font-size:13px; outline:none;
+      padding:7px 10px; border-radius:10px; font-size:13px; outline:none;
     }
+    select{ color-scheme: dark; }
+    [data-theme="light"] select{ color-scheme: light; }
     select:focus, input:focus{border-color:rgba(122,162,255,.45)}
+    option{color:var(--text); background:var(--panel2);}
     .spacer{flex:1}
 
-    .balance{position:relative;}
+    /* BALANCE DROPDOWN */
+    .balance{position:relative; z-index:2000;}
     .dropdown{
-      position:absolute; right:0; top:44px; z-index:20;
-      min-width:230px;
+      position:absolute; right:0; top:44px; z-index:3000;
+      min-width:240px;
       border:1px solid var(--line); background:var(--panel2);
-      border-radius:14px; box-shadow:var(--shadow);
-      padding:10px;
+      border-radius:14px; box-shadow:var(--shadow); padding:10px;
       display:none;
     }
     .dropdown.open{display:block}
-    .brow{display:flex; align-items:center; justify-content:space-between; padding:8px 8px; border-radius:10px;}
+    .brow{display:flex; align-items:center; justify-content:space-between; padding:8px; border-radius:10px;}
     .brow:hover{background:var(--chip)}
-    .brow b{font-weight:700}
     .pos{color:var(--ok); font-weight:700}
     .neg{color:var(--danger); font-weight:700}
 
+    /* SETTINGS DROPDOWN */
+    .settings{position:relative;}
+    #settingsMenu{
+      position:absolute; right:0; top:44px; z-index:2500;
+      min-width:240px;
+      border:1px solid var(--line); background:var(--panel2);
+      border-radius:14px; box-shadow:var(--shadow); padding:10px;
+      display:none;
+    }
+    #settingsMenu.open{display:block}
+    .setRow{padding:8px; border-radius:10px; margin-bottom:4px;}
+    .setRow:hover{background:var(--chip)}
+    .setRow .ttl{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600;}
+    .setBtns{display:flex; gap:6px; flex-wrap:wrap;}
+    .setBtns .btn{padding:6px 10px; font-size:12px;}
+    .setBtns .btn.active{border-color:rgba(122,162,255,.55); background:rgba(122,162,255,.18);}
+
+    /* KPI ROW */
+    .kpiRow{display:none; margin-top:12px; grid-template-columns:repeat(4,minmax(160px,1fr)); gap:10px;}
+    .kpiRow.show{display:grid}
+    .kpi{border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:12px; box-shadow:var(--shadow);}
+    .kpi .v{font-size:18px; font-weight:800; margin-top:6px}
+
+    /* MESSAGES */
+    .err{
+      margin-top:10px; padding:10px 12px; border-radius:12px;
+      border:1px solid rgba(255,92,102,.35); background:rgba(255,92,102,.10); color:#ffb4b4;
+      display:none; white-space:pre-wrap;
+    }
+    .err.show{display:block}
+    .toast{
+      margin-top:10px; padding:10px 12px; border-radius:12px;
+      border:1px solid var(--line); background:var(--panel2);
+      display:none; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .toast.show{display:flex}
+
+    /* TABLE */
     .tablewrap{
-      margin-top:14px;
-      border:1px solid var(--line); background:var(--panel);
-      border-radius:14px; box-shadow:var(--shadow);
+      margin-top:14px; border:1px solid var(--line); background:var(--panel);
+      border-radius:14px; box-shadow:var(--shadow); overflow:visible;
     }
     table{width:100%; border-collapse:collapse; table-layout:fixed}
     thead th{
       text-align:left; font-size:12px; color:var(--muted);
-      padding:12px 12px; border-bottom:1px solid var(--line);
-      user-select:none; cursor:pointer;
-      white-space:nowrap;
+      padding:var(--th-pad-y) var(--td-pad-x); border-bottom:1px solid var(--line);
+      user-select:none; cursor:pointer; white-space:nowrap;
+      position:sticky; top:0; z-index:5; background:var(--panel);
+      box-shadow:0 1px 0 var(--line);
     }
-    thead th.selcol{cursor:default}
+    thead th.selcol{cursor:default; width:44px; text-align:center;}
     tbody td{
-      padding:10px 12px; border-bottom:1px solid var(--line);
-      font-size:13px; vertical-align:middle;
-      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      padding:var(--td-pad-y) var(--td-pad-x); border-bottom:1px solid var(--line);
+      font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
     tbody tr:hover{background:rgba(255,255,255,.03)}
     [data-theme="light"] tbody tr:hover{background:rgba(0,0,0,.03)}
-
-    .amt{text-align:right; font-variant-numeric: tabular-nums}
-    .curcell{display:flex; align-items:center; justify-content:center; gap:8px}
+    .amt{text-align:right; font-variant-numeric:tabular-nums}
+    .curcell{display:flex; align-items:center; justify-content:center; gap:6px}
     .flag{display:inline-flex; width:18px}
     .flag svg{width:16px; height:12px; border-radius:3px; display:block}
+    .small{font-size:12px; color:var(--muted)}
+    .sortHint{opacity:.6; margin-left:4px; font-size:11px}
 
-    .catSel, .merchantEdit{
-      width:100%;
-      border:1px solid transparent;
-      background:transparent;
-      color:var(--text);
-      padding:6px 8px;
-      border-radius:10px;
+    /* SELECTION */
+    td.selcol{width:44px; text-align:center;}
+    .cbRow, #cbAll{width:16px; height:16px; cursor:pointer; accent-color:var(--accent);}
+    td.selcol .cbRow{opacity:0; transition:opacity .12s;}
+    tbody tr:hover td.selcol .cbRow, td.selcol .cbRow:checked{opacity:1;}
+    tr.selected-row{outline:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05);}
+    [data-theme="light"] tr.selected-row{outline:1px solid rgba(0,0,0,.14); background:rgba(0,0,0,.04);}
+
+    /* INLINE EDIT */
+    .catSel,.merchantEdit{
+      width:100%; border:1px solid transparent; background:transparent; color:var(--text);
+      padding:5px 7px; border-radius:8px; font-size:13px;
     }
     .merchantEdit:hover{background:var(--chip)}
     .merchantEdit:focus{outline:none; border-color:rgba(122,162,255,.45); background:var(--panel2)}
+    .catSel{cursor:pointer;}
+    .catSel:hover{background:var(--chip)}
+    .catSel[data-cat="coffee"]{background:rgba(255,179,71,.16); border-color:rgba(255,255,255,.14);}
+    .catSel[data-cat="food"]{background:rgba(61,220,151,.14); border-color:rgba(255,255,255,.14);}
+    .catSel[data-cat="groceries"]{background:rgba(122,162,255,.14); border-color:rgba(255,255,255,.14);}
+    .catSel[data-cat="transport"]{background:rgba(159,122,234,.14); border-color:rgba(255,255,255,.14);}
+    .catSel[data-cat="other"]{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.10);}
 
-    .small{font-size:12px; color:var(--muted)}
-    .toast{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:var(--panel2);
-      display:none;
-      align-items:center; justify-content:space-between; gap:10px;
+    /* DAY HEADERS */
+    tr.rg-sep td{
+      font-size:12px; color:var(--muted); background:rgba(255,255,255,.02);
+      cursor:pointer; font-weight:600; padding:8px 12px;
     }
-    .toast.show{display:flex}
-    .err{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,92,102,.35);
-      background:rgba(255,92,102,.10);
-      color:#ffb4b4;
-      display:none;
-      white-space:pre-wrap;
+    [data-theme="dark"] tr.rg-sep td{background:rgba(17,24,39,.92); color:rgba(255,255,255,.85);}
+    .rg-day-subtotals{float:right; font-size:12px; display:inline-flex; gap:10px; opacity:.9;}
+    .rg-day-subtotals .inc{color:#16a34a; font-weight:700;}
+    .rg-day-subtotals .exp{color:#dc2626; font-weight:700;}
+    .rg-day-subtotals .net{color:var(--text); font-weight:700;}
+
+    /* SKELETON */
+    .rg-skel{
+      position:relative; overflow:hidden; background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10); border-radius:8px; height:14px;
     }
-    .err.show{display:block}
-
-    .sortHint{opacity:.6; margin-left:6px; font-size:11px}
-
-    .kpiRow{
-      display:none;
-      margin-top:12px;
-      grid-template-columns: repeat(4, minmax(160px, 1fr));
-      gap:10px;
+    .rg-skel::after{
+      content:""; position:absolute; inset:0; transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
+      animation:rgShimmer 1.05s infinite;
     }
-    .kpiRow.show{display:grid}
-    .kpi{
-      border:1px solid var(--line);
-      background:var(--panel);
-      border-radius:14px;
-      padding:12px;
-      box-shadow:var(--shadow);
+    @keyframes rgShimmer{100%{transform:translateX(100%)}}
+    tr.rg-skel-row td{padding:12px !important;}
+    tr.rg-skel-row{background:rgba(255,255,255,.04) !important;}
+    tr.rg-spotlight{outline:2px solid rgba(59,130,246,.70); box-shadow:0 0 0 6px rgba(59,130,246,.18);}
+
+    /* INSIGHTS */
+    .insWrap{
+      margin-top:14px; border:1px solid var(--line); background:var(--panel);
+      border-radius:14px; box-shadow:var(--shadow); padding:14px;
     }
-    .kpi .v{font-size:18px; font-weight:800; margin-top:6px}
+    .insHead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+    .insHead h2{margin:0; font-size:13px; font-weight:600; color:var(--muted);}
+    .insGrid{display:grid; grid-template-columns:repeat(3,minmax(200px,1fr)); gap:10px;}
+    @media(max-width:900px){.insGrid{grid-template-columns:1fr}}
+    .insCard{border:1px solid var(--line); background:var(--panel2); border-radius:12px; padding:12px;}
+    .insK{font-size:12px; color:var(--muted); margin-bottom:4px;}
+    .insV{font-size:15px; font-weight:700; color:var(--text);}
+    .insSmall{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.4;}
 
-    /* ===== Row selection checkboxes ===== */
-    th.selcol, td.selcol { width: 44px; text-align: center; }
-    .cbRow, #cbAll{
-      width: 16px; height: 16px; cursor: pointer;
-      accent-color: var(--accent);
+    /* HIDE DATE COLUMN (use day headers) */
+    #t thead th:nth-child(2){display:none !important;}
+    #t tbody tr:not(.rg-sep) td:nth-child(2){display:none !important;}
+
+    /* TX MODAL */
+    .rgModalOverlay{
+      position:fixed; inset:0; background:rgba(0,0,0,.6);
+      display:none; align-items:center; justify-content:center; z-index:9000;
     }
-    td.selcol .cbRow { opacity: 0; transition: opacity .12s ease; }
-    tbody tr:hover td.selcol .cbRow { opacity: 1; }
-    td.selcol .cbRow:checked { opacity: 1; }
-    th.selcol #cbAll { opacity: 1; }
-
-    tr.selected-row { outline: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
-    [data-theme="light"] tr.selected-row { outline: 1px solid rgba(0,0,0,.14); background: rgba(0,0,0,.04); }
-  
-/* ===== Dropdown readability fix (native selects) ===== */
-:root { color-scheme: dark; }
-[data-theme="light"] { color-scheme: light; }
-
-/* The CLOSED select control (always fixable) */
-select, input[type="date"], input[type="text"]{
-  color: var(--text);
-  background: var(--panel2);
-}
-
-/* Hint to browsers to render native dropdown menus with dark palette */
-select{ color-scheme: dark; }
-[data-theme="light"] select{ color-scheme: light; }
-
-/* Some browsers use system colors for the popout list; this helps where supported */
-option{ color: var(--text); background: var(--panel2); }
-
-/* If the OS forces light popups, at least make the select itself readable */
-select:focus{ border-color: rgba(122,162,255,.45); }
-
-
-
-/* ===== AUTO-REFRESH PATCH: TABLE UX ===== */
-
-/* Sin scroll interno: el scroll es de la página */
-.tablewrap{
-  overflow: visible;
-  max-height: none;
-}
-
-/* Header sticky */
-thead th{
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--panel);
-}
-
-/* En light, fondo coherente */
-[data-theme="light"] thead th{
-  background: var(--panel);
-}
-
-
-/* ===== Premium UX patch (safe) ===== */
-
-/* Sticky filters bar (sin tocar lógica) */
-.row{
-  position: sticky;
-  top: 10px;
-  z-index: 30;
-}
-
-/* Evita la "tabla dentro de un cuadro con scroll" */
-.tablewrap{
-  overflow: visible !important;
-  max-height: none !important;
-}
-
-/* Si por algún motivo en tu versión había overflow:auto en algún wrapper, esto lo mata */
-html, body { overflow: auto !important; }
-
-/* Subtítulo del header */
-#subtitle{ margin-top:4px; }
-
-/* Dropdowns legibles en dark: el popup del select es del sistema, pero el control sí queda bien */
-select, input[type="date"], input[type="text"]{
-  color: var(--text);
-}
-
-/* ===== Category chips on select (con contraste) ===== */
-:root{
-  --chipCoffee: rgba(255, 179, 71, .16);
-  --chipFood: rgba(61, 220, 151, .14);
-  --chipGroceries: rgba(122, 162, 255, .14);
-  --chipTransport: rgba(159, 122, 234, .14);
-  --chipOther: rgba(255,255,255,.08);
-  --chipBorder: rgba(255,255,255,.14);
-}
-[data-theme="light"]{
-  --chipCoffee: rgba(255, 179, 71, .22);
-  --chipFood: rgba(61, 220, 151, .18);
-  --chipGroceries: rgba(122, 162, 255, .18);
-  --chipTransport: rgba(159, 122, 234, .18);
-  --chipOther: rgba(0,0,0,.06);
-  --chipBorder: rgba(0,0,0,.12);
-}
-.catSel{
-  border:1px solid transparent;
-}
-.catSel[data-cat="coffee"]{ background: var(--chipCoffee); border-color: var(--chipBorder); }
-.catSel[data-cat="food"]{ background: var(--chipFood); border-color: var(--chipBorder); }
-.catSel[data-cat="groceries"]{ background: var(--chipGroceries); border-color: var(--chipBorder); }
-.catSel[data-cat="transport"]{ background: var(--chipTransport); border-color: var(--chipBorder); }
-.catSel[data-cat="other"]{ background: var(--chipOther); border-color: var(--chipBorder); }
-
-/* Roadmap cards */
-.roadmap{ margin-top:14px; }
-.roadmap h2{ margin:0 0 10px 0; font-size:14px; color:var(--muted); letter-spacing:.2px; }
-.rmGrid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap:10px;
-}
-@media (max-width: 900px){
-  .rmGrid{ grid-template-columns: 1fr; }
-}
-.rmCard{
-  border:1px solid var(--line);
-  background:var(--panel);
-  border-radius:14px;
-  padding:12px;
-  box-shadow:var(--shadow);
-}
-.rmCard b{ display:block; margin-bottom:6px; }
-.rmTag{
-  display:inline-flex;
-  border:1px solid var(--line);
-  background:var(--chip);
-  padding:4px 8px;
-  border-radius:999px;
-  font-size:12px;
-  color:var(--muted);
-}
-
-
-/* ===== FIX: balance dropdown over sticky filters ===== */
-.top{ position: relative; z-index: 60; }
-.balance{ position: relative; z-index: 2000; }
-.balance .dropdown{ z-index: 3000 !important; }
-.row{ z-index: 30; } /* por debajo del dropdown */
-
-
-/* === SETTINGS (gear) + DENSITY === */
-.settings{ position:relative; }
-#settingsMenu{
-  position:absolute; right:0; top:44px; z-index:40;
-  min-width:240px;
-  border:1px solid var(--line); background:var(--panel2);
-  border-radius:14px; box-shadow:var(--shadow);
-  padding:10px;
-  display:none;
-}
-#settingsMenu.open{display:block}
-.setRow{ padding:8px 8px; border-radius:10px; }
-.setRow:hover{ background:var(--chip); }
-.setRow .ttl{ font-size:12px; color:var(--muted); margin-bottom:6px; }
-.setBtns{ display:flex; gap:8px; flex-wrap:wrap; }
-.setBtns .btn{ padding:7px 10px; border-radius:10px; font-size:12px; }
-.setBtns .btn.active{ border-color:rgba(122,162,255,.55); background:rgba(122,162,255,.18); }
-
-/* Density behavior (table paddings + row height feeling) */
-:root{ --td-pad-y: 10px; --td-pad-x: 12px; --th-pad-y: 12px; }
-[data-density="compact"] { --td-pad-y: 6px;  --td-pad-x: 12px; --th-pad-y: 10px; }
-[data-density="normal"]  { --td-pad-y: 10px; --td-pad-x: 12px; --th-pad-y: 12px; }
-[data-density="comfy"]   { --td-pad-y: 14px; --td-pad-x: 12px; --th-pad-y: 14px; }
-
-thead th{ padding: var(--th-pad-y) var(--td-pad-x) !important; }
-tbody td{ padding: var(--td-pad-y) var(--td-pad-x) !important; }
-
-
-/* === SETTINGS: hide original buttons moved into gear === */
-#toggleKpi{ display:none !important; }
-#btnExport{ display:none !important; }
-
-/* Rule button: intentamos varios IDs comunes */
-#btnRule, #ruleBtn, #ruleButton{ display:none !important; }
-
-
-
-/* === STICKY TABLE HEADER (Date/Merchant/...) === */
-.tablewrap { overflow: visible !important; } /* evita scroll interno raro */
-table thead th{
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background: var(--panel);
-}
-[data-theme="light"] table thead th{
-  background: var(--panel);
-}
-/* línea de separación más clara cuando está sticky */
-table thead th{
-  box-shadow: 0 1px 0 var(--line);
-}
-/* por si hay checkbox/columna select a la izquierda */
-table thead th:first-child{
-  z-index: 31;
-}
-
-
-/* ================================
-   STICKY TABLE HEADER
-   ================================ */
-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--bg, #0f1115);
-}
-
-/* En modo claro */
-body.light table thead th {
-  background: #ffffff;
-}
-
-
-/* ================================
-   STICKY TABLE HEADER
-   ================================ */
-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--bg, #0f1115);
-}
-
-/* En modo claro */
-body.light table thead th {
-  background: #ffffff;
-}
-
-
-/* ===== PATCH: Hide Date column (use day headers instead) ===== */
-#t thead th:nth-child(2){ display:none !important; }
-#t tbody tr:not(.rg-sep) td:nth-child(2){ display:none !important; }
-
-/* Rebalance widths */
-#t thead th:nth-child(3), #t tbody td:nth-child(3){ width:56% !important; }  /* Merchant */
-#t thead th:nth-child(4), #t tbody td:nth-child(4){ width:18% !important; }  /* Category */
-#t thead th:nth-child(5), #t tbody td:nth-child(5){ width:12% !important; }  /* Amount */
-#t thead th:nth-child(6), #t tbody td:nth-child(6){ width:14% !important; }  /* Currency */
-
-/* Day separator row */
-tr.rg-sep td{
-  font-size:12px;
-  color:var(--muted);
-  background:rgba(255,255,255,.03);
-  cursor:pointer;
-}
-
-
-/* ===== Transaction details modal ===== */
-.rgModalOverlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.55);
-  display:none; align-items:center; justify-content:center;
-  z-index:5000;
-}
-.rgModalOverlay.open{ display:flex; }
-.rgModal{
-  width:min(720px, calc(100vw - 28px));
-  max-height:calc(100vh - 28px);
-  overflow:auto;
-  border:1px solid var(--line);
-  background:var(--panel2);
-  border-radius:16px;
-  box-shadow:var(--shadow);
-}
-.rgModalHead{
-  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
-  padding:14px 14px 10px 14px;
-  border-bottom:1px solid var(--line);
-}
-.rgModalTitle{
-  margin:0; font-size:15px; font-weight:600; letter-spacing:.2px;
-}
-.rgModalSub{
-  margin-top:6px; font-size:12px; color:var(--muted);
-}
-.rgModalClose{
-  border:1px solid var(--line);
-  background:transparent;
-  color:var(--text);
-  width:38px; height:38px;
-  border-radius:12px;
-  cursor:pointer;
-}
-.rgModalBody{ padding:14px; }
-.rgGrid{
-  display:grid;
-  grid-template-columns: 150px 1fr;
-  gap:10px 12px;
-}
-@media (max-width: 520px){
-  .rgGrid{ grid-template-columns: 1fr; }
-}
-.rgK{ font-size:12px; color:var(--muted); }
-.rgV{ font-size:13px; color:var(--text); }
-.rgBig{
-  margin-top:12px;
-  padding:12px;
-  border:1px solid var(--line);
-  background:var(--panel);
-  border-radius:14px;
-  font-size:13px;
-  white-space:pre-wrap;
-  word-break:break-word;
-  line-height:1.35;
-}
-.rgPills{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-.rgPill{
-  border:1px solid var(--line);
-  background:var(--chip);
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  color:var(--muted);
-}
-
-
-/* ===== INSIGHTS_PANEL_V1 ===== */
-.insWrap{
-  margin-top:14px;
-  border:1px solid var(--line);
-  background:var(--panel);
-  border-radius:14px;
-  box-shadow:var(--shadow);
-  padding:12px;
-}
-.insHead{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  margin-bottom:10px;
-}
-.insHead h2{
-  margin:0;
-  font-size:13px;
-  font-weight:600;
-  color:var(--muted);
-  letter-spacing:.2px;
-}
-.insGrid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap:10px;
-}
-@media (max-width: 900px){
-  .insGrid{ grid-template-columns: 1fr; }
-}
-.insCard{
-  border:1px solid var(--line);
-  background:var(--panel2);
-  border-radius:14px;
-  padding:10px;
-}
-.insK{
-  font-size:12px;
-  color:var(--muted);
-  margin-bottom:6px;
-}
-.insV{
-  font-size:14px;
-  font-weight:600;
-  color:var(--text);
-}
-.insSmall{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:6px;
-  line-height:1.35;
-}
-
-
-/* RG_STICKY_DAY_HEADERS_V2 */
-tr.rg-sep {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-tr.rg-sep td {
-  background: rgba(255,255,255,0.92) !important;
-  backdrop-filter: blur(6px);
-}
-.rg-day-subtotals {
-  float: right;
-  font-size: 12px;
-  display: inline-flex;
-  gap: 10px;
-  opacity: 0.95;
-}
-.rg-day-subtotals .inc { color: #16a34a; font-weight: 700; }
-.rg-day-subtotals .exp { color: #dc2626; font-weight: 700; }
-.rg-day-subtotals .net { color: #111827; font-weight: 700; }
-
-
-/* RG_STICKY_DAY_HEADERS_DARK_FIX_V1 */
-html[data-theme="dark"] tr.rg-sep td {
-  background: rgba(17,24,39,0.92) !important; /* dark slate */
-  color: rgba(255,255,255,0.92) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-html[data-theme="dark"] tr.rg-sep td * {
-  color: inherit !important;
-}
-html[data-theme="dark"] .rg-day-subtotals .net {
-  color: rgba(255,255,255,0.92) !important;
-}
-
-
-/* RG_MODERN_SKIN_V1 */
-/* ===== Modern fintech skin (no layout changes) ===== */
-:root {
-  --rg-bg1: #0b1220;
-  --rg-bg2: #0e1b2e;
-  --rg-card: rgba(255,255,255,0.06);
-  --rg-card2: rgba(255,255,255,0.09);
-  --rg-border: rgba(255,255,255,0.10);
-  --rg-text: rgba(255,255,255,0.92);
-  --rg-muted: rgba(255,255,255,0.60);
-  --rg-shadow: 0 14px 40px rgba(0,0,0,0.35);
-  --rg-shadow-soft: 0 10px 24px rgba(0,0,0,0.25);
-  --rg-radius: 16px;
-  --rg-radius-sm: 12px;
-}
-
-html, body {
-  height: 100%;
-}
-
-body {
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,0.16), transparent 60%),
-              radial-gradient(1000px 700px at 90% 10%, rgba(16,185,129,0.12), transparent 55%),
-              linear-gradient(180deg, var(--rg-bg1), var(--rg-bg2));
-  color: var(--rg-text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a { color: inherit; }
-
-::selection {
-  background: rgba(59,130,246,0.35);
-}
-
- /* Make your existing main wrappers look like cards without changing DOM */
-.container, .wrap, .page, .app, #app, #root, main {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
- /* Try to “cardify” the main blocks if they exist */
-.panel, .card, .box, .section, .kpis, .filters, .insights, #insightsPanel, #kpis, #toolbar, #controls {
-  background: var(--rg-card);
-  border: 1px solid var(--rg-border);
-  border-radius: var(--rg-radius);
-  box-shadow: var(--rg-shadow-soft);
-  backdrop-filter: blur(10px);
-}
-
- /* Improve spacing globally (safe) */
-.panel, .card, .box, .section, #insightsPanel, #kpis, #toolbar, #controls {
-  padding: 14px 14px;
-}
-
-h1, h2, h3 {
-  letter-spacing: -0.02em;
-}
-
- /* Inputs / selects / buttons */
-input, select, textarea {
-  background: rgba(255,255,255,0.06) !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
-  color: var(--rg-text) !important;
-  border-radius: 12px !important;
-  padding: 10px 12px !important;
-  outline: none !important;
-}
-
-input::placeholder, textarea::placeholder {
-  color: rgba(255,255,255,0.45) !important;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: rgba(59,130,246,0.65) !important;
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.20) !important;
-}
-
-button {
-  border-radius: 12px !important;
-  border: 1px solid rgba(255,255,255,0.16) !important;
-  background: rgba(255,255,255,0.10) !important;
-  color: var(--rg-text) !important;
-  padding: 10px 12px !important;
-  transition: transform .12s ease, background .12s ease, border-color .12s ease;
-}
-
-button:hover {
-  background: rgba(255,255,255,0.14) !important;
-  border-color: rgba(255,255,255,0.22) !important;
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0px) scale(0.99);
-}
-
- /* Status pill / error box (if present) */
-#statusPill, .statusPill {
-  background: rgba(255,255,255,0.10) !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
-  color: var(--rg-text) !important;
-  border-radius: 999px !important;
-  padding: 6px 10px !important;
-}
-
-#errBox, .errBox {
-  background: rgba(239,68,68,0.10) !important;
-  border: 1px solid rgba(239,68,68,0.22) !important;
-  color: rgba(255,255,255,0.92) !important;
-  border-radius: var(--rg-radius-sm) !important;
-}
-
- /* Table: keep columns, improve readability */
-table {
-  width: 100%;
-  border-collapse: separate !important;
-  border-spacing: 0 10px !important; /* creates “rows as cards” without changing columns */
-}
-
-#t thead th, thead th {
-  color: rgba(255,255,255,0.70) !important;
-  font-weight: 600 !important;
-  font-size: 12px !important;
-  text-transform: none !important;
-  letter-spacing: 0.02em;
-}
-
-#t tbody tr, tbody tr {
-  background: var(--rg-card2) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
-}
-
-#t tbody td, tbody td {
-  padding: 12px 12px !important;
-  border-top: 1px solid rgba(255,255,255,0.08) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-}
-
-#t tbody tr td:first-child, tbody tr td:first-child {
-  border-left: 1px solid rgba(255,255,255,0.10) !important;
-  border-top-left-radius: 14px;
-  border-bottom-left-radius: 14px;
-}
-
-#t tbody tr td:last-child, tbody tr td:last-child {
-  border-right: 1px solid rgba(255,255,255,0.10) !important;
-  border-top-right-radius: 14px;
-  border-bottom-right-radius: 14px;
-}
-
-#t tbody tr:hover, tbody tr:hover {
-  background: rgba(255,255,255,0.12) !important;
-  transform: translateY(-1px);
-  transition: transform .12s ease, background .12s ease;
-}
-
- /* Day separator rows (rg-sep) - keep your fix and make it look premium */
-tr.rg-sep td {
-  font-weight: 700 !important;
-  color: rgba(255,255,255,0.92) !important;
-  letter-spacing: -0.01em;
-}
-
- /* Make positive/negative clearer */
-.pos { color: rgba(34,197,94,0.95) !important; font-weight: 700; }
-.neg { color: rgba(239,68,68,0.95) !important; font-weight: 700; }
-
- /* Light theme compatibility if you ever switch */
-html[data-theme="light"] body {
-  background: radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,0.10), transparent 60%),
-              radial-gradient(1000px 700px at 90% 10%, rgba(16,185,129,0.08), transparent 55%),
-              linear-gradient(180deg, #f8fafc, #eef2ff);
-  color: #0f172a;
-}
-html[data-theme="light"] .panel,
-html[data-theme="light"] .card,
-html[data-theme="light"] .box,
-html[data-theme="light"] .section,
-html[data-theme="light"] #insightsPanel,
-html[data-theme="light"] #kpis,
-html[data-theme="light"] #toolbar,
-html[data-theme="light"] #controls {
-  background: rgba(255,255,255,0.78);
-  border-color: rgba(15,23,42,0.10);
-}
-
-
-/* RG_SKELETON_SPOTLIGHT_V1 */
-/* Skeleton rows */
-.rg-skel {
-  position: relative;
-  overflow: hidden;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 12px;
-  height: 14px;
-}
-.rg-skel::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
-  animation: rgShimmer 1.05s infinite;
-}
-@keyframes rgShimmer {
-  100% { transform: translateX(100%); }
-}
-/* make skeleton rows look like your table cards */
-tr.rg-skel-row td {
-  padding: 12px 12px !important;
-}
-tr.rg-skel-row {
-  background: rgba(255,255,255,0.06) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.14);
-}
-
-/* Spotlight row when details open */
-tr.rg-spotlight {
-  outline: 2px solid rgba(59,130,246,0.70);
-  box-shadow: 0 0 0 6px rgba(59,130,246,0.18), 0 16px 40px rgba(0,0,0,0.25);
-  transform: translateY(-1px);
-}
-
-</style>
-
-<!-- AUTO-REFRESH COMPLETELY DISABLED: manual refresh only -->
+    .rgModalOverlay.open{display:flex;}
+    .rgModal{
+      width:min(680px,calc(100vw - 28px)); max-height:calc(100vh - 40px); overflow:auto;
+      border:1px solid var(--line); background:var(--panel2);
+      border-radius:16px; box-shadow:var(--shadow);
+    }
+    .rgModalHead{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:14px 14px 10px; border-bottom:1px solid var(--line);
+    }
+    .rgModalTitle{margin:0; font-size:15px; font-weight:700;}
+    .rgModalSub{margin-top:4px; font-size:12px; color:var(--muted);}
+    .rgModalClose{
+      border:1px solid var(--line); background:transparent; color:var(--text);
+      width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:16px;
+    }
+    .rgModalBody{padding:14px;}
+    .rgGrid{display:grid; grid-template-columns:140px 1fr; gap:10px 14px;}
+    @media(max-width:520px){.rgGrid{grid-template-columns:1fr}}
+    .rgK{font-size:12px; color:var(--muted); padding-top:1px;}
+    .rgV{font-size:13px; color:var(--text); font-weight:500;}
+    .rgBig{
+      margin-top:12px; padding:12px; border:1px solid var(--line);
+      background:var(--panel); border-radius:12px; font-size:12px; font-family:monospace;
+      white-space:pre-wrap; word-break:break-all; line-height:1.5; color:var(--muted);
+    }
+    .rgPills{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+    .rgPill{
+      border:1px solid var(--line); background:var(--chip); padding:5px 10px;
+      border-radius:999px; font-size:12px; color:var(--muted);
+    }
+
+    /* RULE MODAL */
+    .ruleOverlay{
+      position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:8000;
+      display:none; align-items:center; justify-content:center;
+    }
+    .ruleOverlay.open{display:flex;}
+    .ruleBox{
+      width:min(520px,calc(100vw - 28px));
+      background:var(--panel2); border:1px solid var(--line); border-radius:14px;
+      box-shadow:var(--shadow); padding:16px;
+    }
+    .ruleBox h3{margin:0 0 14px; font-size:15px;}
+    .ruleBox label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
+    .ruleBox input[type="text"], .ruleBox select{
+      width:100%; border:1px solid var(--line); background:var(--panel); color:var(--text);
+      padding:8px 10px; border-radius:10px; font-size:13px; outline:none; margin-bottom:10px;
+    }
+    .ruleBox input:focus, .ruleBox select:focus{border-color:rgba(122,162,255,.45)}
+    .ruleActions{display:flex; gap:8px; justify-content:flex-end; margin-top:6px;}
+    #ruleStatus{font-size:12px; color:var(--muted); min-height:18px; margin-top:6px;}
+  </style>
 </head>
-
 <body>
 <div class="wrap" id="app">
+
+  <!-- TOP -->
   <div class="top">
     <div class="title">
       <div>
@@ -812,59 +291,49 @@ tr.rg-spotlight {
         <div class="small" id="subtitle">Personal finance dashboard</div>
       </div>
       <div class="pill" id="statusPill">loading…</div>
-      <button class="btn ghost" id="toggleKpi">KPIs</button>
     </div>
-
     <div class="right">
-      <button class="btn iconbtn" id="themeBtn" title="Tema">
-        <span id="themeIcon">🌙</span>
-      </button>
+      <button class="btn iconbtn" id="themeBtn" title="Theme"><span id="themeIcon">🌙</span></button>
+
       <div class="settings">
-        <button class="btn iconbtn" id="settingsBtn" title="Settings">
-          <span id="settingsIcon">⚙️</span>
-        </button>
-        <div class="dropdown" id="settingsMenu">
-          
-          <div class="setRow" id="quickActions">
-            <div class="ttl"><b>Quick actions</b></div>
+        <button class="btn iconbtn" id="settingsBtn" title="Settings">⚙️</button>
+        <div id="settingsMenu">
+          <div class="setRow">
+            <div class="ttl">Quick actions</div>
             <div class="setBtns">
-              <button class="btn" id="qaKpi" type="button">KPIs</button>
-              <button class="btn" id="qaRule" type="button">Rule</button>
-              <button class="btn" id="qaCsv" type="button">Export CSV</button>
-              <button class="btn" id="qaRefresh" type="button">🔄 Refresh</button>
-              <button class="btn" id="qaSortDate" type="button">📅 Sort by date</button>
+              <button class="btn" id="qaKpi">KPIs</button>
+              <button class="btn" id="qaRule">+ Rule</button>
+              <button class="btn" id="qaCsv">Export CSV</button>
+              <button class="btn" id="qaRefresh">🔄 Refresh</button>
             </div>
           </div>
-<div class="setRow">
-            <div class="ttl"><b>Row density</b></div>
+          <div class="setRow">
+            <div class="ttl">Row density</div>
             <div class="setBtns">
-              <button class="btn" id="densCompact" type="button">Compact</button>
-              <button class="btn" id="densNormal" type="button">Normal</button>
-              <button class="btn" id="densComfy" type="button">Comfortable</button>
+              <button class="btn" id="densCompact">Compact</button>
+              <button class="btn active" id="densNormal">Normal</button>
+              <button class="btn" id="densComfy">Comfortable</button>
             </div>
           </div>
         </div>
       </div>
 
-
       <div class="balance">
         <button class="btn primary" id="balanceBtn">Balance</button>
         <div class="dropdown" id="balanceMenu">
-          
-          
-          
-          
-          
-        <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
+          <div class="brow"><b><span class="flag" data-cur="KWD"></span> KWD</b><span id="balKWD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="USD"></span> USD</b><span id="balUSD" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="EUR"></span> EUR</b><span id="balEUR" class="small">—</span></div>
           <div class="brow"><b><span class="flag" data-cur="AED"></span> AED</b><span id="balAED" class="small">—</span></div>
-          <div class="brow" style="border-top:1px solid var(--line); margin-top:8px; padding-top:10px;"><b>Total (EUR)</b><span id="balTotalEUR" class="small">—</span></div>
+          <div class="brow" style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px;">
+            <b>Total (EUR)</b><span id="balTotalEUR" class="small">—</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- FILTERS -->
   <div class="row">
     <div class="ctrl">
       <label>Currency</label>
@@ -882,7 +351,6 @@ tr.rg-spotlight {
       <label>To</label>
       <input type="date" id="dateTo">
     </div>
-
     <div class="ctrl">
       <button class="btn" id="btnToday">Today</button>
       <button class="btn" id="btnWeek">Last week</button>
@@ -890,16 +358,13 @@ tr.rg-spotlight {
       <button class="btn" id="btnYear">This year</button>
       <button class="btn" id="btnClear">Clear</button>
     </div>
-
     <div class="spacer"></div>
-
     <div class="ctrl">
       <button class="btn danger" id="btnDelete" disabled>Delete selected</button>
-      <button class="btn" id="btnExport">Export CSV</button>
-      <button class="btn" id="btnRule">Rule</button>
     </div>
   </div>
 
+  <!-- KPI -->
   <div class="kpiRow" id="kpiRow">
     <div class="kpi"><div class="small">Total (filtered)</div><div class="v" id="kpiTotal">—</div></div>
     <div class="kpi"><div class="small">Today</div><div class="v" id="kpiToday">—</div></div>
@@ -914,1624 +379,948 @@ tr.rg-spotlight {
     <button class="btn" id="btnUndo">Undo (10s)</button>
   </div>
 
+  <!-- TABLE -->
   <div class="tablewrap">
     <table id="t">
       <thead>
         <tr>
-          <th class="selcol"><input type="checkbox" id="cbAll" title="Select all"></th>
-          <th data-sort="created_at">Date <span class="sortHint" id="sortHintDate"></span></th>
+          <th class="selcol"><input type="checkbox" id="cbAll"></th>
+          <th data-sort="created_at">Date <span class="sortHint" id="sortHintDate">↓</span></th>
           <th data-sort="merchant_clean">Merchant</th>
           <th data-sort="category">Category</th>
           <th data-sort="amount" style="text-align:right">Amount</th>
-          <th data-sort="currency" style="text-align:center">Currency</th>
+          <th style="text-align:center">Currency</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
     </table>
-  
-  <!-- ===== INSIGHTS_PANEL_V1 ===== -->
-  <div class="insWrap" id="insWrap">
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="insWrap">
     <div class="insHead">
       <h2>Insights (filtered view)</h2>
-      <div class="small" id="insSub">Updates automatically</div>
+      <div class="small">Updates automatically</div>
     </div>
-
-    <div class="insGrid" id="insGrid">
+    <div class="insGrid">
       <div class="insCard">
-        <div class="insK">Rows</div>
+        <div class="insK">Rows / days</div>
         <div class="insV" id="insRows">—</div>
         <div class="insSmall" id="insDays">—</div>
       </div>
-
       <div class="insCard">
         <div class="insK">Totals by currency</div>
         <div class="insV" id="insTotals">—</div>
-        <div class="insSmall">Sum of amounts shown (no FX)</div>
+        <div class="insSmall">Sum of filtered amounts</div>
       </div>
-
       <div class="insCard">
         <div class="insK">Top category</div>
         <div class="insV" id="insTopCat">—</div>
         <div class="insSmall" id="insTopCatDetail">—</div>
       </div>
-
       <div class="insCard">
         <div class="insK">Top merchant</div>
         <div class="insV" id="insTopMerch">—</div>
         <div class="insSmall" id="insTopMerchDetail">—</div>
       </div>
-
       <div class="insCard">
         <div class="insK">Largest expense</div>
         <div class="insV" id="insLargest">—</div>
         <div class="insSmall" id="insLargestDetail">—</div>
       </div>
-
       <div class="insCard">
         <div class="insK">Avg per day</div>
         <div class="insV" id="insAvgDay">—</div>
-        <div class="insSmall">Based on distinct days in the filtered list</div>
+        <div class="insSmall">Based on distinct days</div>
       </div>
     </div>
   </div>
-
 </div>
 
-  <!-- RULE MODAL -->
-  <div id="ruleModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999;">
-    <div style="max-width:520px; margin:90px auto; background:var(--panel2); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:14px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <div style="font-weight:800;">Create rule</div>
-        <button class="btn ghost" id="ruleClose" title="Close">✕</button>
+<!-- TX MODAL -->
+<div class="rgModalOverlay" id="txOverlay" aria-modal="true" role="dialog" aria-hidden="true">
+  <div class="rgModal">
+    <div class="rgModalHead">
+      <div>
+        <div class="rgModalTitle" id="txTitle">Transaction</div>
+        <div class="rgModalSub" id="txSub">—</div>
       </div>
-
-      <div style="margin-top:10px; display:grid; gap:10px;">
-        <div>
-          <div class="small" style="margin-bottom:6px;">Merchant (pattern, contains)</div>
-          <input id="ruleMerchant" type="text" placeholder="e.g. starb, talabat, uber…" style="width:100%;" />
-        </div>
-
-        <div>
-          <div class="small" style="margin-bottom:6px;">Category</div>
-          <select id="ruleCategory" style="width:100%;"></select>
-          <div class="small" style="margin-top:6px; opacity:.9;">Tip: puedes escribir una nueva categoría desde la tabla y luego saldrá aquí.</div>
-        </div>
-
-        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
-          <button class="btn" id="ruleCancel">Cancel</button>
-          
-            <div style="margin-top:10px;padding:10px;border:1px solid var(--line);background:var(--chip);border-radius:12px;">
-              <div class="small"><b>Rule preview</b></div>
-              <div class="small" id="rulePreviewText">Matches in current table: —</div>
-            </div>
-<button class="btn primary" id="ruleSave">Save rule</button>
-        </div>
-
-        <div class="small" id="ruleStatus" style="min-height:18px;"></div>
-      </div>
+      <button class="rgModalClose" id="txClose">✕</button>
+    </div>
+    <div class="rgModalBody">
+      <div class="rgGrid" id="txGrid"></div>
+      <div class="rgPills" id="txPills"></div>
+      <div class="rgBig" id="txSms"></div>
     </div>
   </div>
-
 </div>
 
-
-  <div class="roadmap" id="roadmap">
-    <h2>Roadmap</h2>
-    <div class="rmGrid">
-      <div class="rmCard">
-        <b>Insights</b>
-        <div class="small">Month-over-month changes, recurring merchants, top categories.</div>
-        <div style="margin-top:10px;"><span class="rmTag">Planned</span></div>
-      </div>
-      <div class="rmCard">
-        <b>Currency conversion</b>
-        <div class="small">Optional FX view (KWD → EUR/USD) for reporting.</div>
-        <div style="margin-top:10px;"><span class="rmTag">Planned</span></div>
-      </div>
-      <div class="rmCard">
-        <b>Subscriptions</b>
-        <div class="small">Detect repeated charges and show a “subscriptions” section.</div>
-        <div style="margin-top:10px;"><span class="rmTag">Planned</span></div>
-      </div>
+<!-- RULE MODAL -->
+<div class="ruleOverlay" id="ruleOverlay">
+  <div class="ruleBox">
+    <h3>Create rule</h3>
+    <label>Merchant pattern (contains)</label>
+    <input type="text" id="ruleMerchant" placeholder="e.g. talabat, starbucks, uber…" />
+    <label>Category</label>
+    <select id="ruleCategory"></select>
+    <div class="ruleActions">
+      <button class="btn" id="ruleCancel">Cancel</button>
+      <button class="btn primary" id="ruleSave">Save rule</button>
     </div>
+    <div id="ruleStatus"></div>
   </div>
+</div>
 
 <script>
-  // =============== CONFIG ===============
-  const USER_ID = "pedro";
-  const API_KEY = "ElPortichuelo99";
-  const LIMIT = 500;
+// ============================================================
+// CONFIG
+// ============================================================
+const USER_ID  = "pedro";
+const API_KEY  = "ElPortichuelo99";
+const BASE_URL = "https://sms-parser-api.onrender.com";
+const LIMIT    = 500;
 
-  // =============== FLAGS (SVG) ===============
-  function flagHTML(cur){
-    const c = String(cur||"").toUpperCase();
-    const KUWAIT = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
-      <rect width="16" height="12" fill="#fff"/>
-      <rect width="16" height="4" y="0" fill="#0B7A3B"/>
-      <rect width="16" height="4" y="8" fill="#C8102E"/>
-      <path d="M0 0h5L8 6 5 12H0z" fill="#000"/>
-    </svg>`;
-    const USA = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
-      <rect width="16" height="12" fill="#fff"/>
-      <g fill="#B22234">
-        <rect y="0" width="16" height="1"/>
-        <rect y="2" width="16" height="1"/>
-        <rect y="4" width="16" height="1"/>
-        <rect y="6" width="16" height="1"/>
-        <rect y="8" width="16" height="1"/>
-        <rect y="10" width="16" height="1"/>
-      </g>
-      <rect width="7" height="5" fill="#3C3B6E"/>
-      <g fill="#fff" opacity=".9">
-        <circle cx="1.2" cy="1" r=".25"/><circle cx="2.4" cy="1" r=".25"/><circle cx="3.6" cy="1" r=".25"/><circle cx="4.8" cy="1" r=".25"/><circle cx="6.0" cy="1" r=".25"/>
-        <circle cx="1.8" cy="2" r=".25"/><circle cx="3.0" cy="2" r=".25"/><circle cx="4.2" cy="2" r=".25"/><circle cx="5.4" cy="2" r=".25"/>
-        <circle cx="1.2" cy="3" r=".25"/><circle cx="2.4" cy="3" r=".25"/><circle cx="3.6" cy="3" r=".25"/><circle cx="4.8" cy="3" r=".25"/><circle cx="6.0" cy="3" r=".25"/>
-        <circle cx="1.8" cy="4" r=".25"/><circle cx="3.0" cy="4" r=".25"/><circle cx="4.2" cy="4" r=".25"/><circle cx="5.4" cy="4" r=".25"/>
-      </g>
-    </svg>`;
-    const EU = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
-      <rect width="16" height="12" fill="#003399"/>
-      <g fill="#FFCC00">
-        <circle cx="8" cy="2.1" r=".35"/>
-        <circle cx="10.2" cy="2.7" r=".35"/>
-        <circle cx="11.8" cy="4.3" r=".35"/>
-        <circle cx="12.4" cy="6.0" r=".35"/>
-        <circle cx="11.8" cy="7.7" r=".35"/>
-        <circle cx="10.2" cy="9.3" r=".35"/>
-        <circle cx="8" cy="9.9" r=".35"/>
-        <circle cx="5.8" cy="9.3" r=".35"/>
-        <circle cx="4.2" cy="7.7" r=".35"/>
-        <circle cx="3.6" cy="6.0" r=".35"/>
-        <circle cx="4.2" cy="4.3" r=".35"/>
-        <circle cx="5.8" cy="2.7" r=".35"/>
-      </g>
-    </svg>`;
-    const UAE = `<svg viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
-      <rect width="16" height="12" fill="#fff"/>
-      <rect x="4" y="0" width="12" height="4" fill="#00732F"/>
-      <rect x="4" y="4" width="12" height="4" fill="#fff"/>
-      <rect x="4" y="8" width="12" height="4" fill="#000"/>
-      <rect x="0" y="0" width="4" height="12" fill="#FF0000"/>
-    </svg>`;
-    if(c==="KWD") return KUWAIT;
-    if(c==="USD") return USA;
-    if(c==="EUR") return EU;
-    if(c==="AED") return UAE;
-    return "";
-  }
-  function initFlags(){
-    document.querySelectorAll(".flag[data-cur]").forEach(el=>{
-      el.innerHTML = flagHTML(el.getAttribute("data-cur"));
-    });
-  }
+// ============================================================
+// FLAGS
+// ============================================================
+function flagHTML(cur){
+  const c = String(cur||"").toUpperCase();
+  const F = {
+    KWD:`<svg viewBox="0 0 16 12"><rect width="16" height="12" fill="#fff"/><rect width="16" height="4" fill="#0B7A3B"/><rect y="8" width="16" height="4" fill="#C8102E"/><path d="M0 0h5L8 6 5 12H0z" fill="#000"/></svg>`,
+    USD:`<svg viewBox="0 0 16 12"><rect width="16" height="12" fill="#fff"/><g fill="#B22234"><rect y="0" width="16" height="1"/><rect y="2" width="16" height="1"/><rect y="4" width="16" height="1"/><rect y="6" width="16" height="1"/><rect y="8" width="16" height="1"/><rect y="10" width="16" height="1"/></g><rect width="7" height="5" fill="#3C3B6E"/></svg>`,
+    EUR:`<svg viewBox="0 0 16 12"><rect width="16" height="12" fill="#003399"/><g fill="#FFCC00"><circle cx="8" cy="2" r=".4"/><circle cx="10.2" cy="2.7" r=".4"/><circle cx="11.8" cy="4.3" r=".4"/><circle cx="12.4" cy="6" r=".4"/><circle cx="11.8" cy="7.7" r=".4"/><circle cx="10.2" cy="9.3" r=".4"/><circle cx="8" cy="10" r=".4"/><circle cx="5.8" cy="9.3" r=".4"/><circle cx="4.2" cy="7.7" r=".4"/><circle cx="3.6" cy="6" r=".4"/><circle cx="4.2" cy="4.3" r=".4"/><circle cx="5.8" cy="2.7" r=".4"/></g></svg>`,
+    AED:`<svg viewBox="0 0 16 12"><rect width="16" height="12" fill="#fff"/><rect x="4" y="0" width="12" height="4" fill="#00732F"/><rect x="4" y="8" width="12" height="4" fill="#000"/><rect x="0" y="0" width="4" height="12" fill="#FF0000"/></svg>`
+  };
+  return F[c] || "";
+}
+function initFlags(){
+  document.querySelectorAll(".flag[data-cur]").forEach(el=>{
+    el.innerHTML = flagHTML(el.getAttribute("data-cur"));
+  });
+}
 
-  // =============== HELPERS ===============
-  const $ = (id)=>document.getElementById(id);
-  function setStatus(txt){ $("statusPill").textContent = txt; }
-  function showErr(msg){
-    const b = $("errBox");
-    b.textContent = String(msg||"");
-    b.classList.toggle("show", !!msg);
-  }
-  function api(url){
-    const u = new URL(url, window.location.origin);
-    return u.pathname + u.search;
-  }
-  function apiKey(url){
-    const u = new URL(url, window.location.origin);
-    u.searchParams.set("api_key", API_KEY);
-    return u.pathname + u.search;
-  }
-  async function getJSON(url){
-    const r = await fetch(api(url));
-    const j = await r.json();
-    return j;
-  }
-  async function postJSON(url, body){
-    const r = await fetch(apiKey(url), {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body||{})
-    });
-    const t = await r.text().catch(()=> "");
-    if(!r.ok) throw new Error(`${url} => HTTP ${r.status} :: ${t}`);
-    try{ return JSON.parse(t); }catch(_){ return {ok:true}; }
-  }
-  function titleCase(x){
-    x = String(x||"").trim();
-    if(!x) return "";
-    return x.charAt(0).toUpperCase() + x.slice(1);
-  }
-  
+// ============================================================
+// HELPERS
+// ============================================================
+const $id = id => document.getElementById(id);
+
+function setStatus(t){ $id("statusPill").textContent = t; }
+
+function showErr(msg){
+  const b = $id("errBox");
+  b.textContent = String(msg||"");
+  b.classList.toggle("show", !!msg);
+}
+
 function isoDay(s){ return (s||"").slice(0,10); }
 
-// ===== DATE (ENGLISH) =====
 function enOrdinal(n){
-  const v = n % 100;
-  if(v>=11 && v<=13) return n+"th";
-  switch(n % 10){
-    case 1: return n+"st";
-    case 2: return n+"nd";
-    case 3: return n+"rd";
-    default: return n+"th";
-  }
+  const v = n%100;
+  if(v>=11&&v<=13) return n+"th";
+  const m = {1:"st",2:"nd",3:"rd"};
+  return n+(m[n%10]||"th");
 }
-function formatDateEnglishISO(iso10){
-  if(!iso10 || iso10.length<10) return iso10;
-  const y = Number(iso10.slice(0,4));
-  const m = Number(iso10.slice(5,7));
-  const d = Number(iso10.slice(8,10));
-  if(!y || !m || !d) return iso10;
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  return `${enOrdinal(d)} ${months[m-1]} ${y}`;
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function formatDate(iso){
+  if(!iso||iso.length<10) return iso||"";
+  const y=+iso.slice(0,4),m=+iso.slice(5,7),d=+iso.slice(8,10);
+  if(!y||!m||!d) return iso;
+  return `${enOrdinal(d)} ${MONTHS[m-1]} ${y}`;
 }
 
-  function fmtMoney(n){
-    if(n===null||n===undefined||n==="") return "";
-    const v = Number(n);
-    if(Number.isNaN(v)) return String(n);
-    return v.toFixed(3);
+function fmtMoney(n){
+  if(n===null||n===undefined||n==="") return "";
+  const v=Number(n);
+  return isNaN(v)?"":v.toFixed(3);
+}
+
+function titleCase(x){
+  x=String(x||"").trim();
+  return x?x[0].toUpperCase()+x.slice(1):"";
+}
+
+function inferDirection(r){
+  const d=(r.direction||"").toLowerCase();
+  if(["income","in","credit","credited"].includes(d)) return "in";
+  if(["expense","out","debit","debited"].includes(d)) return "out";
+  const s=(r.sms||r.sms_raw||"").toLowerCase();
+  if(s.includes("credited")) return "in";
+  return "out";
+}
+
+// Clean merchant: strip balance trailing text and "Your Avl. balance..." noise
+function cleanMerchant(raw){
+  if(!raw) return "";
+  // Remove ".Your Avl. balance is..." and similar
+  let m = raw.replace(/[,.]?\s*your avl\.?\s*balance.*$/i, "").trim();
+  // Remove trailing commas
+  m = m.replace(/[,\s]+$/, "").trim();
+  return m || raw.trim();
+}
+
+async function apiGET(path){
+  const r = await fetch(BASE_URL + path);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function apiPOST(path, body){
+  const url = `${BASE_URL}${path}${path.includes("?")?"&":"?"}api_key=${encodeURIComponent(API_KEY)}`;
+  const r = await fetch(url, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body||{})
+  });
+  const text = await r.text();
+  if(!r.ok) throw new Error(`${r.status}: ${text}`);
+  try{ return JSON.parse(text); }catch(_){ return {ok:true}; }
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  all: [],
+  view: [],
+  sortKey: "created_at",
+  sortDir: "desc",
+  categories: new Set(),
+  currencies: new Set(),
+  selected: new Set(),
+  undoTimer: null
+};
+
+// ============================================================
+// THEME
+// ============================================================
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  localStorage.setItem("theme", t);
+  $id("themeIcon").textContent = t==="light"?"☀️":"🌙";
+}
+function initTheme(){
+  setTheme(localStorage.getItem("theme")||"dark");
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function buildFilters(){
+  const curSel = $id("curFilter");
+  curSel.innerHTML = `<option value="">All currencies</option>` +
+    [...state.currencies].sort().map(c=>`<option value="${c}">${c}</option>`).join("");
+
+  const catSel = $id("catFilter");
+  catSel.innerHTML = `<option value="">All categories</option>` +
+    [...state.categories].sort().map(c=>`<option value="${c}">${titleCase(c)}</option>`).join("");
+
+  // Populate rule category select
+  const ruleCat = $id("ruleCategory");
+  if(ruleCat){
+    ruleCat.innerHTML = [...state.categories].sort()
+      .map(c=>`<option value="${c}">${titleCase(c)}</option>`).join("");
   }
-  function inferDirection(row){
-    const d = (row.direction||"").toLowerCase();
-    if(d==="income" || d==="in" || d==="credit" || d==="credited") return "in";
-    if(d==="expense" || d==="out" || d==="debit" || d==="debited") return "out";
-    const sms = (row.sms||row.sms_raw||"").toLowerCase();
-    if(sms.includes("credited")) return "in";
-    if(sms.includes("debited")) return "out";
-    return "out";
-  }
+}
 
-  // =============== STATE ===============
-  const state = {
-    all: [],
-    view: [],
-    sortKey: "created_at",
-    sortDir: "desc",
-    categories: new Set(),
-    currencies: new Set(),
-    undoTimer: null,
-    selected: new Set()
-  };
+function applyFilters(){
+  const cur = $id("curFilter").value;
+  const cat = $id("catFilter").value;
+  const df  = $id("dateFrom").value;
+  const dt  = $id("dateTo").value;
 
-  // =============== THEME ===============
-  function setTheme(t){
-    document.documentElement.setAttribute("data-theme", t);
-    localStorage.setItem("theme", t);
-    $("themeIcon").textContent = (t==="light") ? "☀️" : "🌙";
-  }
-  function initTheme(){
-    const t = localStorage.getItem("theme") || "dark";
-    setTheme(t);
-  }
-
-  // =============== FILTERS ===============
-  function buildFilters(){
-    const curSel = $("curFilter");
-    const curs = Array.from(state.currencies).sort();
-    curSel.innerHTML = `<option value="">All currencies</option>` + curs.map(c=>`<option value="${c}">${c}</option>`).join("");
-
-    const catSel = $("catFilter");
-    const cats = Array.from(state.categories).sort();
-    catSel.innerHTML = `<option value="">All categories</option>` + cats.map(c=>`<option value="${c}">${titleCase(c)}</option>`).join("");
-  }
-
-  function applyFilters(){
-    const cur = $("curFilter").value || "";
-    const cat = $("catFilter").value || "";
-    const df = $("dateFrom").value || "";
-    const dt = $("dateTo").value || "";
-
-    state.view = state.all.filter(r=>{
-      if(cur && (r.currency||"")!==cur) return false;
-      if(cat && (r.category||"")!==cat) return false;
-
-      if(df || dt){
-        const d = isoDay(r.created_at || r.date_iso || r.date_raw || "");
-        if(df && d && d < df) return false;
-        if(dt && d && d > dt) return false;
-      }
-      return true;
-    });
-
-    sortView();
-    render();
-  }
-
-  function setQuickRange(mode){
-    const today = new Date();
-    const iso = (d)=> d.toISOString().slice(0,10);
-    const to = iso(today);
-    let from = "";
-    if(mode==="today"){
-      from = to;
-    }else if(mode==="week"){
-      const d = new Date(today); d.setDate(d.getDate()-7);
-      from = iso(d);
-    }else if(mode==="month"){
-      const d = new Date(today); d.setMonth(d.getMonth()-1);
-      from = iso(d);
-    }else if(mode==="year"){
-      const d = new Date(today); d.setMonth(0); d.setDate(1);
-      from = iso(d);
+  state.view = state.all.filter(r=>{
+    if(cur && r.currency !== cur) return false;
+    if(cat && (r.category||"other") !== cat) return false;
+    if(df||dt){
+      const d = isoDay(r.created_at||r.date_iso||"");
+      if(df && d && d < df) return false;
+      if(dt && d && d > dt) return false;
     }
-    $("dateFrom").value = from;
-    $("dateTo").value = to;
-    applyFilters();
-  }
-
-  function clearFilters(){
-    $("curFilter").value = "";
-    $("catFilter").value = "";
-    $("dateFrom").value = "";
-    $("dateTo").value = "";
-    applyFilters();
-  }
-
-  // =============== SORT ===============
-  function sortView(){
-    const k = state.sortKey;
-    const dir = state.sortDir === "asc" ? 1 : -1;
-    state.view.sort((a,b)=>{
-      let av = a[k], bv = b[k];
-      if(k==="amount"){
-        av = Number(av||0); bv = Number(bv||0);
-      }else{
-        av = String(av||""); bv = String(bv||"");
-      }
-      if(av < bv) return -1*dir;
-      if(av > bv) return  1*dir;
-      return 0;
-    });
-    $("sortHintDate").textContent = (state.sortKey==="created_at") ? (state.sortDir==="asc"?"↑":"↓") : "";
-  }
-
-  // =============== BALANCE + KPI ===============
-  // ===== FX (live total in EUR) =====
-  const __rgFx = { ts: 0, rates: null };
-
-  async function __rgGetFxRatesEUR(){
-    const now = Date.now();
-    // cache 10 min
-    if(__rgFx.rates && (now - __rgFx.ts) < 10*60*1000) return __rgFx.rates;
-
-    // 1) Fuente principal: fawazahmed0 currency-api (incluye KWD/AED)
-    const urls = [
-      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json",
-      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@1/latest/currencies/eur.json",
-      "https://api.frankfurter.app/latest?base=EUR&symbols=USD,KWD,AED",
-      "https://api.exchangerate-api.com/v4/latest/EUR"
-    ];
-
-    let lastErr = null;
-
-    for(const url of urls){
-      try{
-        const r = await fetch(url, { cache: "no-store" });
-        if(!r.ok) throw new Error(`FX HTTP ${r.status}`);
-        const j = await r.json();
-
-        // fawaz: { date: "...", eur: { usd:..., kwd:..., aed:... } }
-        if(j && j.eur){
-          const eur = j.eur;
-          const rates = {
-            USD: eur.usd,
-            KWD: eur.kwd,
-            AED: eur.aed
-          };
-          if(rates.USD && rates.KWD && rates.AED){
-            __rgFx.rates = rates;
-            __rgFx.ts = now;
-            return rates;
-          }
-        }
-
-        // frankfurter: { rates: { USD:..., KWD:..., AED:... } }
-        if(j && j.rates){
-          const rates = j.rates;
-          if(rates.USD && rates.KWD && rates.AED){
-            __rgFx.rates = rates;
-            __rgFx.ts = now;
-            return rates;
-          }
-        }
-
-        // exchangerate-api: { rates: { USD:..., KWD:..., AED:... } }
-        if(j && j.rates){
-          const rates = j.rates;
-          if(rates.USD && rates.KWD && rates.AED){
-            __rgFx.rates = rates;
-            __rgFx.ts = now;
-            return rates;
-          }
-        }
-
-        throw new Error("FX: missing rates");
-      }catch(e){
-        lastErr = e;
-      }
-    }
-
-    throw lastErr || new Error("FX error");
-  }
-
-  function __rgToEUR(amount, cur, rates){
-    cur = String(cur||"").toUpperCase();
-    const n = Number(amount||0);
-    if(cur === "EUR") return n;
-    const r = rates && rates[cur];
-    if(!r) return null;      // if rate missing, skip
-    return n / Number(r);    // because rates are: 1 EUR = r CUR
-  }
-
-  async function __rgUpdateTotalEUR(bal){
-    const el = document.getElementById("balTotalEUR");
-    if(!el) return;
-    el.textContent = "…";
-    try{
-      const rates = await __rgGetFxRatesEUR();
-      const parts = [
-        __rgToEUR(bal.KWD, "KWD", rates),
-        __rgToEUR(bal.USD, "USD", rates),
-        __rgToEUR(bal.AED, "AED", rates),
-        __rgToEUR(bal.EUR, "EUR", rates),
-      ];
-      const total = parts.filter(v => typeof v === "number" && !Number.isNaN(v)).reduce((a,b)=>a+b, 0);
-      // show with 2 decimals (EUR)
-      el.innerHTML = (total>=0) ? `<span class="pos">${total.toFixed(2)}</span>` : `<span class="neg">${total.toFixed(2)}</span>`;
-    }catch(e){
-      el.textContent = "FX error";
-    }
-  }
-
-
-  function computeBalance(rows){
-    const out = {KWD:0, USD:0, EUR:0, AED:0};
-    for(const r of rows){
-      const cur = (r.currency||"").toUpperCase();
-      const amt = Number(r.amount||0);
-      const sign = inferDirection(r)==="in" ? 1 : -1;
-      if(out[cur]!==undefined) out[cur] += sign*amt;
-    }
-    return out;
-  }
-
-  function updateBalanceAndKpis(){
-    const rows = state.view;
-    const b = computeBalance(rows);
-
-    const fmt = (v)=> (v>=0 ? `<span class="pos">${v.toFixed(2)}</span>` : `<span class="neg">${v.toFixed(2)}</span>`);
-    $("balKWD").innerHTML = fmt(b.KWD);
-    const balAED = document.getElementById("balAED"); if(balAED) balAED.innerHTML = fmt(b.AED);
-    $("balUSD").innerHTML = fmt(b.USD);
-    $("balEUR").innerHTML = fmt(b.EUR);
-
-    // live Total (EUR)
-    try{ __rgUpdateTotalEUR(b); }catch(e){}
-    $("balAED").innerHTML = fmt(b.AED);
-
-    const mix = b.KWD + b.USD + b.EUR + b.AED;
-    $("kpiTotal").textContent = `${mix.toFixed(2)} (mix)`;
-
-    const t = new Date().toISOString().slice(0,10);
-    const todayRows = rows.filter(r => isoDay(r.created_at||"") === t);
-    const bt = computeBalance(todayRows);
-    const todayMix = bt.KWD + bt.USD + bt.EUR + bt.AED;
-    $("kpiToday").textContent = `${todayMix.toFixed(2)} (mix)`;
-
-    const days = new Set(rows.map(r=>isoDay(r.created_at||"")).filter(Boolean));
-    const dcount = Math.max(1, days.size);
-    $("kpiAvg").textContent = `${(mix/dcount).toFixed(2)} (mix)`;
-
-    const m = new Map();
-    for(const r of rows){
-      const c = (r.category||"other");
-      m.set(c, (m.get(c)||0) + 1);
-    }
-    let best = "—", bestN=0;
-    for(const [k,v] of m.entries()){
-      if(v>bestN){bestN=v; best=k;}
-    }
-    $("kpiTopCat").textContent = titleCase(best);
-  }
-
-  // =============== RENDER ===============
-  function categoryCellHTML(id, current){
-    const cats = Array.from(state.categories).sort();
-    const options = cats.map(c=>{
-      const sel = c===current ? "selected" : "";
-      return `<option value="${c}" ${sel}>${titleCase(c)}</option>`;
-    }).join("");
-    return `
-      <select class="catSel" data-id="${id}" data-cat="${current}">
-        ${options}
-        <option value="__add__">+ Add category…</option>
-      </select>
-    `;
-  }
-
-  function render(){
-    const tb = $("tbody");
-    tb.innerHTML = "";
-
-    for(const r of state.view){
-      const id = r.id;
-      const dir = inferDirection(r);
-      const signClass = dir==="in" ? "pos" : "neg";
-      const amountTxt = fmtMoney(r.amount);
-      const dateISO = isoDay(r.created_at || r.date_iso || r.date_raw || "");
-      const dateTxt = formatDateEnglishISO(dateISO);
-
-      const cur = (r.currency||"").toUpperCase();
-      const cat = (r.category||"other");
-      const merch = (r.merchant_clean ?? r.merchant_raw ?? "").trim();
-
-      const tr = document.createElement("tr");
-      tr.dataset.day = dateISO;   // 👈 clave: agrupación determinista
-      tr.dataset.id = id;
-      // day key for day-headers
-      tr.dataset.day = isoDay(r.created_at || r.date_iso || r.date_raw || "");
-
-      const checked = state.selected.has(id) ? "checked" : "";
-      if(state.selected.has(id)) tr.classList.add("selected-row");
-
-      tr.innerHTML = `
-        <td class="selcol">
-          <input class="cbRow" type="checkbox" data-id="${id}" ${checked}>
-        </td>
-
-        <td title="${dateISO}">${dateTxt}</td>
-
-        <td>
-          <input class="merchantEdit" data-id="${id}" value="${merch.replace(/"/g,'&quot;')}" />
-        </td>
-
-        <td>
-          ${categoryCellHTML(id, cat)}
-        </td>
-
-        <td class="amt ${signClass}" title="${amountTxt}">${amountTxt}</td>
-
-        <td style="text-align:center">
-          <div class="curcell" title="${cur}">
-            <span class="flag">${flagHTML(cur)}</span><span>${cur}</span>
-          </div>
-        </td>
-      `;
-
-      tb.appendChild(tr);
-    }
-
-    setStatus(`count ${state.view.length}`);
-    updateBalanceAndKpis();
-    try{ updateInsights(); }catch(e){}
-    wireRowInputs();
-    wireSelectionControls();
-    try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
-
-    try{ if(typeof window.__rgRebuildDayHeaders==="function") window.__rgRebuildDayHeaders(); }catch(e){}
-
-  }
-
-  function wireRowInputs(){
-    // merchant edit
-    document.querySelectorAll(".merchantEdit").forEach(inp=>{
-      inp.addEventListener("keydown", async (e)=>{
-        if(e.key === "Enter"){
-          e.preventDefault();
-          inp.blur();
-        }
-      });
-      inp.addEventListener("blur", async ()=>{
-        const id = Number(inp.dataset.id);
-        const val = inp.value.trim();
-        try{
-          showErr("");
-          await postJSON("/update_field", {userid: USER_ID, id, field:"merchant_clean", value: val});
-          const row = state.all.find(x=>x.id===id);
-          if(row) row.merchant_clean = val;
-          applyFilters();
-        }catch(err){
-          showErr("Save merchant failed: " + err.message);
-        }
-      });
-    });
-
-    // category select
-    document.querySelectorAll(".catSel").forEach(sel=>{
-      sel.addEventListener("change", async ()=>{
-        const id = Number(sel.dataset.id);
-        const v = sel.value;
-        // keep chip color synced
-        sel.dataset.cat = (v === '__add__') ? (sel.dataset.cat || 'other') : v;
-
-        if(v === "__add__"){
-          const name = prompt("New category name:");
-          if(!name){
-            const row = state.all.find(x=>x.id===id);
-            sel.value = row?.category || "other";
-            return;
-          }
-          const cat = name.trim().toLowerCase();
-          if(!cat){
-            const row = state.all.find(x=>x.id===id);
-            sel.value = row?.category || "other";
-            return;
-          }
-          state.categories.add(cat);
-          buildFilters();
-          await saveCategory(id, cat);
-          return;
-        }
-
-        await saveCategory(id, v);
-      });
-    });
-  }
-
-  async function saveCategory(id, cat){
-    try{
-      showErr("");
-      await postJSON("/update_field", {userid: USER_ID, id, field:"category", value: cat});
-      const row = state.all.find(x=>x.id===id);
-      if(row) row.category = cat;
-      applyFilters();
-    }catch(err){
-      showErr("Save category failed: " + err.message);
-      applyFilters();
-    }
-  }
-
-  // =============== SELECTION CONTROLS ===============
-  function syncSelectAllCheckbox(){
-    const cbAll = $("cbAll");
-    if(!cbAll) return;
-    const ids = state.view.map(r=>r.id);
-    if(ids.length === 0){
-      cbAll.checked = false;
-      cbAll.indeterminate = false;
-      return;
-    }
-    const selectedCount = ids.filter(id=>state.selected.has(id)).length;
-    cbAll.checked = (selectedCount === ids.length);
-    cbAll.indeterminate = (selectedCount > 0 && selectedCount, selectedCount < ids.length);
-    cbAll.indeterminate = (selectedCount > 0 && selectedCount < ids.length);
-  }
-
-  function wireSelectionControls(){
-    // row checkboxes
-    document.querySelectorAll(".cbRow").forEach(cb=>{
-      cb.addEventListener("change", ()=>{
-        const id = Number(cb.dataset.id);
-        const tr = cb.closest("tr");
-
-        if(cb.checked){
-          state.selected.add(id);
-          tr?.classList.add("selected-row");
-        }else{
-          state.selected.delete(id);
-          tr?.classList.remove("selected-row");
-        }
-
-        $("btnDelete").disabled = (state.selected.size === 0);
-        syncSelectAllCheckbox();
-      });
-    });
-
-    // header select all
-    const cbAll = $("cbAll");
-    if(cbAll){
-      cbAll.onchange = ()=>{
-        const want = cbAll.checked;
-        for(const r of state.view){
-          if(want) state.selected.add(r.id);
-          else state.selected.delete(r.id);
-        }
-        document.querySelectorAll(".cbRow").forEach(cb=>{
-          cb.checked = want;
-          const tr = cb.closest("tr");
-          if(want) tr?.classList.add("selected-row");
-          else tr?.classList.remove("selected-row");
-        });
-
-        $("btnDelete").disabled = (state.selected.size === 0);
-        syncSelectAllCheckbox();
-      };
-    }
-
-    $("btnDelete").disabled = (state.selected.size === 0);
-    syncSelectAllCheckbox();
-  }
-
-  // =============== DELETE + UNDO ===============
-  function showToast(msg){
-    $("toastMsg").textContent = msg;
-    $("toast").classList.add("show");
-    clearTimeout(state.undoTimer);
-    state.undoTimer = setTimeout(()=> $("toast").classList.remove("show"), 10000);
-  }
-
-  async function doDeleteSelected(){
-    const ids = Array.from(state.selected);
-    if(ids.length === 0) return;
-
-    try{
-      showErr("");
-
-      for(const id of ids){
-        await postJSON("/delete", {userid: USER_ID, id});
-      }
-
-      state.selected.clear();
-      $("btnDelete").disabled = true;
-      $("cbAll").checked = false;
-      $("cbAll").indeterminate = false;
-
-      showToast(`Deleted ${ids.length} row(s)`);
-      await load();
-    }catch(err){
-      showErr("Delete failed: " + err.message);
-    }
-  }
-
-  async function undoDelete(){
-    try{
-      showErr("");
-      await postJSON("/undo_delete", {userid: USER_ID});
-      $("toast").classList.remove("show");
-      await load();
-    }catch(err){
-      showErr("Undo failed: " + err.message);
-    }
-  }
-
-  // =============== EXPORT CSV ===============
-  function exportCSV(){
-    const rows = state.view;
-    const headers = ["created_at","merchant_clean","category","amount","currency"];
-    const escape = (v)=> `"${String(v??"").replace(/"/g,'""')}"`;
-    const lines = [headers.join(",")].concat(rows.map(r=>[
-      r.created_at||"",
-      r.merchant_clean||"",
-      r.category||"",
-      r.amount??"",
-      r.currency||""
-    ].map(escape).join(",")));
-    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "registro_gastos.csv";
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 500);
-  }
-
-  // =============== LOAD ===============
-  async function load(){
-    try{
-      showErr("");
-      setStatus("loading…");
-      const j = await getJSON(`/expenses?user_id=${encodeURIComponent(USER_ID)}&limit=${LIMIT}`);
-      const rows = j.expenses || [];
-      state.all = rows;
-      window.__rg_last_rows = rows;
-
-      state.categories = new Set(rows.map(r => (r.category||"other").toLowerCase()));
-      state.currencies = new Set(rows.map(r => (r.currency||"").toUpperCase()).filter(Boolean));
-
-      if(!state.categories.size) state.categories.add("other");
-      if(!state.currencies.size) state.currencies.add("KWD");
-
-      buildFilters();
-      applyFilters();
-      try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
-
-      setStatus(`count ${state.view.length}`);
-    }catch(err){
-      showErr(String(err?.message || err));
-      setStatus("error");
-    }
-  }
-
-  // =============== EVENTS ===============
-  function bind(){
-    initFlags();
-    initTheme();
-
-    $("toggleKpi").addEventListener("click", ()=>{
-      $("kpiRow").classList.toggle("show");
-    });
-
-    $("themeBtn").addEventListener("click", ()=>{
-      const cur = document.documentElement.getAttribute("data-theme") || "dark";
-      setTheme(cur==="dark" ? "light" : "dark");
-    });
-
-    $("balanceBtn").addEventListener("click", ()=>{
-      $("balanceMenu").classList.toggle("open");
-    });
-    document.addEventListener("click",(e)=>{
-      if(!e.target.closest(".balance")) $("balanceMenu").classList.remove("open");
-    });
-
-    $("curFilter").addEventListener("change", applyFilters);
-    $("catFilter").addEventListener("change", applyFilters);
-    $("dateFrom").addEventListener("change", applyFilters);
-    $("dateTo").addEventListener("change", applyFilters);
-
-    $("btnToday").addEventListener("click", ()=>setQuickRange("today"));
-    $("btnWeek").addEventListener("click", ()=>setQuickRange("week"));
-    $("btnMonth").addEventListener("click", ()=>setQuickRange("month"));
-    $("btnYear").addEventListener("click", ()=>setQuickRange("year"));
-    $("btnClear").addEventListener("click", clearFilters);
-
-    $("btnDelete").addEventListener("click", doDeleteSelected);
-    $("btnUndo").addEventListener("click", undoDelete);
-    $("btnExport").addEventListener("click", exportCSV);
-
-    // sorting headers (skip select column)
-    document.querySelectorAll("thead th[data-sort]").forEach(th=>{
-      th.addEventListener("click", ()=>{
-        const k = th.getAttribute("data-sort");
-        if(state.sortKey === k){
-          state.sortDir = (state.sortDir==="asc") ? "desc" : "asc";
-        }else{
-          state.sortKey = k;
-          state.sortDir = (k==="created_at") ? "desc" : "asc";
-        }
-        sortView();
-        render();
-      });
-    });
-  }
-
-  // ===== INSIGHTS_PANEL_V1 =====
-  function _safeNum(x){
-    const n = Number(x);
-    return Number.isFinite(n) ? n : 0;
-  }
-  function _iso10FromRow(r){
-    return isoDay(r.created_at || r.date_iso || r.date_raw || "");
-  }
-  function _fmt3(n){
-    const v = Number(n);
-    if(!Number.isFinite(v)) return "0.000";
-    return v.toFixed(3);
-  }
-
-  function updateInsights(){
-    try{
-      const rows = Array.isArray(state.view) ? state.view : [];
-      const $rows = document.getElementById("insRows");
-      const $days = document.getElementById("insDays");
-      const $tot  = document.getElementById("insTotals");
-      const $tc   = document.getElementById("insTopCat");
-      const $tcd  = document.getElementById("insTopCatDetail");
-      const $tm   = document.getElementById("insTopMerch");
-      const $tmd  = document.getElementById("insTopMerchDetail");
-      const $lg   = document.getElementById("insLargest");
-      const $lgd  = document.getElementById("insLargestDetail");
-      const $avg  = document.getElementById("insAvgDay");
-
-      if(!$rows) return; // panel no existe
-
-      $rows.textContent = String(rows.length);
-
-      const daySet = new Set();
-      for(const r of rows){
-        const d = _iso10FromRow(r);
-        if(d) daySet.add(d);
-      }
-      const dayCount = Math.max(1, daySet.size);
-      $days.textContent = `Distinct days: ${daySet.size}`;
-
-      // Totals by currency (no FX)
-      const totals = new Map(); // cur -> sum
-      for(const r of rows){
-        const cur = String(r.currency||"").toUpperCase() || "—";
-        totals.set(cur, (totals.get(cur)||0) + _safeNum(r.amount));
-      }
-      const totParts = Array.from(totals.entries())
-        .sort((a,b)=> a[0].localeCompare(b[0]))
-        .map(([c,v])=> `${c} ${_fmt3(v)}`);
-      $tot.textContent = totParts.length ? totParts.join(" · ") : "—";
-
-      // Top category (by count)
-      const catCount = new Map();
-      for(const r of rows){
-        const c = String(r.category||"other").toLowerCase();
-        catCount.set(c, (catCount.get(c)||0) + 1);
-      }
-      let bestCat="—", bestCatN=0;
-      for(const [k,v] of catCount.entries()){
-        if(v>bestCatN){ bestCatN=v; bestCat=k; }
-      }
-      $tc.textContent = titleCase(bestCat);
-      $tcd.textContent = bestCatN ? `${bestCatN} transaction(s)` : "—";
-
-      // Top merchant (by count)
-      const mCount = new Map();
-      for(const r of rows){
-        const m = String((r.merchant_clean ?? r.merchant_raw ?? "")).trim() || "—";
-        mCount.set(m, (mCount.get(m)||0) + 1);
-      }
-      let bestM="—", bestMN=0;
-      for(const [k,v] of mCount.entries()){
-        if(v>bestMN){ bestMN=v; bestM=k; }
-      }
-      $tm.textContent = bestM;
-      $tmd.textContent = bestMN ? `${bestMN} transaction(s)` : "—";
-
-      // Largest expense (by amount, only expense direction)
-      let maxRow = null;
-      let maxAmt = -1;
-      for(const r of rows){
-        const dir = inferDirection(r);
-        if(dir !== "out") continue;
-        const a = _safeNum(r.amount);
-        if(a > maxAmt){
-          maxAmt = a;
-          maxRow = r;
-        }
-      }
-      if(maxRow){
-        const cur = String(maxRow.currency||"").toUpperCase();
-        $lg.textContent = `${cur} ${_fmt3(maxAmt)}`;
-        const m = String((maxRow.merchant_clean ?? maxRow.merchant_raw ?? "")).trim() || "—";
-        const d = _iso10FromRow(maxRow);
-        $lgd.textContent = `${m} · ${formatDateEnglishISO(d)}`;
-      }else{
-        $lg.textContent = "—";
-        $lgd.textContent = "—";
-      }
-
-      // Avg per day (by count)
-      $avg.textContent = (rows.length / dayCount).toFixed(2) + " tx/day";
-
-    }catch(e){
-      // no petamos UI
-    }
-  }
-
-  // boot
-  bind();
-  load().then(()=>{
-    // ✅ ensure day headers appear on FIRST load (deterministic)
-    try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
-    setTimeout(()=>{ try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){} }, 120);
-    setTimeout(()=>{ try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){} }, 350);
+    return true;
   });
 
-
-
-
-
-// AUTO-REFRESH DISABLED (manual only)
-
-
-
-
-// ===== DATE FORMAT ENGLISH PATCH =====
-function enOrdinal(n){
-  const v = n % 100;
-  if(v>=11 && v<=13) return n+"th";
-  switch(n % 10){
-    case 1: return n+"st";
-    case 2: return n+"nd";
-    case 3: return n+"rd";
-    default: return n+"th";
-  }
-}
-function formatDateEnglishISO(iso){
-  if(!iso || iso.length < 10) return "";
-  const y = Number(iso.slice(0,4));
-  const m = Number(iso.slice(5,7));
-  const d = Number(iso.slice(8,10));
-  if(!y || !m || !d) return iso;
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  return `${enOrdinal(d)} ${months[m-1]} ${y}`;
+  sortView();
+  render();
 }
 
-// Hook render(): replace date cell display without touching core logic
-(function(){
-  const _render = window.render;
-  if(typeof _render !== "function") return;
+function setQuickRange(mode){
+  const today = new Date();
+  const iso = d => d.toISOString().slice(0,10);
+  const to = iso(today);
+  let from = "";
+  if(mode==="today") from = to;
+  else if(mode==="week"){ const d=new Date(today); d.setDate(d.getDate()-7); from=iso(d); }
+  else if(mode==="month"){ const d=new Date(today); d.setMonth(d.getMonth()-1); from=iso(d); }
+  else if(mode==="year"){ const d=new Date(today); d.setMonth(0); d.setDate(1); from=iso(d); }
+  $id("dateFrom").value = from;
+  $id("dateTo").value = to;
+  applyFilters();
+}
 
-  window.render = function(){
-    _render();
-    document.querySelectorAll("#tbody tr td:first-child").forEach(td=>{
-      const iso = (td.getAttribute("title") || td.textContent || "").trim();
-      const iso10 = iso.slice(0,10);
-      if(/^\d{4}-\d{2}-\d{2}$/.test(iso10)){
-        td.textContent = formatDateEnglishISO(iso10);
-      }
-    });
-  };
-})();
+// ============================================================
+// SORT
+// ============================================================
+function sortView(){
+  const k = state.sortKey;
+  const dir = state.sortDir==="asc"?1:-1;
+  state.view.sort((a,b)=>{
+    let av=a[k], bv=b[k];
+    if(k==="amount"){ av=Number(av||0); bv=Number(bv||0); }
+    else{ av=String(av||""); bv=String(bv||""); }
+    return av<bv?-dir:av>bv?dir:0;
+  });
+  $id("sortHintDate").textContent = state.sortKey==="created_at"?(state.sortDir==="asc"?"↑":"↓"):"";
+}
 
-
-// ===== PATCH: call day-headers after render() =====
-(function(){
-  if (window.__rgRenderHookDayHeaders) return;
-  window.__rgRenderHookDayHeaders = true;
-
-  function callRebuild(){
+// ============================================================
+// BALANCE
+// ============================================================
+const FX = {ts:0, rates:null};
+async function getFXRates(){
+  if(FX.rates && Date.now()-FX.ts < 600000) return FX.rates;
+  const urls = [
+    "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json",
+    "https://api.frankfurter.app/latest?base=EUR&symbols=USD,KWD,AED"
+  ];
+  for(const url of urls){
     try{
-      if (typeof window.__rgRebuildDayHeaders === "function") window.__rgRebuildDayHeaders();
-    }catch(e){}
+      const r = await fetch(url, {cache:"no-store"});
+      if(!r.ok) continue;
+      const j = await r.json();
+      let rates = null;
+      if(j.eur){ rates = {USD:j.eur.usd, KWD:j.eur.kwd, AED:j.eur.aed}; }
+      else if(j.rates){ rates = j.rates; }
+      if(rates?.USD && rates?.KWD){ FX.rates=rates; FX.ts=Date.now(); return rates; }
+    }catch(_){}
   }
+  return null;
+}
 
-  const _render = window.render;
-  if (typeof _render === "function"){
-    window.render = function(){
-      _render();
-      setTimeout(callRebuild, 0);
-      setTimeout(callRebuild, 60);
-    };
+function computeBalance(rows){
+  const out={KWD:0,USD:0,EUR:0,AED:0};
+  for(const r of rows){
+    const cur=(r.currency||"").toUpperCase();
+    const amt=Number(r.amount||0);
+    const sign=inferDirection(r)==="in"?1:-1;
+    if(out[cur]!==undefined) out[cur]+=sign*amt;
+  }
+  return out;
+}
+
+async function updateBalance(){
+  const b = computeBalance(state.view);
+  const fmt = v => v>=0?`<span class="pos">${v.toFixed(3)}</span>`:`<span class="neg">${v.toFixed(3)}</span>`;
+  $id("balKWD").innerHTML = fmt(b.KWD);
+  $id("balUSD").innerHTML = fmt(b.USD);
+  $id("balEUR").innerHTML = fmt(b.EUR);
+  $id("balAED").innerHTML = fmt(b.AED);
+  $id("balTotalEUR").textContent = "…";
+  try{
+    const rates = await getFXRates();
+    if(rates){
+      const total = (b.KWD/(rates.KWD||1)) + (b.USD/(rates.USD||1)) + b.EUR + (b.AED/(rates.AED||1));
+      $id("balTotalEUR").innerHTML = total>=0?`<span class="pos">${total.toFixed(2)}</span>`:`<span class="neg">${total.toFixed(2)}</span>`;
+    }
+  }catch(_){}
+}
+
+function updateKPIs(){
+  const rows = state.view;
+  const b = computeBalance(rows);
+  const mix = b.KWD+b.USD+b.EUR+b.AED;
+  $id("kpiTotal").textContent = `${mix.toFixed(2)} (mix)`;
+
+  const today = new Date().toISOString().slice(0,10);
+  const todayB = computeBalance(rows.filter(r=>isoDay(r.created_at||"")===today));
+  $id("kpiToday").textContent = `${(todayB.KWD+todayB.USD+todayB.EUR+todayB.AED).toFixed(2)} (mix)`;
+
+  const days = new Set(rows.map(r=>isoDay(r.created_at||"")).filter(Boolean));
+  $id("kpiAvg").textContent = `${(mix/Math.max(1,days.size)).toFixed(2)} (mix)`;
+
+  const catMap = new Map();
+  for(const r of rows) catMap.set(r.category||"other",(catMap.get(r.category||"other")||0)+1);
+  let best="—",bestN=0;
+  for(const [k,v] of catMap) if(v>bestN){bestN=v;best=k;}
+  $id("kpiTopCat").textContent = titleCase(best);
+}
+
+// ============================================================
+// INSIGHTS
+// ============================================================
+function updateInsights(){
+  const rows = state.view;
+  $id("insRows").textContent = rows.length;
+
+  const days = new Set(rows.map(r=>isoDay(r.created_at||"")).filter(Boolean));
+  $id("insDays").textContent = `Distinct days: ${days.size}`;
+
+  const totMap = new Map();
+  for(const r of rows){
+    const c=(r.currency||"—").toUpperCase();
+    totMap.set(c,(totMap.get(c)||0)+Number(r.amount||0));
+  }
+  $id("insTotals").textContent = [...totMap.entries()].sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([c,v])=>`${c} ${v.toFixed(3)}`).join(" · ")||"—";
+
+  const catMap=new Map();
+  for(const r of rows){ const c=(r.category||"other"); catMap.set(c,(catMap.get(c)||0)+1); }
+  let bestCat="—",bestCatN=0;
+  for(const [k,v] of catMap) if(v>bestCatN){bestCatN=v;bestCat=k;}
+  $id("insTopCat").textContent = titleCase(bestCat);
+  $id("insTopCatDetail").textContent = bestCatN?`${bestCatN} transaction(s)`:"—";
+
+  const mMap=new Map();
+  for(const r of rows){
+    const m=cleanMerchant(r.merchant_clean||r.merchant_raw||"").trim()||"—";
+    mMap.set(m,(mMap.get(m)||0)+1);
+  }
+  let bestM="—",bestMN=0;
+  for(const [k,v] of mMap) if(v>bestMN){bestMN=v;bestM=k;}
+  $id("insTopMerch").textContent = bestM;
+  $id("insTopMerchDetail").textContent = bestMN?`${bestMN} transaction(s)`:"—";
+
+  let maxAmt=-1,maxRow=null;
+  for(const r of rows){
+    if(inferDirection(r)!=="out") continue;
+    const a=Number(r.amount||0);
+    if(a>maxAmt){maxAmt=a;maxRow=r;}
+  }
+  if(maxRow){
+    $id("insLargest").textContent = `${(maxRow.currency||"").toUpperCase()} ${maxAmt.toFixed(3)}`;
+    const d=isoDay(maxRow.created_at||"");
+    $id("insLargestDetail").textContent = `${cleanMerchant(maxRow.merchant_clean||maxRow.merchant_raw||"")||"—"} · ${formatDate(d)}`;
   }else{
-    // fallback: try on load
-    window.addEventListener("load", ()=>setTimeout(callRebuild, 120));
-  }
-})();
-
-
-
-// RG_DAY_SUBTOTALS_V2
-(function(){
-  if (window.__rgDaySubtotalsInstalled) return;
-  window.__rgDaySubtotalsInstalled = true;
-
-  function computeDayMap(rows){
-    const m = {};
-    for (const r of (rows||[])){
-      const day = (typeof isoDay === "function") ? isoDay(r.created_at||r.date_iso||r.date_raw||"") : "";
-      if(!day) continue;
-      const amt = Number(r.amount||0);
-      const dir = (typeof inferDirection==="function") ? inferDirection(r) : ((r.direction==="income") ? "in" : "out");
-      const sign = (dir==="in") ? 1 : -1;
-      if(!m[day]) m[day] = {inc:0, exp:0, net:0};
-      if(sign>0) m[day].inc += amt;
-      else m[day].exp += amt;
-      m[day].net += sign*amt;
-    }
-    return m;
+    $id("insLargest").textContent="—";
+    $id("insLargestDetail").textContent="—";
   }
 
-  function fmt(n){
-    const v = Number(n||0);
-    // "mix" format: 2 decimals (like your KPI mix)
-    return (Math.round(v*100)/100).toFixed(2);
+  $id("insAvgDay").textContent = (rows.length/Math.max(1,days.size)).toFixed(2)+" tx/day";
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function categoryCellHTML(id, current){
+  const cats = [...state.categories].sort();
+  const opts = cats.map(c=>`<option value="${c}"${c===current?" selected":""}>${titleCase(c)}</option>`).join("");
+  return `<select class="catSel" data-id="${id}" data-cat="${current||"other"}">
+    ${opts}
+    <option value="__add__">+ Add…</option>
+  </select>`;
+}
+
+function render(){
+  const tb = $id("tbody");
+  tb.innerHTML = "";
+
+  for(const r of state.view){
+    const id = r.id;
+    const dir = inferDirection(r);
+    const signClass = dir==="in"?"pos":"neg";
+    const dateISO = isoDay(r.created_at||r.date_iso||"");
+    const cur = (r.currency||"").toUpperCase();
+    const cat = (r.category||"other").toLowerCase();
+    const merch = cleanMerchant(r.merchant_clean||r.merchant_raw||"");
+    const amt = fmtMoney(r.amount);
+
+    const tr = document.createElement("tr");
+    tr.dataset.day = dateISO;
+    tr.dataset.id = id;
+    if(state.selected.has(id)) tr.classList.add("selected-row");
+
+    tr.innerHTML = `
+      <td class="selcol"><input class="cbRow" type="checkbox" data-id="${id}"${state.selected.has(id)?" checked":""}></td>
+      <td title="${dateISO}">${formatDate(dateISO)}</td>
+      <td><input class="merchantEdit" data-id="${id}" value="${merch.replace(/"/g,"&quot;")}"/></td>
+      <td>${categoryCellHTML(id,cat)}</td>
+      <td class="amt ${signClass}">${amt}</td>
+      <td style="text-align:center">
+        <div class="curcell"><span class="flag">${flagHTML(cur)}</span><span>${cur}</span></div>
+      </td>
+    `;
+    tb.appendChild(tr);
   }
 
-  function dayKeyFromSepRow(tr){
-    // Best: next tx row's dataset.day (since your tx rows have tr.dataset.day = isoDay(...))
-    let el = tr.nextElementSibling;
-    while(el && el.classList && el.classList.contains("rg-sep")) el = el.nextElementSibling;
-    if(el && el.dataset && el.dataset.day) return el.dataset.day;
+  setStatus(`count ${state.view.length}`);
+  updateBalance();
+  updateKPIs();
+  updateInsights();
+  wireRowInputs();
+  wireSelection();
+  rebuildDayHeaders();
+}
 
-    // Fallback: try parse YYYY-MM-DD from header text
-    const t = (tr.textContent||"");
-    const m = t.match(/\b\d{4}-\d{2}-\d{2}\b/);
-    return m ? m[0] : "";
-  }
-
-  function applyDaySubtotals(){
-    try{
-      if(!window.state || !Array.isArray(state.view)) return;
-      const map = computeDayMap(state.view);
-
-      const seps = document.querySelectorAll("tr.rg-sep");
-      seps.forEach(tr => {
-        const day = dayKeyFromSepRow(tr);
-        if(!day || !map[day]) return;
-
-        const cell = tr.querySelector("td");
-        if(!cell) return;
-
-        // Avoid duplicates
-        if(cell.querySelector(".rg-day-subtotals")) return;
-
-        const s = map[day];
-        const wrap = document.createElement("span");
-        wrap.className = "rg-day-subtotals";
-        wrap.innerHTML = `
-          <span class="inc">+${fmt(s.inc)}</span>
-          <span class="exp">-${fmt(s.exp)}</span>
-          <span class="net">${fmt(s.net)}</span>
-        `;
-        cell.appendChild(wrap);
-      });
-    }catch(e){}
-  }
-
-  // Hook: after day headers rebuild, apply subtotals
-  const orig = window.__rgRebuildDayHeaders;
-  if(typeof orig === "function"){
-    window.__rgRebuildDayHeaders = function(){
-      const r = orig.apply(this, arguments);
-      try{ applyDaySubtotals(); }catch(e){}
-      return r;
-    };
-  } else {
-    // Fallback: try after render
-    const r0 = window.render;
-    if(typeof r0 === "function"){
-      window.render = function(){
-        const r = r0.apply(this, arguments);
-        setTimeout(applyDaySubtotals, 0);
-        return r;
-      }
-    }
-  }
-
-  // Also run once on load (in case headers already rendered)
-  setTimeout(applyDaySubtotals, 250);
-})();
-
-
-// RG_SKELETON_SPOTLIGHT_JS_V1
-(function() {
-  if (window.__rgSkeletonSpotlightInstalled) return;
-  window.__rgSkeletonSpotlightInstalled = true;
-
-  function getTable() {
-    return document.getElementById("t");
-  }
-
-  function makeSkeletonTbody(rowCount=8) {
-    const table = getTable();
-    if (!table) return null;
-
-    const thead = table.querySelector("thead");
-    const ths = thead ? Array.from(thead.querySelectorAll("th")) : [];
-    // count visible cols (ignore display:none)
-    const colCount = Math.max(
-      3,
-      ths.filter(th => getComputedStyle(th).display !== "none").length || ths.length || 6
-    );
-
-    const tbody = document.createElement("tbody");
-    tbody.setAttribute("data-rg-skeleton", "1");
-
-    for (let i=0;i<rowCount;i++) {
-      const tr = document.createElement("tr");
-      tr.className = "rg-skel-row";
-      for (let c=0;c<colCount;c++) {
-        const td = document.createElement("td");
-        const div = document.createElement("div");
-        div.className = "rg-skel";
-        // vary widths a bit
-        const w = [72, 55, 66, 48, 62, 58][c % 6];
-        div.style.width = w + "%";
-        td.appendChild(div);
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-    }
-    return tbody;
-  }
-
-  function showSkeleton(show) {
-    const table = getTable();
-    if (!table) return;
-
-    const existing = table.querySelector('tbody[data-rg-skeleton="1"]');
-    if (show) {
-      if (existing) return;
-      const current = table.querySelector("tbody");
-      if (current) {
-        // stash current tbody HTML (safe)
-        table.setAttribute("data-rg-tbody-html", current.innerHTML);
-        current.remove();
-      }
-      const sk = makeSkeletonTbody(9);
-      if (sk) table.appendChild(sk);
-    } else {
-      if (!existing) return;
-      existing.remove();
-      const tbody = document.createElement("tbody");
-      tbody.innerHTML = table.getAttribute("data-rg-tbody-html") || "";
-      table.appendChild(tbody);
-      table.removeAttribute("data-rg-tbody-html");
-    }
-  }
-
-  // Wrap load() to show skeleton while fetching/rerendering
-  function wrapLoad() {
-    if (typeof window.load !== "function") return false;
-    if (window.load.__rgWrapped) return true;
-
-    const _load = window.load;
-    window.load = async function() {
-      try {
-        showSkeleton(true);
-      } catch(e) {}
-      try {
-        return await _load.apply(this, arguments);
-      } finally {
-        // small delay to avoid flicker
-        setTimeout(() => {
-          try { showSkeleton(false); } catch(e) {}
-        }, 120);
-      }
-    };
-    window.load.__rgWrapped = true;
-    return true;
-  }
-
-  // Spotlight helpers
-  let lastSpot = null;
-  function clearSpotlight() {
-    try {
-      if (lastSpot) lastSpot.classList.remove("rg-spotlight");
-      lastSpot = null;
-    } catch(e) {}
-  }
-  function setSpotlightById(id) {
-    clearSpotlight();
-    const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (tr) {
-      tr.classList.add("rg-spotlight");
-      lastSpot = tr;
-      // ensure visible
-      try { tr.scrollIntoView({ block: "nearest" }); } catch(e) {}
-    }
-  }
-
-  // Wrap openDetails(id) if exists
-  function wrapOpenDetails() {
-    if (typeof window.openDetails !== "function") return false;
-    if (window.openDetails.__rgWrapped) return true;
-
-    const _open = window.openDetails;
-    window.openDetails = function(id) {
-      try { setSpotlightById(id); } catch(e) {}
-      return _open.apply(this, arguments);
-    };
-    window.openDetails.__rgWrapped = true;
-    return true;
-  }
-
-  // Wrap possible close functions to clear spotlight
-  function wrapCloseFn(name) {
-    const fn = window[name];
-    if (typeof fn !== "function") return false;
-    if (fn.__rgWrapped) return true;
-    window[name] = function() {
-      try { clearSpotlight(); } catch(e) {}
-      return fn.apply(this, arguments);
-    };
-    window[name].__rgWrapped = true;
-    return true;
-  }
-
-  // Escape clears spotlight as a fallback
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      clearSpotlight();
-    }
-  });
-
-  // Attempt install now, and retry a few times (in case functions defined later)
-  function install() {
-    wrapLoad();
-    wrapOpenDetails();
-    wrapCloseFn("closeDetails");
-    wrapCloseFn("hideDetails");
-    wrapCloseFn("closePopup");
-    wrapCloseFn("closeModal");
-    wrapCloseFn("hideModal");
-  }
-  install();
-  setTimeout(install, 250);
-  setTimeout(install, 800);
-})();
-
-</script>
-
-<!-- RULE_BUTTON_WIRE_V1 -->
-<!-- DISABLED OLD DAY HEADERS SCRIPT (PATCH: DAY HEADERS FINAL (dataset-based)) -->
-
-<script>
-
-
-// ===== SORT BY DATE BUTTON =====
-(function(){
-  document.addEventListener("DOMContentLoaded", ()=>{
-    const b = document.getElementById("qaSortDate");
-    if(!b) return;
-    b.addEventListener("click", ()=>{
+// ============================================================
+// INLINE EDIT
+// ============================================================
+function wireRowInputs(){
+  document.querySelectorAll(".merchantEdit").forEach(inp=>{
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter") inp.blur(); });
+    inp.addEventListener("blur", async ()=>{
+      const id = Number(inp.dataset.id);
+      const val = inp.value.trim();
       try{
-        if(window.state){
-          window.state.sortKey = "created_at";
-          window.state.sortDir = "desc";
-        }
-        if(typeof window.sortView === "function") window.sortView();
-        if(typeof window.render === "function") window.render();
-        try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
-      }catch(e){}
+        await apiPOST("/update_field", {userid:USER_ID, id, field:"merchant_clean", value:val});
+        const row = state.all.find(x=>x.id===id);
+        if(row) row.merchant_clean = val;
+      }catch(err){ showErr("Save merchant failed: "+err.message); }
     });
   });
-})();
 
-// ===== MANUAL REFRESH BUTTON =====
-(function(){
-  document.addEventListener("DOMContentLoaded", ()=>{
-    const b = document.getElementById("qaRefresh");
-    if(!b) return;
-    b.addEventListener("click", async ()=>{
-      try{
-        if(typeof load === "function") await load();
-        try{ window.__rgRebuildDayHeaders && window.__rgRebuildDayHeaders(); }catch(e){}
-      }catch(e){}
+  document.querySelectorAll(".catSel").forEach(sel=>{
+    sel.addEventListener("change", async ()=>{
+      const id = Number(sel.dataset.id);
+      const v = sel.value;
+      if(v==="__add__"){
+        const name = prompt("New category name:");
+        if(!name){ const row=state.all.find(x=>x.id===id); sel.value=row?.category||"other"; return; }
+        const cat = name.trim().toLowerCase();
+        if(!cat){ const row=state.all.find(x=>x.id===id); sel.value=row?.category||"other"; return; }
+        state.categories.add(cat);
+        buildFilters();
+        await saveCategory(id, cat);
+        return;
+      }
+      sel.dataset.cat = v;
+      await saveCategory(id, v);
     });
   });
-})();
+}
 
-</script>
-
-<!-- ===== FIX: gear dropdown + tx modal dblclick (robust) ===== -->
-<script id="FIX_GEAR_AND_MODAL_V1">
-(function(){
-  function ready(fn){
-    if(document.readyState !== "loading") fn();
-    else document.addEventListener("DOMContentLoaded", fn);
+async function saveCategory(id, cat){
+  try{
+    showErr("");
+    await apiPOST("/update_field", {userid:USER_ID, id, field:"category", value:cat});
+    const row = state.all.find(x=>x.id===id);
+    if(row) row.category = cat;
+    applyFilters();
+  }catch(err){
+    showErr("Save category failed: "+err.message);
+    applyFilters();
   }
+}
 
-  // Gear menu: toggle fiable
-  ready(function(){
-    var btn = document.getElementById("settingsBtn");
-    var menu = document.getElementById("settingsMenu");
-    if(btn && menu){
-      btn.addEventListener("click", function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        menu.classList.toggle("open");
+// ============================================================
+// SELECTION
+// ============================================================
+function syncCbAll(){
+  const cbAll = $id("cbAll");
+  if(!cbAll) return;
+  const ids = state.view.map(r=>r.id);
+  const sel = ids.filter(id=>state.selected.has(id)).length;
+  cbAll.checked = ids.length>0 && sel===ids.length;
+  cbAll.indeterminate = sel>0 && sel<ids.length;
+}
+
+function wireSelection(){
+  document.querySelectorAll(".cbRow").forEach(cb=>{
+    cb.addEventListener("change", ()=>{
+      const id = Number(cb.dataset.id);
+      const tr = cb.closest("tr");
+      if(cb.checked){ state.selected.add(id); tr?.classList.add("selected-row"); }
+      else{ state.selected.delete(id); tr?.classList.remove("selected-row"); }
+      $id("btnDelete").disabled = state.selected.size===0;
+      syncCbAll();
+    });
+  });
+
+  const cbAll = $id("cbAll");
+  if(cbAll){
+    cbAll.onchange = ()=>{
+      const want = cbAll.checked;
+      for(const r of state.view){ if(want) state.selected.add(r.id); else state.selected.delete(r.id); }
+      document.querySelectorAll(".cbRow").forEach(cb=>{
+        cb.checked=want;
+        const tr=cb.closest("tr");
+        if(want) tr?.classList.add("selected-row"); else tr?.classList.remove("selected-row");
       });
-      document.addEventListener("click", function(e){
-        if(!e.target.closest(".settings")) menu.classList.remove("open");
-      });
+      $id("btnDelete").disabled = state.selected.size===0;
+      syncCbAll();
+    };
+  }
+  $id("btnDelete").disabled = state.selected.size===0;
+  syncCbAll();
+}
+
+// ============================================================
+// DELETE + UNDO
+// ============================================================
+function showToast(msg){
+  $id("toastMsg").textContent = msg;
+  $id("toast").classList.add("show");
+  clearTimeout(state.undoTimer);
+  state.undoTimer = setTimeout(()=>$id("toast").classList.remove("show"), 10000);
+}
+
+async function doDeleteSelected(){
+  const ids = [...state.selected];
+  if(!ids.length) return;
+  try{
+    showErr("");
+    for(const id of ids){
+      await apiPOST("/delete", {userid:USER_ID, id});
     }
-  });
+    state.selected.clear();
+    $id("btnDelete").disabled = true;
+    $id("cbAll").checked = false;
+    $id("cbAll").indeterminate = false;
+    showToast(`Deleted ${ids.length} row(s). You have 10s to undo.`);
+    await load();
+  }catch(err){
+    showErr("Delete failed: "+err.message);
+  }
+}
 
-  // Tx modal: doble click en fila (evita inputs/selects)
-  document.addEventListener("dblclick", function(e){
-    var tr = e.target && e.target.closest ? e.target.closest("#tbody tr") : null;
-    if(!tr) return;
-    if(tr.classList.contains("rg-sep")) return;
-    if(e.target.closest && e.target.closest("input, select, button, a, textarea")) return;
+async function undoDelete(){
+  try{
+    showErr("");
+    await apiPOST("/undo_delete", {userid:USER_ID});
+    $id("toast").classList.remove("show");
+    await load();
+  }catch(err){
+    showErr("Undo failed: "+err.message);
+  }
+}
 
-    var id = tr.getAttribute("data-id");
-    if(!id) return;
+// ============================================================
+// EXPORT CSV
+// ============================================================
+function exportCSV(){
+  const hdrs = ["created_at","merchant_clean","category","amount","currency","direction"];
+  const esc = v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const lines = [hdrs.join(",")].concat(state.view.map(r=>[
+    r.created_at||"", cleanMerchant(r.merchant_clean||r.merchant_raw||""),
+    r.category||"", r.amount??"", r.currency||"", r.direction||""
+  ].map(esc).join(",")));
+  const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "registro_gastos.csv";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
 
-    var list = window.__rg_last_rows || (window.state && Array.isArray(window.state.all) ? window.state.all : []);
-    var item = Array.isArray(list) ? list.find(function(x){ return String(x.id) === String(id); }) : null;
+// ============================================================
+// DAY HEADERS
+// ============================================================
+function rebuildDayHeaders(){
+  const tb = document.querySelector("#t tbody");
+  if(!tb) return;
+  tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
 
-    if(item && typeof window.__rgOpenTx === "function"){
-      window.__rgOpenTx(item);
-    }
-  }, true);
-})();
-</script>
+  let lastDay = null;
+  const rows = [...tb.querySelectorAll("tr:not(.rg-sep)")];
 
-</body>
-</html>
-
-<!-- FIX_RULE_MODAL_V1 -->
-<script>
-(function(){
-  function closeRuleModal(){
-    const m = document.getElementById("ruleModal");
-    if(m){
-      m.style.display = "none";
-    }
+  // compute day subtotals
+  const dayMap = {};
+  for(const r of state.view){
+    const d = isoDay(r.created_at||r.date_iso||"");
+    if(!d) continue;
+    if(!dayMap[d]) dayMap[d]={inc:0,exp:0};
+    const amt=Number(r.amount||0);
+    if(inferDirection(r)==="in") dayMap[d].inc+=amt; else dayMap[d].exp+=amt;
   }
 
-  document.addEventListener("click", function(e){
-    if(e.target && e.target.id === "ruleClose"){
-      closeRuleModal();
-    }
-    if(e.target && e.target.id === "ruleSave"){
-      setTimeout(closeRuleModal, 300);
-    }
-  });
-
-  // Cerrar al hacer click fuera
-  document.addEventListener("mousedown", function(e){
-    const m = document.getElementById("ruleModal");
-    if(!m) return;
-    if(e.target === m){
-      closeRuleModal();
-    }
-  });
-})();
-
-/* ===== TX MODAL PATCH ===== */
-(function(){
-  const $ = (q)=>document.querySelector(q);
-
-  const overlay = $("#txOverlay");
-  const closeBtn = $("#txClose");
-  const grid = $("#txGrid");
-  const pills = $("#txPills");
-  const smsBox = $("#txSms");
-  const sub = $("#txSub");
-
-  function esc(s){ return (s ?? "").toString(); }
-
-  function fmtMoney(amount, currency){
-    if(amount === null || amount === undefined) return "—";
-    try{
-      const n = Number(amount);
-      if(Number.isNaN(n)) return esc(amount);
-      return (currency||"") + " " + n.toFixed(3);
-    }catch(e){ return esc(amount) + " " + (currency||""); }
+  function dayLabel(iso){
+    if(!iso) return "";
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
+    const d = new Date(iso+"T00:00:00Z");
+    const diff = Math.round((d-today)/86400000);
+    if(diff===0) return "Today";
+    if(diff===-1) return "Yesterday";
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   }
 
-  function fmtDateNice(iso){
-    if(!iso) return "—";
-    try{
-      const d = new Date(iso);
-      if(Number.isNaN(d.getTime())) return iso;
-      return d.toLocaleString("en-GB", { day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
-    }catch(e){ return iso; }
-  }
+  for(const tr of rows){
+    const day = tr.dataset.day||"";
+    if(!day||day===lastDay) continue;
+    lastDay=day;
 
-  function openTx(item){
-    // pills
-    pills.innerHTML = "";
-    const pillData = [
-      ["ID", item.id],
-      ["Direction", item.direction || "—"],
-      ["Currency", item.currency || "—"],
-      ["Category", item.category || "—"]
-    ];
-    for(const [k,v] of pillData){
-      const el = document.createElement("div");
-      el.className = "rgPill";
-      el.textContent = `${k}: ${v ?? "—"}`;
-      pills.appendChild(el);
-    }
+    const sep = document.createElement("tr");
+    sep.className="rg-sep";
 
-    // sub header
-    sub.textContent = `${fmtDateNice(item.created_at)} • ${fmtMoney(item.amount, item.currency)}`;
+    const td = document.createElement("td");
+    td.colSpan = tr.children.length;
 
-    // grid
-    const rows = [
-      ["Merchant", item.merchant_clean || "—"],
-      ["Amount", fmtMoney(item.amount, item.currency)],
-      ["Category", item.category || "—"],
-      ["Direction", item.direction || "—"],
-      ["Created", fmtDateNice(item.created_at)],
-      ["Raw SMS", ""],
-    ];
-    grid.innerHTML = "";
-    rows.forEach(([k,v])=>{
-      const kEl = document.createElement("div"); kEl.className="rgK"; kEl.textContent=k;
-      const vEl = document.createElement("div"); vEl.className="rgV"; vEl.textContent=v || "—";
-      grid.appendChild(kEl); grid.appendChild(vEl);
+    const ds = dayMap[day]||{inc:0,exp:0};
+    const net = ds.inc-ds.exp;
+
+    td.innerHTML = `<span style="opacity:.6">▾ </span><span>${dayLabel(day)}</span>
+      <span class="rg-day-subtotals">
+        <span class="inc">+${ds.inc.toFixed(3)}</span>
+        <span class="exp">-${ds.exp.toFixed(3)}</span>
+        <span class="net" style="color:${net>=0?"var(--ok)":"var(--danger)"}">${net>=0?"+":""}${net.toFixed(3)}</span>
+      </span>`;
+
+    sep.appendChild(td);
+    tb.insertBefore(sep, tr);
+
+    sep.addEventListener("click", ()=>{
+      const collapsed = sep.classList.toggle("collapsed");
+      sep.querySelector("span").textContent = collapsed?"▸ ":"▾ ";
+      let n = sep.nextElementSibling;
+      while(n && !n.classList.contains("rg-sep")){
+        n.style.display = collapsed?"none":"table-row";
+        n = n.nextElementSibling;
+      }
     });
+  }
+}
 
-    smsBox.textContent = item.sms || "—";
+// ============================================================
+// TX MODAL
+// ============================================================
+function fmtDateNice(iso){
+  if(!iso) return "—";
+  try{
+    const d=new Date(iso);
+    if(isNaN(d)) return iso;
+    return d.toLocaleString("en-GB",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  }catch(_){ return iso; }
+}
 
-    overlay.classList.add("open");
-    overlay.setAttribute("aria-hidden","false");
+function openTx(item){
+  const overlay = $id("txOverlay");
+  const grid    = $id("txGrid");
+  const pills   = $id("txPills");
+  const smsBox  = $id("txSms");
+  const sub     = $id("txSub");
+  const title   = $id("txTitle");
+
+  const merch = cleanMerchant(item.merchant_clean||item.merchant_raw||"") || "Transaction";
+  title.textContent = merch;
+  sub.textContent = `${fmtDateNice(item.created_at)} · ${(item.currency||"").toUpperCase()} ${fmtMoney(item.amount)}`;
+
+  grid.innerHTML = "";
+  const gridData = [
+    ["Merchant", merch||"—"],
+    ["Amount", `${(item.currency||"").toUpperCase()} ${fmtMoney(item.amount)}`],
+    ["Category", titleCase(item.category||"other")],
+    ["Direction", item.direction||"—"],
+    ["Date", fmtDateNice(item.created_at)],
+  ];
+  for(const [k,v] of gridData){
+    const kEl=document.createElement("div"); kEl.className="rgK"; kEl.textContent=k;
+    const vEl=document.createElement("div"); vEl.className="rgV"; vEl.textContent=v;
+    grid.appendChild(kEl); grid.appendChild(vEl);
   }
 
-  function closeTx(){
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden","true");
+  pills.innerHTML = "";
+  for(const [k,v] of [["ID",item.id],["Currency",item.currency],["Direction",item.direction]]){
+    const el=document.createElement("div"); el.className="rgPill";
+    el.textContent=`${k}: ${v??"—"}`; pills.appendChild(el);
   }
 
-  closeBtn && closeBtn.addEventListener("click", closeTx);
-  overlay && overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeTx(); });
-  window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && overlay.classList.contains("open")) closeTx(); });
+  smsBox.textContent = item.sms||item.sms_raw||"—";
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden","false");
+}
 
-  // Row click: delegate on tbody
-  document.addEventListener("dblclick", (e)=>{
-    const tr = e.target.closest && e.target.closest("tbody tr");
-    if(!tr) return;
+function closeTx(){
+  const overlay = $id("txOverlay");
+  overlay.classList.remove("open");
+  overlay.setAttribute("aria-hidden","true");
+}
 
-    // Do NOT open modal when interacting with controls
-    if(e.target.closest("input, select, button, a, textarea")) return;
+// ============================================================
+// RULE MODAL
+// ============================================================
+function openRule(){
+  $id("ruleOverlay").classList.add("open");
+  $id("ruleMerchant").value="";
+  $id("ruleStatus").textContent="";
+  $id("ruleMerchant").focus();
+}
+function closeRule(){
+  $id("ruleOverlay").classList.remove("open");
+}
 
-    // Expect row has data-id
+// ============================================================
+// SKELETON
+// ============================================================
+function showSkeleton(show){
+  const table = $id("t");
+  const tb = $id("tbody");
+  if(!table||!tb) return;
+  const existing = table.querySelector("tbody[data-skel]");
+  if(show){
+    if(existing) return;
+    tb.setAttribute("data-hidden","1");
+    tb.style.display="none";
+    const sk=document.createElement("tbody");
+    sk.setAttribute("data-skel","1");
+    const cols=6;
+    for(let i=0;i<8;i++){
+      const tr=document.createElement("tr");
+      tr.className="rg-skel-row";
+      for(let c=0;c<cols;c++){
+        const td=document.createElement("td");
+        const d=document.createElement("div");
+        d.className="rg-skel";
+        d.style.width=[60,50,70,40,50,30][c]+"%";
+        td.appendChild(d); tr.appendChild(td);
+      }
+      sk.appendChild(tr);
+    }
+    table.appendChild(sk);
+  }else{
+    if(existing) existing.remove();
+    tb.style.display="";
+    tb.removeAttribute("data-hidden");
+  }
+}
+
+// ============================================================
+// LOAD
+// ============================================================
+async function load(){
+  try{
+    showErr("");
+    setStatus("loading…");
+    showSkeleton(true);
+    const j = await apiGET(`/expenses?user_id=${encodeURIComponent(USER_ID)}&limit=${LIMIT}`);
+    const rows = j.expenses||[];
+    state.all = rows;
+    window.__rg_last_rows = rows;
+
+    state.categories = new Set(rows.map(r=>(r.category||"other").toLowerCase()));
+    state.currencies  = new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+    if(!state.categories.size) state.categories.add("other");
+    if(!state.currencies.size) state.currencies.add("KWD");
+
+    buildFilters();
+    applyFilters();
+    setStatus(`count ${state.view.length}`);
+  }catch(err){
+    showErr(String(err?.message||err));
+    setStatus("error");
+  }finally{
+    showSkeleton(false);
+  }
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+function bind(){
+  initFlags();
+  initTheme();
+
+  // Theme
+  $id("themeBtn").addEventListener("click",()=>{
+    const cur=document.documentElement.getAttribute("data-theme")||"dark";
+    setTheme(cur==="dark"?"light":"dark");
+  });
+
+  // Balance dropdown
+  $id("balanceBtn").addEventListener("click",()=>$id("balanceMenu").classList.toggle("open"));
+  document.addEventListener("click",e=>{
+    if(!e.target.closest(".balance")) $id("balanceMenu").classList.remove("open");
+  });
+
+  // Settings dropdown
+  $id("settingsBtn").addEventListener("click",e=>{
+    e.stopPropagation();
+    $id("settingsMenu").classList.toggle("open");
+  });
+  document.addEventListener("click",e=>{
+    if(!e.target.closest(".settings")) $id("settingsMenu").classList.remove("open");
+  });
+
+  // Settings actions
+  $id("qaKpi").addEventListener("click",()=>{ $id("kpiRow").classList.toggle("show"); $id("settingsMenu").classList.remove("open"); });
+  $id("qaRule").addEventListener("click",()=>{ openRule(); $id("settingsMenu").classList.remove("open"); });
+  $id("qaCsv").addEventListener("click",()=>{ exportCSV(); $id("settingsMenu").classList.remove("open"); });
+  $id("qaRefresh").addEventListener("click",()=>{ load(); $id("settingsMenu").classList.remove("open"); });
+
+  // Density
+  const dens = ["Compact","Normal","Comfy"];
+  const densVals = {Compact:{y:"6px",x:"12px",th:"10px"},Normal:{y:"10px",x:"12px",th:"12px"},Comfy:{y:"14px",x:"12px",th:"14px"}};
+  ["densCompact","densNormal","densComfy"].forEach((bid,i)=>{
+    $id(bid)?.addEventListener("click",()=>{
+      const name=dens[i];
+      const v=densVals[name];
+      document.documentElement.style.setProperty("--td-pad-y",v.y);
+      document.documentElement.style.setProperty("--th-pad-y",v.th);
+      document.querySelectorAll(`#densCompact,#densNormal,#densComfy`).forEach(b=>b.classList.remove("active"));
+      $id(bid).classList.add("active");
+    });
+  });
+
+  // Filters
+  $id("curFilter").addEventListener("change",applyFilters);
+  $id("catFilter").addEventListener("change",applyFilters);
+  $id("dateFrom").addEventListener("change",applyFilters);
+  $id("dateTo").addEventListener("change",applyFilters);
+  $id("btnToday").addEventListener("click",()=>setQuickRange("today"));
+  $id("btnWeek").addEventListener("click",()=>setQuickRange("week"));
+  $id("btnMonth").addEventListener("click",()=>setQuickRange("month"));
+  $id("btnYear").addEventListener("click",()=>setQuickRange("year"));
+  $id("btnClear").addEventListener("click",()=>{
+    $id("curFilter").value=""; $id("catFilter").value="";
+    $id("dateFrom").value=""; $id("dateTo").value="";
+    applyFilters();
+  });
+
+  // Sort headers
+  document.querySelectorAll("thead th[data-sort]").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const k=th.getAttribute("data-sort");
+      if(state.sortKey===k) state.sortDir=state.sortDir==="asc"?"desc":"asc";
+      else{ state.sortKey=k; state.sortDir=k==="created_at"?"desc":"asc"; }
+      sortView(); render();
+    });
+  });
+
+  // Delete
+  $id("btnDelete").addEventListener("click",doDeleteSelected);
+  $id("btnUndo").addEventListener("click",undoDelete);
+
+  // TX Modal
+  $id("txClose").addEventListener("click",closeTx);
+  $id("txOverlay").addEventListener("click",e=>{ if(e.target===$id("txOverlay")) closeTx(); });
+
+  // Double-click row → open tx modal
+  document.addEventListener("dblclick", e=>{
+    const tr = e.target.closest?.("#tbody tr");
+    if(!tr||tr.classList.contains("rg-sep")) return;
+    if(e.target.closest("input,select,button")) return;
     const id = tr.getAttribute("data-id");
     if(!id) return;
+    const item = (window.__rg_last_rows||[]).find(x=>String(x.id)===String(id));
+    if(item) openTx(item);
+  },true);
 
-    // Use global lastData if exists (most dashboards keep it)
-    const list = window.__rg_last_rows || window.lastRows || window.rows || null;
-    if(Array.isArray(list)){
-      const item = list.find(x => String(x.id) === String(id));
-      if(item) return openTx(item);
+  // Rule modal
+  $id("ruleCancel").addEventListener("click",closeRule);
+  $id("ruleOverlay").addEventListener("click",e=>{ if(e.target===$id("ruleOverlay")) closeRule(); });
+  $id("ruleSave").addEventListener("click", async ()=>{
+    const merchant = $id("ruleMerchant").value.trim();
+    const category = $id("ruleCategory").value;
+    if(!merchant){ $id("ruleStatus").textContent="Enter a merchant pattern."; return; }
+    $id("ruleStatus").textContent="Saving…";
+    try{
+      await apiPOST("/add_rule", {userid:USER_ID, merchant, category, match_mode:"contains"});
+      $id("ruleStatus").textContent="✅ Rule saved!";
+      setTimeout(closeRule, 800);
+      await load();
+    }catch(err){
+      $id("ruleStatus").textContent="Error: "+err.message;
     }
-
-    // Fallback: fetch single page and find it
-    const user = (document.querySelector("#statusPill")?.dataset?.user) || "pedro";
-    fetch(`/expenses?user_id=${encodeURIComponent(user)}&limit=500`)
-      .then(r=>r.json())
-      .then(j=>{
-        const item = (j.expenses||[]).find(x => String(x.id)===String(id));
-        if(item) openTx(item);
-      })
-      .catch(()=>{});
   });
 
-  // expose for other parts if needed
-  window.__rgOpenTx = openTx;
-})();
+  // Escape
+  window.addEventListener("keydown", e=>{
+    if(e.key==="Escape"){ closeTx(); closeRule(); }
+  });
+}
 
+// ============================================================
+// BOOT
+// ============================================================
+bind();
+load();
 </script>
-<script>
-
-// ===== DAY HEADERS ENGINE (single source of truth) =====
-(function(){
-  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  function label(iso){
-    if(!iso) return "";
-    const d=new Date(iso+"T00:00:00Z");
-    const now=new Date();
-    const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
-    const diff=Math.round((d-today)/86400000);
-    if(diff===0) return "Today";
-    if(diff===1) return "Tomorrow";
-    if(diff===-1) return "Yesterday";
-    return d.getUTCDate()+" "+MONTHS[d.getUTCMonth()];
-  }
-
-  function rebuild(){
-    const tb=document.querySelector("#t tbody");
-    if(!tb) return;
-
-    // limpia separadores previos
-    tb.querySelectorAll("tr.rg-sep").forEach(x=>x.remove());
-
-    let last=null;
-    const rows=Array.from(tb.querySelectorAll("tr")).filter(r=>!r.classList.contains("rg-sep"));
-    for(const r of rows){
-      const day = r.dataset.day || "";
-      if(!day) continue;
-
-      if(day!==last){
-        last=day;
-
-        const sep=document.createElement("tr");
-        sep.className="rg-sep";
-
-        const td=document.createElement("td");
-        td.colSpan = r.children.length;
-        td.className="rg-sep-cell";
-        td.style.cursor="pointer";
-        td.style.userSelect="none";
-
-        const caret=document.createElement("span");
-        caret.textContent="▾ ";
-        caret.style.opacity=".6";
-
-        const txt=document.createElement("span");
-        txt.textContent=label(day);
-
-        td.appendChild(caret);
-        td.appendChild(txt);
-        sep.appendChild(td);
-
-        tb.insertBefore(sep, r);
-
-        // collapse
-        sep.addEventListener("click", ()=>{
-          const c=sep.classList.toggle("collapsed");
-          caret.textContent=c?"▸ ":"▾ ";
-          let n=sep.nextElementSibling;
-          while(n && !n.classList.contains("rg-sep")){
-            n.style.display=c?"none":"table-row";
-            n=n.nextElementSibling;
-          }
-        });
-      }
-    }
-  }
-
-  window.__rgRebuildDayHeaders = rebuild;
-})();
-
-</script>
+</body>
+</html>
