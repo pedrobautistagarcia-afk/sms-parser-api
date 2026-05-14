@@ -190,6 +190,13 @@
       cursor:pointer; font-weight:600; padding:8px 12px;
     }
     [data-theme="dark"] tr.rg-sep td{background:rgba(17,24,39,.92); color:rgba(255,255,255,.85);}
+    .cbDay{
+      width:16px; height:16px; cursor:pointer; accent-color:var(--accent);
+      opacity:0; transition:opacity .12s; vertical-align:middle; margin-right:6px;
+      position:relative; top:-1px;
+    }
+    tr.rg-sep:hover .cbDay{ opacity:1; }
+    tr.rg-sep.day-selected .cbDay{ opacity:1; }
     .rg-day-subtotals{float:right; font-size:12px; display:inline-flex; gap:10px; opacity:.9;}
     .rg-day-subtotals .inc{color:#16a34a; font-weight:700;}
     .rg-day-subtotals .exp{color:#dc2626; font-weight:700;}
@@ -1051,6 +1058,17 @@ function rebuildDayHeaders(){
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   }
 
+  // helper: get all tx rows for a day
+  function getDayRows(sepRow){
+    const dayRows = [];
+    let n = sepRow.nextElementSibling;
+    while(n && !n.classList.contains("rg-sep")){
+      if(!n.classList.contains("rg-sep")) dayRows.push(n);
+      n = n.nextElementSibling;
+    }
+    return dayRows;
+  }
+
   for(const tr of rows){
     const day = tr.dataset.day||"";
     if(!day||day===lastDay) continue;
@@ -1058,30 +1076,68 @@ function rebuildDayHeaders(){
 
     const sep = document.createElement("tr");
     sep.className="rg-sep";
+    sep.dataset.day = day;
 
     const td = document.createElement("td");
     td.colSpan = tr.children.length;
+    td.style.userSelect = "none";
 
     const ds = dayMap[day]||{inc:0,exp:0};
     const net = ds.inc-ds.exp;
 
-    td.innerHTML = `<span style="opacity:.6">▾ </span><span>${dayLabel(day)}</span>
-      <span class="rg-day-subtotals">
-        <span class="inc">+${ds.inc.toFixed(3)}</span>
-        <span class="exp">-${ds.exp.toFixed(3)}</span>
-        <span class="net" style="color:${net>=0?"var(--ok)":"var(--danger)"}">${net>=0?"+":""}${net.toFixed(3)}</span>
-      </span>`;
+    // checkbox for selecting all rows of this day
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "cbDay";
+    cb.title = "Select all transactions of this day";
 
+    const caret = document.createElement("span");
+    caret.style.opacity = ".6";
+    caret.textContent = "▾ ";
+
+    const label = document.createElement("span");
+    label.textContent = dayLabel(day);
+
+    const subtotals = document.createElement("span");
+    subtotals.className = "rg-day-subtotals";
+    subtotals.innerHTML = `
+      <span class="inc">+${ds.inc.toFixed(3)}</span>
+      <span class="exp">-${ds.exp.toFixed(3)}</span>
+      <span class="net" style="color:${net>=0?"var(--ok)":"var(--danger)"}">${net>=0?"+":""}${net.toFixed(3)}</span>`;
+
+    td.appendChild(cb);
+    td.appendChild(caret);
+    td.appendChild(label);
+    td.appendChild(subtotals);
     sep.appendChild(td);
     tb.insertBefore(sep, tr);
 
-    sep.addEventListener("click", ()=>{
+    // Checkbox: select/deselect all rows of this day
+    cb.addEventListener("click", e=>{
+      e.stopPropagation();
+      const dayRows = getDayRows(sep);
+      const want = cb.checked;
+      sep.classList.toggle("day-selected", want);
+      for(const row of dayRows){
+        const id = Number(row.dataset.id);
+        const rowCb = row.querySelector(".cbRow");
+        if(want){ state.selected.add(id); row.classList.add("selected-row"); }
+        else{ state.selected.delete(id); row.classList.remove("selected-row"); }
+        if(rowCb) rowCb.checked = want;
+      }
+      $id("btnDelete").disabled = state.selected.size===0;
+      syncCbAll();
+    });
+
+    // Caret click: collapse/expand
+    const collapseArea = td;
+    collapseArea.addEventListener("click", e=>{
+      if(e.target === cb) return; // don't collapse when clicking checkbox
       const collapsed = sep.classList.toggle("collapsed");
-      sep.querySelector("span").textContent = collapsed?"▸ ":"▾ ";
-      let n = sep.nextElementSibling;
-      while(n && !n.classList.contains("rg-sep")){
-        n.style.display = collapsed?"none":"table-row";
-        n = n.nextElementSibling;
+      caret.textContent = collapsed?"▸ ":"▾ ";
+      const dayRows = getDayRows(sep);
+      for(const row of dayRows){
+        row.style.display = collapsed?"none":"table-row";
       }
     });
   }
