@@ -548,13 +548,25 @@ function inferDirection(r){
   return "out";
 }
 
-// Clean merchant: strip balance trailing text and "Your Avl. balance..." noise
+// Clean merchant: strip city names and balance trailing text from NBK SMS format
+// Handles patterns like:
+//   "THE SULTAN CENTER , SALMIYA.Your Avl. balance is KWD 8,197.004"
+//   "CAF CAFE , KUWAIT.Your Avl. balance is KWD 8,104.392"
+//   "WAMD Service. Avl. balance is KWD 8,093.192"
+//   "AL NAJAH CO , ALRAI.Your Avl. balance is KWD 8,096.442"
 function cleanMerchant(raw){
   if(!raw) return "";
-  // Remove ".Your Avl. balance is..." and similar
-  let m = raw.replace(/[,.]?\s*your avl\.?\s*balance.*$/i, "").trim();
-  // Remove trailing commas
-  m = m.replace(/[,\s]+$/, "").trim();
+  let m = raw.trim();
+
+  // Remove everything from "Avl. balance" onwards (with optional "Your" before it)
+  m = m.replace(/\.?\s*(?:your\s+)?avl\.?\s*balance.*$/i, "").trim();
+
+  // Remove trailing city name pattern: ", CITYNAME" (all caps word(s) at end)
+  m = m.replace(/\s*,\s*[A-Z][A-Z\s\-]+$/, "").trim();
+
+  // Remove trailing dot or comma
+  m = m.replace(/[.,\s]+$/, "").trim();
+
   return m || raw.trim();
 }
 
