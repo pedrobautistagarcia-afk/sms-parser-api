@@ -912,6 +912,53 @@ tbody tr:active td { background: var(--blue-l) !important; }
   100% { background-position: -200% 0; }
 }
 
+
+/* Search bar */
+.search-wrap {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 11px 14px;
+  margin-bottom: 10px; box-shadow: var(--shadow-m);
+  transition: border-color .15s;
+}
+.search-wrap:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-l), var(--shadow-m);
+}
+.search-ic { font-size: 15px; color: var(--t3); flex-shrink: 0; }
+.search-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--t1); font-family: var(--font); font-size: 13px;
+}
+.search-input::placeholder { color: var(--t3); }
+.search-clear {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--t3); cursor: pointer;
+  font-size: 11px; padding: 3px 8px; transition: all .15s;
+  display: none;
+}
+.search-clear.show { display: block; }
+.search-clear:hover { background: var(--red-l); color: var(--red); border-color: rgba(220,38,38,.2); }
+.search-count { font-size: 11px; color: var(--t3); white-space: nowrap; }
+
+/* Load more / date range hint */
+.tx-range-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius-m);
+  margin-bottom: 10px; font-size: 12px; color: var(--t2);
+  box-shadow: var(--shadow-m);
+}
+.tx-range-info { display: flex; align-items: center; gap: 6px; }
+.tx-range-dot  { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+.load-more-btn {
+  padding: 5px 12px; background: var(--blue-l); border: 1px solid rgba(37,99,235,.2);
+  border-radius: var(--radius-s); color: var(--blue); font-size: 12px;
+  font-weight: 600; font-family: var(--font); cursor: pointer; transition: all .15s;
+}
+.load-more-btn:hover { background: var(--blue); color: #fff; }
+[data-theme="dark"] .load-more-btn { border-color: rgba(59,130,246,.3); }
+
 </style>
 </head>
 <body>
@@ -1099,6 +1146,23 @@ tbody tr:active td { background: var(--blue-l) !important; }
           <div class="sc-sub">In current view</div>
         </div>
       </div>
+      <!-- Search -->
+      <div class="search-wrap" id="searchWrap">
+        <span class="search-ic">🔍</span>
+        <input class="search-input" id="searchInput" placeholder="Buscar por merchant, categoría…" autocomplete="off" autocorrect="off"/>
+        <span class="search-count" id="searchCount"></span>
+        <button class="search-clear" id="searchClear">✕ Limpiar</button>
+      </div>
+
+      <!-- Date range indicator -->
+      <div class="tx-range-bar" id="txRangeBar">
+        <div class="tx-range-info">
+          <div class="tx-range-dot"></div>
+          <span id="txRangeLabel">Mostrando este mes</span>
+        </div>
+        <button class="load-more-btn" id="loadMoreBtn">Ver más meses ↓</button>
+      </div>
+
       <div class="fbar">
         <div class="fg"><span class="fl">Currency</span><select id="curFilter"></select></div>
         <div class="fsep"></div>
@@ -1636,11 +1700,11 @@ function applyFilters(){
 let aQ=null;
 function setQ(mode){
   document.querySelectorAll(".qbtn").forEach(b=>b.classList.remove("active"));
-  if(aQ===mode){aQ=null;$("dateFrom").value="";$("dateTo").value="";applyFilters();return;}
+  if(aQ===mode){aQ=null;$("dateFrom").value="";$("dateTo").value="";TX_WINDOW.months=1;applyFiltersWithWindow();return;}
   aQ=mode;const map={today:"btnToday",week:"btnWeek",month:"btnMonth",year:"btnYear"};$(map[mode])?.classList.add("active");
   const today=new Date(),iso=d=>d.toISOString().slice(0,10),to=iso(today);let from="";
   if(mode==="today")from=to;else if(mode==="week"){const d=new Date(today);d.setDate(d.getDate()-7);from=iso(d);}else if(mode==="month"){const d=new Date(today);d.setMonth(d.getMonth()-1);from=iso(d);}else if(mode==="year"){const d=new Date(today);d.setMonth(0);d.setDate(1);from=iso(d);}
-  $("dateFrom").value=from;$("dateTo").value=to;applyFilters();
+  $("dateFrom").value=from;$("dateTo").value=to;TX_WINDOW.months=0;applyFiltersWithWindow();
 }
 function sortView(){const k=S.sortKey,dir=S.sortDir==="asc"?1:-1;S.view.sort((a,b)=>{let av=a[k],bv=b[k];if(k==="amount"){av=Number(av||0);bv=Number(bv||0);}else{av=String(av||"");bv=String(bv||"");}return av<bv?-dir:av>bv?dir:0;});$("shDate").textContent=S.sortKey==="created_at"?(S.sortDir==="asc"?"↑":"↓"):"";}
 
@@ -2335,7 +2399,7 @@ async function load(fromCache=false){
         S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
         if(!S.categories.size) S.categories.add("other");
         if(!S.currencies.size) S.currencies.add("KWD");
-        buildFilters(); applyFilters();
+        buildFilters(); applyFiltersWithWindow();
         ss(S.view.length+" transactions (caché)");
         renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
         load(true); // refresh in background
@@ -2351,7 +2415,7 @@ async function load(fromCache=false){
     S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
     if(!S.categories.size) S.categories.add("other");
     if(!S.currencies.size) S.currencies.add("KWD");
-    buildFilters(); applyFilters();
+    buildFilters(); applyFiltersWithWindow();
     ss(S.view.length+" transactions");
     renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
     if(fromCache) showToast2("🔄","Datos actualizados","","var(--blue)",2500);
@@ -2395,9 +2459,9 @@ function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{const isDark=document.documentElement.getAttribute("data-theme")==="dark";const next=isDark?"light":"dark";document.documentElement.setAttribute("data-theme",next);localStorage.setItem("theme",next);$("themeBtn").textContent=isDark?"☀️":"🌙";});
   $("refreshBtn").addEventListener("click",load);
-  $("curFilter").addEventListener("change",applyFilters);$("catFilter").addEventListener("change",applyFilters);$("dateFrom").addEventListener("change",applyFilters);$("dateTo").addEventListener("change",applyFilters);
+  $("curFilter").addEventListener("change",applyFiltersWithWindow);$("catFilter").addEventListener("change",applyFiltersWithWindow);$("dateFrom").addEventListener("change",applyFiltersWithWindow);$("dateTo").addEventListener("change",applyFiltersWithWindow);
   $("btnToday").addEventListener("click",()=>setQ("today"));$("btnWeek").addEventListener("click",()=>setQ("week"));$("btnMonth").addEventListener("click",()=>setQ("month"));$("btnYear").addEventListener("click",()=>setQ("year"));
-  $("btnClear").addEventListener("click",()=>{aQ=null;document.querySelectorAll(".qbtn").forEach(b=>b.classList.remove("active"));$("dateFrom").value="";$("dateTo").value="";applyFilters();});
+  $("btnClear").addEventListener("click",()=>{aQ=null;document.querySelectorAll(".qbtn").forEach(b=>b.classList.remove("active"));$("dateFrom").value="";$("dateTo").value="";TX_WINDOW.months=1;applyFiltersWithWindow();});
   document.querySelectorAll("thead th[data-sort]").forEach(th=>th.addEventListener("click",()=>{const k=th.getAttribute("data-sort");if(S.sortKey===k)S.sortDir=S.sortDir==="asc"?"desc":"asc";else{S.sortKey=k;S.sortDir=k==="created_at"?"desc":"asc";}sortView();render();}));
   $("btnDelete").addEventListener("click",doDel);$("btnUndo").addEventListener("click",undoDel);
   $("mdClose").addEventListener("click",closeMonthDetail);
@@ -3060,7 +3124,118 @@ function updateBadges(){
   if(ruleBadge) ruleBadge.textContent = S.rules.length || "—";
 }
 
-bind();load();loadRules();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
+
+// ─── TRANSACTIONS: SEARCH + DATE WINDOW ──────────────────────────
+const TX_WINDOW = { months: 1 }; // default: show current month only
+let _searchQ = "";
+
+function getWindowStartDate(months){
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - (months-1), 1);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";
+}
+
+function updateRangeLabel(){
+  const m = TX_WINDOW.months;
+  const lbl = document.getElementById("txRangeLabel");
+  const btn = document.getElementById("loadMoreBtn");
+  if(!lbl) return;
+  if(m === 0){
+    lbl.textContent = "Mostrando todos los registros";
+    if(btn){ btn.textContent = "Ver menos ↑"; }
+  } else if(m === 1){
+    const now = new Date();
+    lbl.textContent = "Mostrando " + MO[now.getMonth()] + " " + now.getFullYear();
+    if(btn){ btn.textContent = "Ver más meses ↓"; }
+  } else {
+    lbl.textContent = "Mostrando últimos " + m + " meses";
+    if(btn){ btn.textContent = m >= 12 ? "Ver todos ↓" : "Ver más meses ↓"; }
+  }
+}
+
+function applyFiltersWithWindow(){
+  const cur = document.getElementById("curFilter")?.value || "";
+  const cat = document.getElementById("catFilter")?.value || "";
+  const df  = document.getElementById("dateFrom")?.value || "";
+  const dt  = document.getElementById("dateTo")?.value   || "";
+  const q   = _searchQ.toLowerCase().trim();
+
+  // Date window (only if no manual date filter)
+  let windowFrom = "";
+  if(!df && !dt && TX_WINDOW.months > 0){
+    windowFrom = getWindowStartDate(TX_WINDOW.months);
+  }
+
+  S.view = S.all.filter(r=>{
+    if(cur && r.currency !== cur) return false;
+    if(cat && (r.category||"other") !== cat) return false;
+    const d = isoDay(r.created_at||r.date_iso||"");
+    if(df && d && d < df) return false;
+    if(dt && d && d > dt) return false;
+    if(windowFrom && d && d < windowFrom) return false;
+
+    // Search filter
+    if(q){
+      const merch = cm(r.merchant_clean||r.merchant_raw||"").toLowerCase();
+      const catL  = (r.category||"").toLowerCase();
+      const amt   = String(r.amount||"");
+      if(!merch.includes(q) && !catL.includes(q) && !amt.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Update search count
+  const sc = document.getElementById("searchCount");
+  if(sc){
+    sc.textContent = q ? S.view.length+" resultado"+(S.view.length!==1?"s":"") : "";
+  }
+
+  sortView(); render(); updateRangeLabel();
+}
+
+function initSearchAndWindow(){
+  const input = document.getElementById("searchInput");
+  const clear = document.getElementById("searchClear");
+  const more  = document.getElementById("loadMoreBtn");
+
+  if(input){
+    input.addEventListener("input", ()=>{
+      _searchQ = input.value;
+      clear?.classList.toggle("show", _searchQ.length > 0);
+      applyFiltersWithWindow();
+    });
+  }
+
+  if(clear){
+    clear.addEventListener("click", ()=>{
+      _searchQ = "";
+      if(input) input.value = "";
+      clear.classList.remove("show");
+      applyFiltersWithWindow();
+    });
+  }
+
+  if(more){
+    more.addEventListener("click", ()=>{
+      if(TX_WINDOW.months === 0){
+        TX_WINDOW.months = 1; // back to current month
+      } else if(TX_WINDOW.months === 1){
+        TX_WINDOW.months = 3;
+      } else if(TX_WINDOW.months === 3){
+        TX_WINDOW.months = 6;
+      } else if(TX_WINDOW.months === 6){
+        TX_WINDOW.months = 12;
+      } else {
+        TX_WINDOW.months = 0; // show all
+      }
+      applyFiltersWithWindow();
+    });
+  }
+
+  updateRangeLabel();
+}
+
+bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
 
 <!-- Category popup -->
