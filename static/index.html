@@ -1695,10 +1695,74 @@ function buildFilters(){
   $("catFilter").innerHTML=`<option value="">All categories</option>`+[...S.categories].sort().map(c=>`<option value="${c}">${tc(c)}</option>`).join("");
   const rc=$("ruleCat");if(rc)rc.innerHTML=[...S.categories].sort().map(c=>`<option value="${c}">${tc(c)}</option>`).join("");
 }
+
+// ─── FILTER FUNCTIONS (defined early for mobile compatibility) ───
+function getWindowStartDate(months){
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - (months-1), 1);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";
+}
+
+function updateRangeLabel(){
+  const m = TX_WINDOW.months;
+  const lbl = document.getElementById("txRangeLabel");
+  const btn = document.getElementById("loadMoreBtn");
+  if(!lbl) return;
+  if(m === 0){
+    lbl.textContent = "Mostrando todos los registros";
+    if(btn){ btn.textContent = "Ver menos ↑"; }
+  } else if(m === 1){
+    const now = new Date();
+    lbl.textContent = "Mostrando " + MO[now.getMonth()] + " " + now.getFullYear();
+    if(btn){ btn.textContent = "Ver más meses ↓"; }
+  } else {
+    lbl.textContent = "Mostrando últimos " + m + " meses";
+    if(btn){ btn.textContent = m >= 12 ? "Ver todos ↓" : "Ver más meses ↓"; }
+  }
+}
+
+function applyFiltersWithWindow(){
+  const cur = document.getElementById("curFilter")?.value || "";
+  const cat = document.getElementById("catFilter")?.value || "";
+  const df  = document.getElementById("dateFrom")?.value || "";
+  const dt  = document.getElementById("dateTo")?.value   || "";
+  const q   = _searchQ.toLowerCase().trim();
+
+  // Date window (only if no manual date filter)
+  let windowFrom = "";
+  if(!df && !dt && TX_WINDOW.months > 0){
+    windowFrom = getWindowStartDate(TX_WINDOW.months);
+  }
+
+  S.view = S.all.filter(r=>{
+    if(cur && r.currency !== cur) return false;
+    if(cat && (r.category||"other") !== cat) return false;
+    const d = isoDay(r.created_at||r.date_iso||"");
+    if(df && d && d < df) return false;
+    if(dt && d && d > dt) return false;
+    if(windowFrom && d && d < windowFrom) return false;
+
+    // Search filter
+    if(q){
+      const merch = cm(r.merchant_clean||r.merchant_raw||"").toLowerCase();
+      const catL  = (r.category||"").toLowerCase();
+      const amt   = String(r.amount||"");
+      if(!merch.includes(q) && !catL.includes(q) && !amt.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Update search count
+  const sc = document.getElementById("searchCount");
+  if(sc){
+    sc.textContent = q ? S.view.length+" resultado"+(S.view.length!==1?"s":"") : "";
+  }
+
+  sortView(); render(); updateRangeLabel();
+}
+
 function applyFilters(){
-  const cur=$("curFilter").value,cat=$("catFilter").value,df=$("dateFrom").value,dt=$("dateTo").value;
-  S.view=S.all.filter(r=>{if(cur&&r.currency!==cur)return false;if(cat&&(r.category||"other")!==cat)return false;if(df||dt){const d=isoDay(r.created_at||r.date_iso||"");if(df&&d&&d<df)return false;if(dt&&d&&d>dt)return false;}return true;});
-  sortView();render();
+  applyFiltersWithWindow();
 }
 let aQ=null;
 function setQ(mode){
