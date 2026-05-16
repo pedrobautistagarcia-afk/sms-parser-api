@@ -512,6 +512,122 @@ tr.sk td{padding:13px 14px!important;}
 .ri-edit-select { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-s); color: var(--t1); font-family: var(--font); font-size: 13px; padding: 6px 9px; outline: none; }
 .ri-edit-btns { display: flex; gap: 6px; margin-left: auto; }
 
+
+/* ═══════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════ */
+
+/* Mobile toggle button — fixed bottom right */
+.mobile-toggle {
+  position: fixed; bottom: 20px; right: 20px; z-index: 500;
+  width: 44px; height: 44px;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 50%;
+  box-shadow: 0 4px 16px var(--blue-g);
+  cursor: pointer; font-size: 18px;
+  display: none; /* hidden on desktop */
+  align-items: center; justify-content: center;
+  transition: transform .15s, box-shadow .15s;
+}
+.mobile-toggle:hover { transform: scale(1.08); box-shadow: 0 6px 20px var(--blue-g); }
+
+@media (max-width: 768px) {
+  /* Show mobile toggle */
+  .mobile-toggle { display: flex; }
+
+  /* Layout: stack vertically */
+  body { flex-direction: column; overflow: auto; }
+
+  /* Sidebar becomes top nav bar */
+  .sidebar {
+    width: 100%; height: auto; min-height: 0;
+    flex-direction: row; overflow-x: auto; overflow-y: hidden;
+    border-right: none; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; padding: 0;
+  }
+  .sb-top { display: none; }
+  .sb-hr  { display: none; }
+  .sb-footer { display: none; }
+  .sb-nav {
+    display: flex; flex-direction: row; gap: 0;
+    padding: 0; flex: 1; overflow-x: auto;
+  }
+  .sb-sec { display: none; }
+  .nav {
+    flex-direction: column; gap: 2px; padding: 8px 14px;
+    border-radius: 0; margin-bottom: 0; flex-shrink: 0;
+    border-bottom: 2px solid transparent; font-size: 11px;
+  }
+  .nav.active { background: transparent; border-bottom-color: var(--blue); color: var(--blue); }
+  .nav-ic { font-size: 18px; width: auto; }
+  .nav-badge { display: none; }
+
+  /* Main fills screen */
+  .main { overflow: visible; min-width: 0; }
+  .content { padding: 14px; overflow: visible; }
+
+  /* Topbar compact */
+  .topbar { padding: 10px 14px; }
+  .tb-title { font-size: 15px; }
+  .tb-sub { font-size: 11px; }
+  .status-pill { display: none; }
+
+  /* Overview: single column */
+  .ov-hero-strip { grid-template-columns: 1fr; gap: 10px; }
+  .ov-grid { grid-template-columns: 1fr; }
+  .ov-col { gap: 12px; }
+
+  /* Balance grid: 2 cols */
+  .bal-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Analytics grid: single column */
+  .ana-grid { grid-template-columns: 1fr; }
+  .ana-card.full { grid-column: span 1; }
+
+  /* Stat strip: single column */
+  .stat-strip { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Filters bar: wrap tighter */
+  .fbar { gap: 6px; padding: 8px 10px; }
+  .fsep { display: none; }
+  .qbtns { flex-wrap: wrap; }
+
+  /* Table: hide some columns */
+  #t thead th:nth-child(4), #t tbody td:nth-child(4) { display: none !important; } /* category */
+  #t thead th:nth-child(3), #t tbody td:nth-child(3) { width: 50% !important; }
+  #t thead th:nth-child(5), #t tbody td:nth-child(5) { width: 25% !important; }
+  #t thead th:nth-child(6), #t tbody td:nth-child(6) { width: 25% !important; }
+
+  /* Donut wrap: stack vertically */
+  .ov-donut-wrap { flex-direction: column; align-items: flex-start; }
+  .ov-donut-svg { align-self: center; }
+
+  /* Month detail: full width */
+  .month-detail { margin-top: 12px; }
+  .md-currencies { grid-template-columns: repeat(2,1fr); }
+
+  /* Modals: full screen on mobile */
+  .mbox.tx, .mbox.rule, .cat-popup {
+    width: 100vw !important;
+    max-height: 100dvh !important;
+    border-radius: var(--radius) var(--radius) 0 0 !important;
+    margin: auto 0 0 0 !important;
+  }
+  .ovl, .cat-popup-ovl { align-items: flex-end !important; }
+  .rule-overlay { align-items: flex-end !important; }
+
+  /* Rules list */
+  .ri { flex-wrap: wrap; gap: 6px; }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1100px) {
+  :root { --sidebar: 180px; }
+  .ov-hero-strip { grid-template-columns: 1fr 1fr; }
+  .ov-hero-strip .ov-hero:first-child { grid-column: span 2; }
+  .bal-grid { grid-template-columns: 1fr 1fr; }
+}
+
 </style>
 </head>
 <body>
@@ -935,6 +1051,9 @@ const CAT_ICONS = {
 async function renderOverview(){
   if(!S.all.length) return;
 
+  // Ensure FX rates are loaded before computing EUR totals
+  if(!FX.rates){ try{ await getFX(); }catch(_){} }
+
   const now = new Date();
   const ym = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   const monthName = MO[now.getMonth()]+" "+now.getFullYear();
@@ -994,6 +1113,7 @@ async function renderOverview(){
   }
 
   // ── Bar chart: last 5 months ───────────
+  // rates: 1 EUR = X KWD. Fallback: 1 EUR ≈ 3.28 KWD (approximate)
   const rates = FX.rates || {KWD:3.28,USD:0.93,AED:0.25};
   const barNote = $("ovBarNote");
 
@@ -1027,9 +1147,13 @@ async function renderOverview(){
       const parts = ym.split("-");
       const lbl = MS[+parts[1]-1]+"'"+parts[0].slice(2);
       const isPeak = i===peakIdx&&v>0;
+      const kwdTotal = months5.map((m2,j)=>{
+        const rws=S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(m2));
+        return rws.reduce((s,r)=>s+Number(r.amount||0),0);
+      })[i];
       const px = maxBar>0 ? Math.max(Math.round(v/maxBar*140), v>0?6:0) : 0;
       return `<div class="ov-bar-col${isPeak?" ov-peak":""}">
-        <div class="ov-bar-val">${v>0?"€"+Math.round(v):""}</div>
+        <div class="ov-bar-val" style="font-size:10px;font-family:var(--mono);color:var(--t2);text-align:center;margin-bottom:2px;">${v>0?"€"+Math.round(v):""}</div>
         <div class="ov-bar-wrap">
           <div class="ov-bar" style="height:${px}px;width:100%;"></div>
         </div>
@@ -1530,6 +1654,73 @@ function bind(){
   window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");closeMonthDetail();}});
 }
 
+
+// ─── MOBILE TOGGLE ───────────────────────────────────────────
+(function(){
+  const btn = document.getElementById("mobileToggle");
+  if(!btn) return;
+
+  const MOBILE_CSS = `
+    body.fm { flex-direction:column!important; overflow:auto!important; }
+    body.fm .sidebar { width:100%!important; height:auto!important; flex-direction:row!important; overflow-x:auto!important; overflow-y:hidden!important; border-right:none!important; border-bottom:1px solid var(--border)!important; padding:0!important; }
+    body.fm .sb-top, body.fm .sb-hr, body.fm .sb-footer { display:none!important; }
+    body.fm .sb-nav { display:flex!important; flex-direction:row!important; padding:0!important; flex:1!important; overflow-x:auto!important; }
+    body.fm .sb-sec { display:none!important; }
+    body.fm .nav { flex-direction:column!important; gap:2px!important; padding:8px 12px!important; border-radius:0!important; margin-bottom:0!important; flex-shrink:0!important; border-bottom:2px solid transparent!important; font-size:11px!important; }
+    body.fm .nav.active { background:transparent!important; border-bottom-color:var(--blue)!important; }
+    body.fm .nav-badge { display:none!important; }
+    body.fm .main { overflow:visible!important; min-width:0!important; }
+    body.fm .content { padding:14px!important; }
+    body.fm .topbar { padding:10px 14px!important; }
+    body.fm .tb-title { font-size:15px!important; }
+    body.fm .status-pill { display:none!important; }
+    body.fm .ov-hero-strip { grid-template-columns:1fr!important; gap:10px!important; }
+    body.fm .ov-grid { grid-template-columns:1fr!important; }
+    body.fm .ov-col { gap:12px!important; }
+    body.fm .stat-strip { grid-template-columns:1fr!important; gap:10px!important; }
+    body.fm .bal-grid { grid-template-columns:1fr 1fr!important; gap:10px!important; }
+    body.fm .ana-grid { grid-template-columns:1fr!important; }
+    body.fm .ana-card.full { grid-column:span 1!important; }
+    body.fm .ov-donut-wrap { flex-direction:column!important; align-items:center!important; }
+    body.fm .fbar { flex-wrap:wrap!important; gap:6px!important; }
+    body.fm .fsep { display:none!important; }
+    body.fm #t thead th:nth-child(4), body.fm #t tbody td:nth-child(4) { display:none!important; }
+    body.fm #t thead th:nth-child(3), body.fm #t tbody td:nth-child(3) { width:48%!important; }
+    body.fm #t thead th:nth-child(5), body.fm #t tbody td:nth-child(5) { width:26%!important; }
+    body.fm #t thead th:nth-child(6), body.fm #t tbody td:nth-child(6) { width:26%!important; }
+    body.fm .md-currencies { grid-template-columns:1fr 1fr!important; }
+    body.fm .mbox.tx, body.fm .mbox.rule, body.fm .cat-popup { width:100vw!important; max-height:90dvh!important; border-radius:16px 16px 0 0!important; }
+    body.fm .ovl, body.fm .cat-popup-ovl { align-items:flex-end!important; }
+  `;
+  const styleEl = document.createElement("style");
+  styleEl.id = "mobile-style";
+  document.head.appendChild(styleEl);
+  styleEl.textContent = MOBILE_CSS;
+
+  let on = localStorage.getItem("mobileView")==="1";
+  // Also auto-enable on narrow screens
+  if(window.innerWidth < 769) on = true;
+
+  function apply(){
+    document.body.classList.toggle("fm", on);
+    btn.textContent = on ? "🖥️" : "📱";
+    btn.title = on ? "Switch to desktop view" : "Switch to mobile view";
+  }
+  apply();
+
+  btn.addEventListener("click",()=>{
+    on = !on;
+    localStorage.setItem("mobileView", on?"1":"0");
+    apply();
+  });
+
+  // Re-check on resize
+  window.addEventListener("resize",()=>{
+    if(window.innerWidth < 769 && !on){ on=true; apply(); }
+  });
+})();
+
+
 bind();load();loadRules();getFX().catch(()=>{});
 </script>
 
@@ -1546,6 +1737,10 @@ bind();load();loadRules();getFX().catch(()=>{});
     <div class="cat-popup-body" id="catPopupBody"></div>
   </div>
 </div>
+
+
+<!-- Mobile view toggle -->
+<button class="mobile-toggle" id="mobileToggle" title="Switch layout">📱</button>
 
 </body>
 </html>
