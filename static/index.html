@@ -413,9 +413,9 @@ tr.sk td{padding:13px 14px!important;}
 .ov-tx-cur { font-size: 11px; color: var(--t3); margin-top: 2px; }
 
 /* Mini bar chart */
-.ov-bars { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding: 0 18px; margin-bottom: 8px; }
+.ov-bars { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 0 18px; margin-bottom: 8px; }
 .ov-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; }
-.ov-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.ov-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; min-height: 0; }
 .ov-bar {
   width: 100%; border-radius: 5px 5px 0 0;
   background: linear-gradient(180deg, var(--blue), var(--teal));
@@ -434,7 +434,7 @@ tr.sk td{padding:13px 14px!important;}
 .ov-donut-svg { flex-shrink: 0; }
 .ov-donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .ov-legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.ov-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.ov-legend-dot { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display:flex; align-items:center; justify-content:center; font-size:14px; }
 .ov-legend-info { flex: 1; min-width: 0; }
 .ov-legend-name { font-size: 12px; font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ov-legend-sub { font-size: 11px; color: var(--t3); }
@@ -797,7 +797,7 @@ async function renderBalance(){
 
 function updateStatCards(){
   const b=cbal(S.view);const mix=b.KWD+b.USD+b.EUR+b.AED;
-  $("scTotal").textContent=(mix>=0?"+":"")+mix.toFixed(2);
+  $("scTotal").textContent=(mix>=0?"+":"")+mix.toFixed(2)+" KWD";
   const now=new Date(),ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   const mExp=S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(ym)).reduce((s,r)=>s+Number(r.amount||0),0);
   $("scMonth").textContent=mExp.toFixed(3)+" KWD";
@@ -1074,7 +1074,7 @@ async function renderOverview(){
     legend.innerHTML=sortedCats.map(([cat,val])=>{
       const pct=Math.round(val/totalCat*100);
       return`<div class="ov-legend-item">
-        <div class="ov-legend-dot" style="background:${CAT_COLORS[cat]||"#94a3b8"}"></div>
+        <div class="ov-legend-dot" style="background:${CAT_COLORS[cat]||"#94a3b8"};display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;font-size:14px;">${CAT_ICONS[cat]||"❓"}</div>
         <div class="ov-legend-info">
           <div class="ov-legend-name">${tc(cat)}</div>
           <div class="ov-legend-sub">${S.all.filter(r=>(r.category||"other")===cat&&(r.created_at||"").startsWith(ym)&&idir(r)==="out").length} tx · ${pct}%</div>
@@ -1243,7 +1243,7 @@ async function renderAnalytics(){
   // Top categories
   const catMap=new Map();for(const r of expRows){const c=r.category||"other";catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));}
   const tC=[...catMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);const mC=tC[0]?.[1]||1;
-  const cEl=$("catBars");if(cEl)cEl.innerHTML=tC.length?tC.map(([c,v])=>`<div class="h-bar-row"><div class="h-bar-lbl">${tc(c)}</div><div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(v/mC*100)}%;background:var(--blue);"></div></div><div class="h-bar-val">${v.toFixed(2)}</div></div>`).join(""):`<p style="color:var(--t3);font-size:13px">No data for ${year}</p>`;
+  const cEl=$("catBars");if(cEl)cEl.innerHTML=tC.length?tC.map(([c,v])=>`<div class="h-bar-row"><div class="h-bar-lbl" style="display:flex;align-items:center;gap:5px;"><span style="font-size:13px;">${CAT_ICONS[c]||"❓"}</span>${tc(c)}</div><div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(v/mC*100)}%;background:var(--blue);"></div></div><div class="h-bar-val">${v.toFixed(2)}</div></div>`).join(""):`<p style="color:var(--t3);font-size:13px">No data for ${year}</p>`;
 
   // Top merchants
   const mMap=new Map();for(const r of expRows){const m=cm(r.merchant_clean||r.merchant_raw||"").trim()||"—";mMap.set(m,(mMap.get(m)||0)+Number(r.amount||0));}
