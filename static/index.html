@@ -520,14 +520,14 @@ tr.sk td{padding:13px 14px!important;}
 /* Mobile toggle button — fixed bottom right */
 .mobile-toggle {
   position: fixed; bottom: 20px; right: 20px; z-index: 500;
-  width: 44px; height: 44px;
-  background: var(--blue); color: #fff;
-  border: none; border-radius: 50%;
-  box-shadow: 0 4px 16px var(--blue-g);
-  cursor: pointer; font-size: 18px;
-  display: none; /* hidden on desktop */
+  width: 38px; height: 38px;
+  background: var(--surface); color: var(--t2);
+  border: 1px solid var(--border2); border-radius: 10px;
+  box-shadow: var(--shadow-m);
+  cursor: pointer; font-size: 15px;
+  display: flex; /* always visible */
   align-items: center; justify-content: center;
-  transition: transform .15s, box-shadow .15s;
+  transition: all .15s;
 }
 .mobile-toggle:hover { transform: scale(1.08); box-shadow: 0 6px 20px var(--blue-g); }
 
@@ -628,6 +628,108 @@ tr.sk td{padding:13px 14px!important;}
   .bal-grid { grid-template-columns: 1fr 1fr; }
 }
 
+
+/* ═══════════════════════════════════════
+   INVESTMENTS
+═══════════════════════════════════════ */
+.inv-hero-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.inv-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-m);
+  transition: all .15s;
+}
+.inv-hero:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.inv-hero.accent {
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  border-color: transparent;
+}
+.inv-hero.accent .inv-lbl { color: rgba(255,255,255,.75); }
+.inv-hero.accent .inv-val { color: #fff; }
+.inv-hero.accent .inv-sub { color: rgba(255,255,255,.6); }
+.inv-lbl { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.inv-val { font-size: 22px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+.inv-sub { font-size: 11px; color: var(--t3); margin-top: 4px; }
+.inv-val.pos { color: var(--green); }
+.inv-val.neg { color: var(--red); }
+
+.inv-section-title {
+  font-size: 13px; font-weight: 700; color: var(--t2);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin: 20px 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.inv-section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.inv-table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-m);
+  margin-bottom: 20px;
+}
+.inv-table { width: 100%; border-collapse: collapse; }
+.inv-table thead th {
+  padding: 10px 14px;
+  font-size: 11px; font-weight: 600; color: var(--t3);
+  text-align: left; text-transform: uppercase; letter-spacing: .5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.inv-table thead th.r { text-align: right; }
+.inv-table tbody td {
+  padding: 12px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.inv-table tbody tr:last-child td { border-bottom: none; }
+.inv-table tbody tr:hover td { background: var(--bg); }
+.inv-table td.r { text-align: right; font-family: var(--mono); }
+.inv-ticker {
+  font-weight: 700; font-family: var(--mono); font-size: 13px; color: var(--blue);
+}
+.inv-name { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.inv-badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 600;
+}
+.inv-badge.eur { background: var(--purple-l); color: var(--purple); }
+.inv-badge.usd { background: var(--blue-l); color: var(--blue); }
+.pos { color: var(--green); font-weight: 600; }
+.neg { color: var(--red); font-weight: 600; }
+.inv-pnl-bar-wrap { width: 80px; height: 4px; background: var(--border); border-radius: 999px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+.inv-pnl-bar { height: 100%; border-radius: 999px; }
+
+.inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.inv-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-m);
+}
+.inv-card-title { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; }
+
+/* Allocation donut */
+.inv-alloc-wrap { display: flex; align-items: center; gap: 16px; }
+.inv-alloc-legend { flex: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.inv-alloc-item { display: flex; align-items: center; gap: 8px; }
+.inv-alloc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.inv-alloc-name { font-size: 12px; color: var(--t2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-alloc-pct { font-size: 12px; font-family: var(--mono); font-weight: 600; color: var(--t1); }
+
+/* Cash row */
+.inv-cash-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.inv-cash-row:last-child { border-bottom: none; }
+.inv-cash-lbl { color: var(--t2); display: flex; align-items: center; gap: 6px; }
+.inv-cash-val { font-family: var(--mono); font-weight: 600; }
+
 </style>
 </head>
 <body>
@@ -645,6 +747,7 @@ tr.sk td{padding:13px 14px!important;}
     <div class="nav active" data-view="overview"><span class="nav-ic">🏠</span><span>Overview</span></div>
     <div class="nav" data-view="transactions"><span class="nav-ic">📋</span><span>Transactions</span><span class="nav-badge" id="txCount">—</span></div>
     <div class="nav" data-view="analytics"><span class="nav-ic">📊</span><span>Analytics</span></div>
+    <div class="nav" data-view="investments"><span class="nav-ic">📈</span><span>Investments</span></div>
     <div class="nav" data-view="balance"><span class="nav-ic">💰</span><span>Balance</span></div>
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="rules"><span class="nav-ic">⚡</span><span>Rules</span><span class="nav-badge" id="rulesCount">—</span></div>
@@ -866,6 +969,299 @@ tr.sk td{padding:13px 14px!important;}
         <div class="ana-card"><div class="ana-card-title">Top merchants</div><div id="mBars"></div></div>
         <div class="ana-card"><div class="ana-card-title">Summary</div><div id="sumStats"></div></div>
         <div class="ana-card"><div class="ana-card-title">By currency</div><div id="curBars"></div></div>
+      </div>
+    </div>
+
+
+    <!-- INVESTMENTS -->
+    <div class="view" id="view-investments">
+
+      <!-- Hero strip -->
+      <div class="inv-hero-strip">
+        <div class="inv-hero accent">
+          <div class="inv-lbl">Valor liquidativo</div>
+          <div class="inv-val">€59,067</div>
+          <div class="inv-sub">Abril 30, 2026 · IBKR</div>
+        </div>
+        <div class="inv-hero">
+          <div class="inv-lbl">Acciones</div>
+          <div class="inv-val">€42,584</div>
+          <div class="inv-sub">Long · 17 posiciones</div>
+        </div>
+        <div class="inv-hero">
+          <div class="inv-lbl">Efectivo</div>
+          <div class="inv-val">€16,482</div>
+          <div class="inv-sub">EUR + USD</div>
+        </div>
+        <div class="inv-hero">
+          <div class="inv-lbl">Rentabilidad abril</div>
+          <div class="inv-val pos">+6.58%</div>
+          <div class="inv-sub">+€3,647 vs marzo</div>
+        </div>
+      </div>
+
+      <!-- Positions -->
+      <div class="inv-section-title">📊 Posiciones en EUR</div>
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>Activo</th>
+              <th>Mercado</th>
+              <th class="r">Cantidad</th>
+              <th class="r">Precio</th>
+              <th class="r">Valor (€)</th>
+              <th class="r">P&L posición</th>
+              <th class="r">P&L %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="inv-ticker">DFEN</div><div class="inv-name">VanEck Defense ETF</div></td>
+              <td><span class="inv-badge eur">EUR</span></td>
+              <td class="r">72.67</td>
+              <td class="r">55.92</td>
+              <td class="r">4,063</td>
+              <td class="r"><span class="pos">+527</span></td>
+              <td class="r"><span class="pos">+14.9%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">GLUG</div><div class="inv-name">L&G Clean Water UCITS ETF</div></td>
+              <td><span class="inv-badge eur">EUR</span></td>
+              <td class="r">20.35</td>
+              <td class="r">18.03</td>
+              <td class="r">367</td>
+              <td class="r"><span class="pos">+14</span></td>
+              <td class="r"><span class="pos">+4.0%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">IUSE</div><div class="inv-name">iShares S&P 500 EUR-Hedged</div></td>
+              <td><span class="inv-badge eur">EUR</span></td>
+              <td class="r">112.50</td>
+              <td class="r">147.54</td>
+              <td class="r">16,597</td>
+              <td class="r"><span class="pos">+2,971</span></td>
+              <td class="r"><span class="pos">+21.8%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">NQSE</div><div class="inv-name">iShares NASDAQ 100 EUR-Hedged</div></td>
+              <td><span class="inv-badge eur">EUR</span></td>
+              <td class="r">499.26</td>
+              <td class="r">15.89</td>
+              <td class="r">7,931</td>
+              <td class="r"><span class="pos">+1,804</span></td>
+              <td class="r"><span class="pos">+29.4%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">RED</div><div class="inv-name">Redeia Corp SA</div></td>
+              <td><span class="inv-badge eur">EUR</span></td>
+              <td class="r">30.00</td>
+              <td class="r">14.90</td>
+              <td class="r">447</td>
+              <td class="r"><span class="neg">-4</span></td>
+              <td class="r"><span class="neg">-0.9%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="inv-section-title">💵 Posiciones en USD</div>
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>Activo</th>
+              <th>Tipo</th>
+              <th class="r">Cantidad</th>
+              <th class="r">Precio USD</th>
+              <th class="r">Valor USD</th>
+              <th class="r">P&L posición</th>
+              <th class="r">P&L %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="inv-ticker">AAPL</div><div class="inv-name">Apple Inc</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">1.70</td>
+              <td class="r">271.35</td>
+              <td class="r">462</td>
+              <td class="r"><span class="pos">+89</span></td>
+              <td class="r"><span class="pos">+23.8%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">ASTS</div><div class="inv-name">AST SpaceMobile</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">13.30</td>
+              <td class="r">73.90</td>
+              <td class="r">982</td>
+              <td class="r"><span class="neg">-218</span></td>
+              <td class="r"><span class="neg">-18.2%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">BTCWUSD</div><div class="inv-name">WisdomTree Physical Bitcoin</div></td>
+              <td><span class="inv-badge usd">ETC</span></td>
+              <td class="r">26.00</td>
+              <td class="r">18.23</td>
+              <td class="r">474</td>
+              <td class="r"><span class="neg">-6</span></td>
+              <td class="r"><span class="neg">-1.2%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">GOOG</div><div class="inv-name">Alphabet Inc - Class C</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">7.53</td>
+              <td class="r">381.94</td>
+              <td class="r">2,874</td>
+              <td class="r"><span class="pos">+1,624</span></td>
+              <td class="r"><span class="pos">+129.9%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">IGLN</div><div class="inv-name">iShares Physical Gold ETC</div></td>
+              <td><span class="inv-badge usd">ETC</span></td>
+              <td class="r">14.96</td>
+              <td class="r">89.73</td>
+              <td class="r">1,341</td>
+              <td class="r"><span class="pos">+444</span></td>
+              <td class="r"><span class="pos">+49.5%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">INTC</div><div class="inv-name">Intel Corp</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">5.00</td>
+              <td class="r">94.48</td>
+              <td class="r">472</td>
+              <td class="r"><span class="pos">+3</span></td>
+              <td class="r"><span class="pos">+0.5%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">KD</div><div class="inv-name">Kyndryl Holdings</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">27.00</td>
+              <td class="r">13.82</td>
+              <td class="r">373</td>
+              <td class="r"><span class="neg">-24</span></td>
+              <td class="r"><span class="neg">-6.1%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">OSCR</div><div class="inv-name">Oscar Health - Class A</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">20.00</td>
+              <td class="r">18.46</td>
+              <td class="r">369</td>
+              <td class="r"><span class="neg">-28</span></td>
+              <td class="r"><span class="neg">-7.1%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">PLTR</div><div class="inv-name">Palantir Technologies</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">3.50</td>
+              <td class="r">139.11</td>
+              <td class="r">487</td>
+              <td class="r"><span class="neg">-13</span></td>
+              <td class="r"><span class="neg">-2.7%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">TSLA</div><div class="inv-name">Tesla Inc</div></td>
+              <td><span class="inv-badge usd">Acción</span></td>
+              <td class="r">4.32</td>
+              <td class="r">381.63</td>
+              <td class="r">1,647</td>
+              <td class="r"><span class="pos">+413</span></td>
+              <td class="r"><span class="pos">+33.5%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">TSM</div><div class="inv-name">Taiwan Semiconductor ADR</div></td>
+              <td><span class="inv-badge usd">ADR</span></td>
+              <td class="r">3.34</td>
+              <td class="r">396.06</td>
+              <td class="r">1,323</td>
+              <td class="r"><span class="pos">+318</span></td>
+              <td class="r"><span class="pos">+31.7%</span></td>
+            </tr>
+            <tr>
+              <td><div class="inv-ticker">VDEM</div><div class="inv-name">Vanguard FTSE Emerging Markets</div></td>
+              <td><span class="inv-badge usd">ETF</span></td>
+              <td class="r">57.50</td>
+              <td class="r">80.89</td>
+              <td class="r">4,650</td>
+              <td class="r"><span class="pos">+947</span></td>
+              <td class="r"><span class="pos">+25.6%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom grid: allocation + cash -->
+      <div class="inv-grid">
+        <div class="inv-card">
+          <div class="inv-card-title">Asignación de cartera</div>
+          <div class="inv-alloc-wrap">
+            <svg id="invDonut" width="120" height="120" viewBox="0 0 120 120">
+              <!-- EUR ETFs: IUSE+NQSE+DFEN+GLUG = 29,958 EUR → 72% of stocks -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="var(--border)" stroke-width="20"/>
+              <!-- IUSE 16597 = 39% -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#3b82f6" stroke-width="20"
+                stroke-dasharray="110 166" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+              <!-- NQSE 7931 = 18.6% -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#06b6d4" stroke-width="20"
+                stroke-dasharray="52 224" stroke-dashoffset="-110" transform="rotate(-90 60 60)"/>
+              <!-- VDEM 4650 = 10.9% -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#10b981" stroke-width="20"
+                stroke-dasharray="31 245" stroke-dashoffset="-162" transform="rotate(-90 60 60)"/>
+              <!-- GOOG 2874 = 6.7% -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#f59e0b" stroke-width="20"
+                stroke-dasharray="19 257" stroke-dashoffset="-193" transform="rotate(-90 60 60)"/>
+              <!-- TSLA 1647 = 3.9% -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#ef4444" stroke-width="20"
+                stroke-dasharray="11 265" stroke-dashoffset="-212" transform="rotate(-90 60 60)"/>
+              <!-- Rest 8885 = 20.9% -->
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#94a3b8" stroke-width="20"
+                stroke-dasharray="59 217" stroke-dashoffset="-223" transform="rotate(-90 60 60)"/>
+              <text x="60" y="56" text-anchor="middle" font-size="10" fill="var(--t3)" font-family="var(--font)">Acciones</text>
+              <text x="60" y="70" text-anchor="middle" font-size="11" fill="var(--t1)" font-weight="700" font-family="var(--mono)">€42.6K</text>
+            </svg>
+            <div class="inv-alloc-legend">
+              <div class="inv-alloc-item"><div class="inv-alloc-dot" style="background:#3b82f6"></div><div class="inv-alloc-name">IUSE (S&P500)</div><div class="inv-alloc-pct">39.0%</div></div>
+              <div class="inv-alloc-item"><div class="inv-alloc-dot" style="background:#06b6d4"></div><div class="inv-alloc-name">NQSE (NASDAQ)</div><div class="inv-alloc-pct">18.6%</div></div>
+              <div class="inv-alloc-item"><div class="inv-alloc-dot" style="background:#10b981"></div><div class="inv-alloc-name">VDEM (Emergentes)</div><div class="inv-alloc-pct">10.9%</div></div>
+              <div class="inv-alloc-item"><div class="inv-alloc-dot" style="background:#f59e0b"></div><div class="inv-alloc-name">GOOG (Alphabet)</div><div class="inv-alloc-pct">6.7%</div></div>
+              <div class="inv-alloc-item"><div class="inv-alloc-dot" style="background:#ef4444"></div><div class="inv-alloc-name">TSLA (Tesla)</div><div class="inv-alloc-pct">3.9%</div></div>
+              <div class="inv-alloc-item"><div class="inv-alloc-dot" style="background:#94a3b8"></div><div class="inv-alloc-name">Resto</div><div class="inv-alloc-pct">20.9%</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-card">
+          <div class="inv-card-title">Efectivo disponible</div>
+          <div class="inv-cash-row">
+            <span class="inv-cash-lbl"><span class="flag" style="display:inline-flex;width:16px">
+              <svg viewBox="0 0 16 12"><rect width="16" height="12" fill="#003399"/><g fill="#FFCC00"><circle cx="8" cy="2" r=".45"/><circle cx="10.4" cy="2.8" r=".45"/><circle cx="12" cy="4.5" r=".45"/><circle cx="12.5" cy="6" r=".45"/><circle cx="12" cy="7.5" r=".45"/><circle cx="10.4" cy="9.2" r=".45"/><circle cx="8" cy="10" r=".45"/><circle cx="5.6" cy="9.2" r=".45"/><circle cx="4" cy="7.5" r=".45"/><circle cx="3.5" cy="6" r=".45"/><circle cx="4" cy="4.5" r=".45"/><circle cx="5.6" cy="2.8" r=".45"/></g></svg>
+            </span> EUR</span>
+            <span class="inv-cash-val">€7,878</span>
+          </div>
+          <div class="inv-cash-row">
+            <span class="inv-cash-lbl"><span class="flag" style="display:inline-flex;width:16px">
+              <svg viewBox="0 0 16 12"><rect width="16" height="12" fill="#B22234"/><rect y="1" width="16" height="1.5" fill="#fff"/><rect y="4" width="16" height="1.5" fill="#fff"/><rect y="7" width="16" height="1.5" fill="#fff"/><rect y="10" width="16" height="1.5" fill="#fff"/><rect width="7" height="6" fill="#3C3B6E"/></svg>
+            </span> USD</span>
+            <span class="inv-cash-val">$10,094 <span style="font-size:11px;color:var(--t3)">(≈€8,604)</span></span>
+          </div>
+          <div class="inv-cash-row" style="margin-top:8px;padding-top:12px;border-top:2px solid var(--border);border-bottom:none;">
+            <span class="inv-cash-lbl" style="font-weight:700;color:var(--t1);">Total efectivo</span>
+            <span class="inv-cash-val" style="font-size:16px;">€16,482</span>
+          </div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+            <div class="inv-card-title" style="margin-bottom:10px;">Resumen del mes</div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Mark-to-Market</span><span class="inv-cash-val pos">+€3,648</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Dividendos</span><span class="inv-cash-val pos">+€15.75</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Comisiones</span><span class="inv-cash-val neg">-€1.88</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Compras realizadas</span><span class="inv-cash-val neg">-€1,212</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-m);font-size:12px;color:var(--t3);">
+        📄 Datos del informe IBKR · Abril 1–30, 2026 · Cuenta U16775860 · Divisa base EUR · Tasa de rendimiento ponderada: <strong>+6.58%</strong>
       </div>
     </div>
 
@@ -1627,8 +2023,8 @@ async function load(){
   catch(e){se(String(e?.message||e));ss("error");}finally{showSkel(false);}
 }
 
-const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",balance:"Balance",rules:"Rules"};
-const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",balance:"Current balance by currency",rules:"Auto-categorization rules"};
+const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules"};
+const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · Abril 2026 · NAV €59,067",balance:"Current balance by currency",rules:"Auto-categorization rules"};
 function switchView(name){
   document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));
