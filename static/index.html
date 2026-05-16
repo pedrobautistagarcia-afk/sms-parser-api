@@ -777,21 +777,44 @@ tr.sk td{padding:13px 14px!important;}
     <!-- OVERVIEW -->
     <div class="view active" id="view-overview">
       <!-- Hero strip -->
-      <div class="ov-hero-strip">
+      <div class="ov-hero-strip" style="grid-template-columns:1fr 1fr;">
+        <!-- Saldo NBK: último saldo conocido del SMS -->
         <div class="ov-hero accent">
           <div class="ov-hero-lbl">Saldo NBK</div>
-          <div class="ov-hero-sub" id="ovBalSub">Balance actual</div>
+          <div class="ov-hero-sub" id="ovBalSub">Último saldo conocido</div>
           <div class="ov-hero-val" id="ovBalKWD">—</div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);display:flex;gap:16px;">
+            <div>
+              <div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Último SMS</div>
+              <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovLastSMSDate">—</div>
+            </div>
+            <div>
+              <div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Balance acumulado</div>
+              <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovAccBal">—</div>
+            </div>
+          </div>
         </div>
-        <div class="ov-hero">
-          <div class="ov-hero-lbl">Gastos este mes</div>
-          <div class="ov-hero-sub" id="ovExpSub">—</div>
-          <div class="ov-hero-val neg" id="ovExpMonth">—</div>
-        </div>
-        <div class="ov-hero">
-          <div class="ov-hero-lbl">Ingresos este mes</div>
-          <div class="ov-hero-sub" id="ovIncSub">—</div>
-          <div class="ov-hero-val pos" id="ovIncMonth">—</div>
+
+        <!-- Gastos + Ingresos del mes en una sola tarjeta -->
+        <div class="ov-hero" style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="ov-hero-lbl" style="margin:0;">Balance del mes</div>
+            <div class="ov-hero-sub" id="ovMonthLabel" style="margin:0;">—</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+            <div style="background:var(--green-l);border:1px solid rgba(5,150,105,.15);border-radius:var(--radius-s);padding:12px;">
+              <div style="font-size:10px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">↑ Ingresos</div>
+              <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green);" id="ovIncMonth">—</div>
+            </div>
+            <div style="background:var(--red-l);border:1px solid rgba(220,38,38,.15);border-radius:var(--radius-s);padding:12px;">
+              <div style="font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">↓ Gastos</div>
+              <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--red);" id="ovExpMonth">—</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--t2);font-weight:500;">Neto del mes</div>
+            <div style="font-size:16px;font-weight:700;font-family:var(--mono);" id="ovNetMonth">—</div>
+          </div>
         </div>
       </div>
 
@@ -1498,22 +1521,48 @@ async function renderOverview(){
   const ym = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   const monthName = MO[now.getMonth()]+" "+now.getFullYear();
 
-  // ── Hero: NBK balance ──────────────────
-  const b = cbal(S.all);
+  // ── Hero: NBK last known balance from SMS ──────────────────────
+  // Extract "Avl. balance is KWD X" from most recent SMS
+  const sortedAll = [...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  let nbkBalance = null;
+  let lastSMSDate = null;
+  for(const r of sortedAll){
+    const sms = r.sms || r.sms_raw || "";
+    const m = sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);
+    if(m){
+      nbkBalance = parseFloat(m[1].replace(/,/g,""));
+      lastSMSDate = isoDay(r.created_at||"");
+      break;
+    }
+  }
   const kwdEl = $("ovBalKWD");
   if(kwdEl){
-    kwdEl.textContent = (b.KWD>=0?"+":"")+b.KWD.toFixed(3)+" KWD";
+    kwdEl.textContent = nbkBalance !== null ? nbkBalance.toFixed(3)+" KWD" : "—";
   }
-  $("ovBalSub").textContent = "Balance acumulado · NBK";
+  const lastSMSEl = $("ovLastSMSDate");
+  if(lastSMSEl) lastSMSEl.textContent = lastSMSDate ? fd(lastSMSDate) : "—";
+
+  // Accumulated balance (net KWD from all transactions)
+  const accBal = cbal(S.all);
+  const accEl = $("ovAccBal");
+  if(accEl) accEl.textContent = (accBal.KWD>=0?"+":"")+accBal.KWD.toFixed(3)+" KWD";
+
+  $("ovBalSub").textContent = "Último saldo NBK registrado · SMS";
 
   // ── Hero: this month expenses & income ──
   const monthRows = S.all.filter(r=>(r.created_at||"").startsWith(ym));
   const monthExp = monthRows.filter(r=>idir(r)==="out").reduce((s,r)=>s+Number(r.amount||0),0);
   const monthInc = monthRows.filter(r=>idir(r)==="in").reduce((s,r)=>s+Number(r.amount||0),0);
-  $("ovExpMonth").textContent = "-"+monthExp.toFixed(3)+" KWD";
-  $("ovExpSub").textContent = monthName;
-  $("ovIncMonth").textContent = "+"+monthInc.toFixed(3)+" KWD";
-  $("ovIncSub").textContent = monthName;
+  $("ovExpMonth").textContent = monthExp.toFixed(3);
+  $("ovIncMonth").textContent = monthInc.toFixed(3);
+  const netMonth = monthInc - monthExp;
+  const netEl = $("ovNetMonth");
+  if(netEl){
+    netEl.textContent = (netMonth>=0?"+":"")+netMonth.toFixed(3)+" KWD";
+    netEl.style.color = netMonth>=0?"var(--green)":"var(--red)";
+  }
+  const monthLblEl = $("ovMonthLabel");
+  if(monthLblEl) monthLblEl.textContent = monthName;
   $("ovTxSub").textContent = monthName+" · "+monthRows.length+" transacciones";
 
   // ── Recent transactions ────────────────
