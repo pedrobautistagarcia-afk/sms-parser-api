@@ -337,6 +337,125 @@ tr.sk td{padding:13px 14px!important;}
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px;}
+
+/* ═══════════════════════════════════════
+   OVERVIEW
+═══════════════════════════════════════ */
+.ov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.ov-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* Header cards */
+.ov-hero-strip {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.ov-hero {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow-m); transition: all .15s;
+}
+.ov-hero:hover { box-shadow: var(--shadow); }
+.ov-hero-lbl { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.ov-hero-sub { font-size: 11px; color: var(--t3); margin-bottom: 12px; }
+.ov-hero-val { font-size: 34px; font-weight: 700; font-family: var(--mono); letter-spacing: -1.5px; color: var(--t1); }
+.ov-hero-val.neg { color: var(--red); }
+.ov-hero-val.pos { color: var(--green); }
+.ov-hero.accent {
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  border-color: transparent; color: #fff;
+}
+.ov-hero.accent .ov-hero-lbl { color: rgba(255,255,255,.75); }
+.ov-hero.accent .ov-hero-sub { color: rgba(255,255,255,.6); }
+.ov-hero.accent .ov-hero-val { color: #fff; }
+
+/* Card generic */
+.ov-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-m);
+  overflow: hidden;
+}
+.ov-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.ov-card-title { font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
+.ov-card-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.ov-card-body { padding: 0; }
+
+/* Transactions list */
+.ov-tx-list { max-height: 340px; overflow-y: auto; }
+.ov-tx-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background .12s;
+}
+.ov-tx-item:last-child { border-bottom: none; }
+.ov-tx-item:hover { background: var(--bg); }
+.ov-tx-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.ov-tx-info { flex: 1; min-width: 0; }
+.ov-tx-merchant { font-size: 13px; font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-tx-meta { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.ov-tx-right { text-align: right; flex-shrink: 0; }
+.ov-tx-amt { font-size: 13px; font-weight: 700; font-family: var(--mono); }
+.ov-tx-amt.neg { color: var(--red); }
+.ov-tx-amt.pos { color: var(--green); }
+.ov-tx-cur { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+/* Mini bar chart */
+.ov-bars { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding: 0 18px; margin-bottom: 8px; }
+.ov-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.ov-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.ov-bar {
+  width: 100%; border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, var(--blue), var(--teal));
+  opacity: .75; transition: opacity .15s; min-height: 3px;
+}
+.ov-bar-col:hover .ov-bar { opacity: 1; }
+.ov-bar-col.ov-peak .ov-bar { opacity: 1; box-shadow: 0 -4px 12px var(--blue-g); }
+.ov-bar-lbl { font-size: 10px; color: var(--t3); padding-top: 5px; font-weight: 500; }
+.ov-bar-val { font-size: 9px; font-family: var(--mono); color: var(--t2); }
+
+/* Donut chart */
+.ov-donut-wrap {
+  display: flex; align-items: center; gap: 20px;
+  padding: 16px 18px;
+}
+.ov-donut-svg { flex-shrink: 0; }
+.ov-donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ov-legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.ov-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.ov-legend-info { flex: 1; min-width: 0; }
+.ov-legend-name { font-size: 12px; font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-legend-sub { font-size: 11px; color: var(--t3); }
+.ov-legend-val { font-size: 12px; font-family: var(--mono); font-weight: 700; color: var(--t1); flex-shrink: 0; }
+.ov-legend-pct { font-size: 10px; color: var(--t3); }
+
+/* Bank balance card */
+.ov-bank-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.ov-bank-item:last-child { border-bottom: none; }
+.ov-bank-left { display: flex; align-items: center; gap: 10px; }
+.ov-bank-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.ov-bank-name { font-size: 13px; font-weight: 600; color: var(--t1); }
+.ov-bank-type { font-size: 11px; color: var(--t3); margin-top: 1px; }
+.ov-bank-val { font-size: 16px; font-weight: 700; font-family: var(--mono); }
+.ov-bank-sub { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
+.ov-bank-inc { font-size: 11px; color: var(--green); font-family: var(--mono); font-weight: 600; }
+.ov-bank-exp { font-size: 11px; color: var(--red); font-family: var(--mono); font-weight: 600; }
+
 </style>
 </head>
 <body>
@@ -351,7 +470,8 @@ tr.sk td{padding:13px 14px!important;}
   <div class="sb-hr"></div>
   <div class="sb-nav">
     <div class="sb-sec">Main</div>
-    <div class="nav active" data-view="transactions"><span class="nav-ic">📋</span><span>Transactions</span><span class="nav-badge" id="txCount">—</span></div>
+    <div class="nav active" data-view="overview"><span class="nav-ic">🏠</span><span>Overview</span></div>
+    <div class="nav" data-view="transactions"><span class="nav-ic">📋</span><span>Transactions</span><span class="nav-badge" id="txCount">—</span></div>
     <div class="nav" data-view="analytics"><span class="nav-ic">📊</span><span>Analytics</span></div>
     <div class="nav" data-view="balance"><span class="nav-ic">💰</span><span>Balance</span></div>
     <div class="sb-sec">Config</div>
@@ -378,8 +498,109 @@ tr.sk td{padding:13px 14px!important;}
 
   <div class="content">
 
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="view-overview">
+      <!-- Hero strip -->
+      <div class="ov-hero-strip">
+        <div class="ov-hero accent">
+          <div class="ov-hero-lbl">Saldo NBK</div>
+          <div class="ov-hero-sub" id="ovBalSub">Balance actual</div>
+          <div class="ov-hero-val" id="ovBalKWD">—</div>
+        </div>
+        <div class="ov-hero">
+          <div class="ov-hero-lbl">Gastos este mes</div>
+          <div class="ov-hero-sub" id="ovExpSub">—</div>
+          <div class="ov-hero-val neg" id="ovExpMonth">—</div>
+        </div>
+        <div class="ov-hero">
+          <div class="ov-hero-lbl">Ingresos este mes</div>
+          <div class="ov-hero-sub" id="ovIncSub">—</div>
+          <div class="ov-hero-val pos" id="ovIncMonth">—</div>
+        </div>
+      </div>
+
+      <div class="ov-grid">
+        <!-- LEFT COLUMN -->
+        <div class="ov-col">
+
+          <!-- Recent transactions -->
+          <div class="ov-card">
+            <div class="ov-card-head">
+              <div>
+                <div class="ov-card-title">Últimas transacciones</div>
+                <div class="ov-card-sub" id="ovTxSub">—</div>
+              </div>
+              <button class="btn" style="font-size:12px;padding:5px 10px;" onclick="switchView('transactions')">Ver todas →</button>
+            </div>
+            <div class="ov-card-body">
+              <div class="ov-tx-list" id="ovTxList">
+                <div style="padding:24px;text-align:center;color:var(--t3);font-size:13px;">Loading…</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evolución gastos -->
+          <div class="ov-card">
+            <div class="ov-card-head">
+              <div>
+                <div class="ov-card-title">Evolución de gastos</div>
+                <div class="ov-card-sub">Últimos 5 meses · EUR equiv.</div>
+              </div>
+              <span id="ovBarNote" style="font-size:11px;color:var(--t3);font-style:italic;"></span>
+            </div>
+            <div class="ov-card-body" style="padding:16px 0 8px;">
+              <div class="ov-bars" id="ovBars">
+                <div style="padding:24px;text-align:center;color:var(--t3);font-size:13px;width:100%">Loading…</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="ov-col">
+
+          <!-- Saldos bancarios -->
+          <div class="ov-card">
+            <div class="ov-card-head">
+              <div>
+                <div class="ov-card-title">Saldos (último conocido)</div>
+                <div class="ov-card-sub">Basado en SMS registrados</div>
+              </div>
+            </div>
+            <div class="ov-card-body" id="ovBanks">
+              <div style="padding:24px;text-align:center;color:var(--t3);font-size:13px;">Loading…</div>
+            </div>
+          </div>
+
+          <!-- Categorías donut -->
+          <div class="ov-card">
+            <div class="ov-card-head">
+              <div>
+                <div class="ov-card-title">Gastos por categoría</div>
+                <div class="ov-card-sub" id="ovCatSub">Este mes</div>
+              </div>
+            </div>
+            <div class="ov-card-body">
+              <div class="ov-donut-wrap">
+                <svg class="ov-donut-svg" id="ovDonut" width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r="52" fill="none" stroke="var(--border)" stroke-width="24"/>
+                  <!-- segments injected by JS -->
+                </svg>
+                <div class="ov-legend" id="ovLegend" style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                  <div style="color:var(--t3);font-size:13px;">Loading…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- TRANSACTIONS -->
-    <div class="view active" id="view-transactions">
+    <div class="view" id="view-transactions">
       <div class="stat-strip">
         <div class="stat-card hero">
           <div class="sc-label">Total balance</div>
@@ -639,6 +860,234 @@ function rebuildDayHeaders(){
 }
 function showSkel(show){const table=$("t"),tb=$("tbody");if(!table||!tb)return;const ex=table.querySelector("tbody[data-skel]");if(show){if(ex)return;tb.style.display="none";const sk=document.createElement("tbody");sk.setAttribute("data-skel","1");for(let i=0;i<8;i++){const tr=document.createElement("tr");tr.className="sk";for(let c=0;c<6;c++){const td=document.createElement("td");const d=document.createElement("div");d.className="skel";d.style.width=[50,0,65,35,40,25][c]+"%";td.appendChild(d);tr.appendChild(td);}sk.appendChild(tr);}table.appendChild(sk);}else{if(ex)ex.remove();tb.style.display="";}}
 
+
+// ─── OVERVIEW ────────────────────────────────────────────────
+const CAT_COLORS = {
+  coffee:"#f59e0b", food:"#0891b2", groceries:"#059669",
+  pharmacy:"#dc2626", transport:"#2563eb", utilities:"#7c3aed",
+  shopping:"#7c3aed", entertainment:"#db2777", health:"#ef4444",
+  travel:"#06b6d4", education:"#d97706", salary:"#059669",
+  income:"#059669", other:"#94a3b8"
+};
+const CAT_ICONS = {
+  coffee:"☕", food:"🍔", groceries:"🛒", pharmacy:"💊",
+  transport:"🚗", utilities:"💡", shopping:"🛍️",
+  entertainment:"🎬", health:"🏥", travel:"✈️",
+  education:"📚", salary:"💼", income:"💰", other:"❓"
+};
+
+async function renderOverview(){
+  if(!S.all.length) return;
+
+  const now = new Date();
+  const ym = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  const monthName = MO[now.getMonth()]+" "+now.getFullYear();
+
+  // ── Hero: NBK balance ──────────────────
+  const b = cbal(S.all);
+  const kwdEl = $("ovBalKWD");
+  if(kwdEl){
+    kwdEl.textContent = (b.KWD>=0?"+":"")+b.KWD.toFixed(3)+" KWD";
+  }
+  $("ovBalSub").textContent = "Balance acumulado · NBK";
+
+  // ── Hero: this month expenses & income ──
+  const monthRows = S.all.filter(r=>(r.created_at||"").startsWith(ym));
+  const monthExp = monthRows.filter(r=>idir(r)==="out").reduce((s,r)=>s+Number(r.amount||0),0);
+  const monthInc = monthRows.filter(r=>idir(r)==="in").reduce((s,r)=>s+Number(r.amount||0),0);
+  $("ovExpMonth").textContent = "-"+monthExp.toFixed(3)+" KWD";
+  $("ovExpSub").textContent = monthName;
+  $("ovIncMonth").textContent = "+"+monthInc.toFixed(3)+" KWD";
+  $("ovIncSub").textContent = monthName;
+  $("ovTxSub").textContent = monthName+" · "+monthRows.length+" transacciones";
+
+  // ── Recent transactions ────────────────
+  const recent = [...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))).slice(0,20);
+  const txList = $("ovTxList");
+  if(txList){
+    txList.innerHTML = recent.map(r=>{
+      const dir = idir(r);
+      const merch = cm(r.merchant_clean||r.merchant_raw||"—");
+      const cat = (r.category||"other").toLowerCase();
+      const icon = CAT_ICONS[cat]||"❓";
+      const clr = CAT_COLORS[cat]||"#94a3b8";
+      const d = isoDay(r.created_at||"");
+      const dateStr = d?`${+d.slice(8,10)} ${MO[+d.slice(5,7)-1].slice(0,3)}`:"";
+      const amtStr = (dir==="in"?"+":"-")+fm(r.amount);
+      return `<div class="ov-tx-item" data-id="${r.id}">
+        <div class="ov-tx-icon" style="background:${clr}18;">${icon}</div>
+        <div class="ov-tx-info">
+          <div class="ov-tx-merchant">${merch}</div>
+          <div class="ov-tx-meta">${tc(cat)} · ${dateStr}</div>
+        </div>
+        <div class="ov-tx-right">
+          <div class="ov-tx-amt ${dir==="in"?"pos":"neg"}">${amtStr}</div>
+          <div class="ov-tx-cur">${(r.currency||"").toUpperCase()}</div>
+        </div>
+      </div>`;
+    }).join("")||"<div style='padding:24px;text-align:center;color:var(--t3);font-size:13px;'>No hay transacciones</div>";
+
+    // Wire clicks
+    txList.querySelectorAll(".ov-tx-item").forEach(el=>{
+      el.addEventListener("click",()=>{
+        const id = Number(el.dataset.id);
+        const item = S.all.find(x=>x.id===id);
+        if(item) openTx(item);
+      });
+    });
+  }
+
+  // ── Bar chart: last 5 months ───────────
+  const rates = FX.rates || {KWD:3.28,USD:0.93,AED:0.25};
+  const barNote = $("ovBarNote");
+
+  // Build last 5 months
+  const months5 = [];
+  for(let i=4;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months5.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));
+  }
+
+  const moTotals = months5.map(ym=>{
+    const rows=S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(ym));
+    const byCur={KWD:0,USD:0,EUR:0,AED:0};
+    for(const r of rows){const c=(r.currency||"KWD").toUpperCase();if(byCur[c]!==undefined)byCur[c]+=Number(r.amount||0);}
+    return(byCur.KWD/(rates.KWD||3.28))+(byCur.USD/(rates.USD||0.93))+byCur.EUR+(byCur.AED/(rates.AED||0.25));
+  });
+
+  if(barNote){
+    if(FX.rates) barNote.textContent=`1 KWD ≈ €${(1/rates.KWD).toFixed(2)}`;
+    else barNote.textContent="Tasas aproximadas";
+  }
+
+  const maxBar = Math.max(...moTotals,1);
+  const peakIdx = moTotals.indexOf(Math.max(...moTotals));
+
+  const barsEl = $("ovBars");
+  if(barsEl){
+    barsEl.innerHTML = months5.map((ym,i)=>{
+      const v = moTotals[i];
+      const pct = Math.max(Math.round(v/maxBar*100), v>0?3:0);
+      const parts = ym.split("-");
+      const lbl = MS[+parts[1]-1]+"'"+parts[0].slice(2);
+      const isPeak = i===peakIdx&&v>0;
+      return `<div class="ov-bar-col${isPeak?" ov-peak":""}">
+        <div class="ov-bar-val">${v>0?"€"+Math.round(v):""}</div>
+        <div class="ov-bar-wrap">
+          <div class="ov-bar" style="height:${pct}%;width:100%;"></div>
+        </div>
+        <div class="ov-bar-lbl">${lbl}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Bank balances ──────────────────────
+  // Extract last known balance from SMS for each bank
+  // We approximate by looking at the last SMS with balance info
+  const banksEl = $("ovBanks");
+  if(banksEl){
+    // Get last balance from NBK SMS (pattern: "Your Avl. balance is KWD X")
+    let nbkBal = null;
+    const sorted = [...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+    for(const r of sorted){
+      const sms = r.sms||r.sms_raw||"";
+      const m = sms.match(/(?:avl\.?\s*balance\s+is\s+KWD|balance[:\s]+KWD)\s*([\d,]+\.?\d*)/i);
+      if(m){nbkBal=parseFloat(m[1].replace(/,/g,""));break;}
+    }
+
+    const monthExpKWD = monthRows.filter(r=>idir(r)==="out"&&r.currency==="KWD").reduce((s,r)=>s+Number(r.amount||0),0);
+    const monthIncKWD = monthRows.filter(r=>idir(r)==="in"&&r.currency==="KWD").reduce((s,r)=>s+Number(r.amount||0),0);
+
+    banksEl.innerHTML = `
+      <div class="ov-bank-item">
+        <div class="ov-bank-left">
+          <div class="ov-bank-icon" style="background:var(--blue-l)">🏦</div>
+          <div>
+            <div class="ov-bank-name">National Bank of Kuwait</div>
+            <div class="ov-bank-type">NBK · Cuenta principal</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="ov-bank-val">${nbkBal!==null?nbkBal.toFixed(3)+" KWD":"—"}</div>
+          <div class="ov-bank-sub">
+            <span class="ov-bank-inc">+${monthIncKWD.toFixed(3)}</span>
+            <span class="ov-bank-exp">-${monthExpKWD.toFixed(3)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="ov-bank-item" style="opacity:.45;">
+        <div class="ov-bank-left">
+          <div class="ov-bank-icon" style="background:var(--red-l)">🏦</div>
+          <div>
+            <div class="ov-bank-name">Banco Santander</div>
+            <div class="ov-bank-type">Próximamente</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="ov-bank-val" style="color:var(--t3);">—</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Donut chart: categories this month ──
+  const catTotals = new Map();
+  for(const r of monthRows.filter(r=>idir(r)==="out")){
+    const c=(r.category||"other").toLowerCase();
+    catTotals.set(c,(catTotals.get(c)||0)+Number(r.amount||0));
+  }
+  const sortedCats = [...catTotals.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const totalCat = sortedCats.reduce((s,[,v])=>s+v,0)||1;
+
+  // Build donut SVG
+  const R=52, CX=70, CY=70, strokeW=24;
+  const circ=2*Math.PI*R;
+  let offset=0;
+  // Start from top (-90 deg = rotate -90)
+  const segments=sortedCats.map(([cat,val],i)=>{
+    const pct=val/totalCat;
+    const dash=pct*circ;
+    const gap=circ-dash;
+    const seg=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+      stroke="${CAT_COLORS[cat]||"#94a3b8"}"
+      stroke-width="${strokeW}"
+      stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
+      stroke-dashoffset="${-offset.toFixed(2)}"
+      transform="rotate(-90 ${CX} ${CY})"
+      style="transition:stroke-dasharray .5s ease"/>`;
+    offset+=dash;
+    return seg;
+  }).join("");
+
+  const donut=$("ovDonut");
+  if(donut){
+    donut.innerHTML=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${strokeW}"/>
+    ${segments}
+    <text x="${CX}" y="${CY-6}" text-anchor="middle" font-size="11" fill="var(--t3)" font-family="var(--font)">Total</text>
+    <text x="${CX}" y="${CY+10}" text-anchor="middle" font-size="12" fill="var(--t1)" font-weight="700" font-family="var(--mono)">${totalCat.toFixed(0)}</text>`;
+  }
+
+  // Legend
+  const legend=$("ovLegend");
+  if(legend){
+    $("ovCatSub").textContent=monthName;
+    legend.innerHTML=sortedCats.map(([cat,val])=>{
+      const pct=Math.round(val/totalCat*100);
+      return`<div class="ov-legend-item">
+        <div class="ov-legend-dot" style="background:${CAT_COLORS[cat]||"#94a3b8"}"></div>
+        <div class="ov-legend-info">
+          <div class="ov-legend-name">${tc(cat)}</div>
+          <div class="ov-legend-sub">${S.all.filter(r=>(r.category||"other")===cat&&(r.created_at||"").startsWith(ym)&&idir(r)==="out").length} tx · ${pct}%</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="ov-legend-val">${val.toFixed(2)}</div>
+          <div class="ov-legend-pct">KWD</div>
+        </div>
+      </div>`;
+    }).join("")||"<div style='color:var(--t3);font-size:13px;'>Sin datos este mes</div>";
+  }
+}
+
 // ─── ANALYTICS ───────────────────────────────────────────────
 function getYears(){const y=new Set();for(const r of S.all){const d=isoDay(r.created_at||"");if(d)y.add(d.slice(0,4));}return[...y].sort().reverse();}
 
@@ -833,17 +1282,17 @@ function openTx(item){
 }
 
 async function load(){
-  try{se("");ss("loading…");showSkel(true);const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFilters();ss(S.view.length+" transactions");renderBalance();renderAnalytics();}
+  try{se("");ss("loading…");showSkel(true);const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFilters();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();}
   catch(e){se(String(e?.message||e));ss("error");}finally{showSkel(false);}
 }
 
-const VT={transactions:"Transactions",analytics:"Analytics",balance:"Balance",rules:"Rules"};
-const VS={transactions:"All your transactions",analytics:"Spending patterns and trends",balance:"Current balance by currency",rules:"Auto-categorization rules"};
+const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",balance:"Balance",rules:"Rules"};
+const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",balance:"Current balance by currency",rules:"Auto-categorization rules"};
 function switchView(name){
   document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));
   $("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";
-  if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();
+  if(name==="overview")renderOverview();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();
 }
 
 function bind(){
