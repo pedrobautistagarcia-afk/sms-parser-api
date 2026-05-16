@@ -1179,6 +1179,7 @@ tbody tr:active td { background: var(--blue-l) !important; }
         </div>
         <div class="sp"></div>
         <button class="btn btn-red" id="btnDelete" disabled>Delete selected</button>
+        <button class="btn" id="btnExport" title="Exportar CSV">⬇️ CSV</button>
       </div>
       <div class="err-box" id="errBox"></div>
       <div class="toast" id="toast"><span id="toastMsg">Deleted.</span><button class="btn" id="btnUndo" style="padding:5px 10px;font-size:12px;">Undo</button></div>
@@ -2401,7 +2402,7 @@ async function load(fromCache=false){
         S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
         if(!S.categories.size) S.categories.add("other");
         if(!S.currencies.size) S.currencies.add("KWD");
-        buildFilters(); (typeof applyFiltersWithWindow==="function"?applyFiltersWithWindow:applyFilters)();
+        buildFilters(); applyFiltersWithWindow();
         ss(S.view.length+" transactions (caché)");
         renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
         load(true); // refresh in background
@@ -2417,7 +2418,7 @@ async function load(fromCache=false){
     S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
     if(!S.categories.size) S.categories.add("other");
     if(!S.currencies.size) S.currencies.add("KWD");
-    buildFilters(); (typeof applyFiltersWithWindow==="function"?applyFiltersWithWindow:applyFilters)();
+    buildFilters(); applyFiltersWithWindow();
     ss(S.view.length+" transactions");
     renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
     if(fromCache) showToast2("🔄","Datos actualizados","","var(--blue)",2500);
@@ -2452,7 +2453,8 @@ function switchView(name){
     if(name==="investments") buildInvDonut();
     if(name==="balance")    renderBalance();
     if(name==="analytics")  renderAnalytics();
-    if(name==="rules")      loadRules();
+    if(name==="rules")         loadRules();
+    if(name==="transactions")  { updateRangeLabel(); applyFiltersWithWindow(); }
     haptic("light");
   }
 }
@@ -2475,6 +2477,31 @@ function bind(){
   // Cat popup close
   $("catPopupClose")?.addEventListener("click", closeCatPopup);
   $("catPopupOvl")?.addEventListener("click", e=>{ if(e.target===$("catPopupOvl")) closeCatPopup(); });
+  // Export CSV
+  $("btnExport")?.addEventListener("click",()=>{
+    const rows = S.view;
+    if(!rows.length){ showToast2("⚠️","Sin datos","No hay transacciones visibles","var(--amber)",2500); return; }
+    const header = ["ID","Fecha","Merchant","Categoría","Importe","Moneda","Dirección"];
+    const lines  = rows.map(r=>[
+      r.id,
+      isoDay(r.created_at||""),
+      '"'+(cm(r.merchant_clean||r.merchant_raw||"")).replace(/"/g,'""')+'"',
+      r.category||"other",
+      r.amount,
+      r.currency||"KWD",
+      idir(r)
+    ].join(","));
+    const csv  = [header.join(","), ...lines].join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    const date = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = "gastos_"+date+".csv";
+    a.click(); URL.revokeObjectURL(url);
+    haptic("success");
+    showToast2("⬇️","CSV exportado",rows.length+" transacciones","var(--blue)",2500);
+  });
+
   window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");closeMonthDetail();closeCatPopup();}});
 }
 
