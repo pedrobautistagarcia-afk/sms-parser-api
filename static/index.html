@@ -959,6 +959,143 @@ tbody tr:active td { background: var(--blue-l) !important; }
 .load-more-btn:hover { background: var(--blue); color: #fff; }
 [data-theme="dark"] .load-more-btn { border-color: rgba(59,130,246,.3); }
 
+
+/* ── Dark mode polish ────────────────────────────────────────── */
+[data-theme="dark"] .sidebar {
+  background: #0a0f1c;
+  border-right-color: rgba(255,255,255,.06);
+}
+[data-theme="dark"] .topbar {
+  background: #0a0f1c;
+  border-bottom-color: rgba(255,255,255,.06);
+}
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .ov-card,
+[data-theme="dark"] .ana-card,
+[data-theme="dark"] .inv-card,
+[data-theme="dark"] .inv-hero:not(.accent),
+[data-theme="dark"] .bal-card,
+[data-theme="dark"] .twrap,
+[data-theme="dark"] .fbar,
+[data-theme="dark"] .search-wrap,
+[data-theme="dark"] .tx-range-bar,
+[data-theme="dark"] .ri,
+[data-theme="dark"] .mbox {
+  background: #0e1520;
+  border-color: rgba(255,255,255,.07);
+  box-shadow: 0 2px 12px rgba(0,0,0,.35);
+}
+[data-theme="dark"] .stat-card:hover,
+[data-theme="dark"] .ov-card:hover,
+[data-theme="dark"] .ana-card:hover,
+[data-theme="dark"] .bal-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+[data-theme="dark"] thead th { background: #0a0f1c; border-bottom-color: rgba(255,255,255,.07); }
+[data-theme="dark"] tbody td  { border-bottom-color: rgba(255,255,255,.05); }
+[data-theme="dark"] tbody tr:hover td { background: rgba(255,255,255,.03); }
+[data-theme="dark"] .surface2,
+[data-theme="dark"] .sb-nav .nav:hover { background: rgba(255,255,255,.04); }
+[data-theme="dark"] .nav.active { background: rgba(59,130,246,.15); }
+[data-theme="dark"] select,
+[data-theme="dark"] input[type=date],
+[data-theme="dark"] .fin { background: #0a0f1c; border-color: rgba(255,255,255,.1); }
+[data-theme="dark"] .year-tabs { background: #0a0f1c; border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .ytab.active { box-shadow: 0 2px 12px rgba(59,130,246,.4); }
+[data-theme="dark"] .status-pill { background: #0a0f1c; border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .theme-btn  { background: #0a0f1c; border-color: rgba(255,255,255,.1); }
+[data-theme="dark"] .theme-btn:hover { background: rgba(255,255,255,.07); }
+[data-theme="dark"] .privacy-btn { background: #0a0f1c; border-color: rgba(255,255,255,.1); }
+[data-theme="dark"] .ov-tx-item:hover { background: rgba(255,255,255,.03); }
+[data-theme="dark"] .cat-popup { background: #0e1520; }
+[data-theme="dark"] .cat-popup-tx:hover { background: rgba(255,255,255,.03); }
+[data-theme="dark"] .toast-v2 {
+  background: #131d2e;
+  border-color: rgba(255,255,255,.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+[data-theme="dark"] .month-detail { background: #0a0f1c; border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .md-cur-card { background: #0e1520; border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .inv-table-wrap { background: #0e1520; border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .inv-table thead th { background: #0a0f1c; }
+[data-theme="dark"] .inv-table tbody tr:hover td { background: rgba(255,255,255,.03); }
+[data-theme="dark"] tr.rg-sep td { background: #0a0f1c; border-bottom-color: rgba(255,255,255,.06); }
+[data-theme="dark"] tr.rg-sep:hover td { background: rgba(255,255,255,.05); }
+[data-theme="dark"] .skel { background: linear-gradient(90deg,#131d2e 25%,#1a2540 50%,#131d2e 75%); }
+[data-theme="dark"] .me:focus { background: #0a0f1c; }
+[data-theme="dark"] .sb-footer { border-top-color: rgba(255,255,255,.06); }
+[data-theme="dark"] .mobile-toggle { background: #0a0f1c; border-color: rgba(255,255,255,.12); }
+
+/* Glow effects in dark mode */
+[data-theme="dark"] .stat-card.hero {
+  box-shadow: 0 4px 24px rgba(37,99,235,.25);
+}
+[data-theme="dark"] .bal-hero {
+  box-shadow: 0 8px 32px rgba(37,99,235,.3);
+}
+[data-theme="dark"] .inv-hero.accent {
+  box-shadow: 0 4px 24px rgba(37,99,235,.25);
+}
+[data-theme="dark"] .ov-hero.accent {
+  box-shadow: 0 4px 24px rgba(37,99,235,.25);
+}
+[data-theme="dark"] .ytab.active {
+  background: rgba(59,130,246,.9);
+}
+
+
+/* ── Overview rich additions ─────────────────────────────────── */
+
+/* Sparkline */
+.ov-sparkline-wrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.15);
+}
+.ov-hero.accent .ov-sparkline-wrap { border-top-color: rgba(255,255,255,.2); }
+.ov-sparkline-label {
+  font-size: 10px; opacity: .65; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 6px;
+}
+.sparkline-svg { display: block; width: 100%; }
+
+/* Quick stats row */
+.ov-quick-stats {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; margin-bottom: 16px;
+}
+.ov-qs {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-m); padding: 12px 14px;
+  box-shadow: var(--shadow-m); transition: all .15s;
+}
+.ov-qs:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.ov-qs-label { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+.ov-qs-val   { font-size: 16px; font-weight: 700; font-family: var(--mono); color: var(--t1); }
+.ov-qs-sub   { font-size: 10px; color: var(--t3); margin-top: 3px; }
+
+/* Category mini bars */
+.ov-cat-mini { display: flex; flex-direction: column; gap: 7px; }
+.ov-cat-row  { display: flex; align-items: center; gap: 8px; }
+.ov-cat-icon { font-size: 14px; width: 22px; text-align: center; flex-shrink: 0; }
+.ov-cat-name { font-size: 12px; color: var(--t2); width: 80px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-cat-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+.ov-cat-fill  { height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+.ov-cat-amt   { font-size: 11px; font-family: var(--mono); color: var(--t2); width: 60px; text-align: right; flex-shrink: 0; }
+
+/* Weekly comparison */
+.ov-week-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ov-week-row:last-child { border-bottom: none; }
+.ov-week-label { color: var(--t2); }
+.ov-week-vals  { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-weight: 600; }
+.ov-week-curr  { color: var(--t1); }
+.ov-week-prev  { color: var(--t3); font-size: 11px; }
+.ov-week-badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; font-weight: 700; }
+.ov-week-badge.up   { background: var(--green-l); color: var(--green); }
+.ov-week-badge.down { background: var(--red-l); color: var(--red); }
+
 </style>
 </head>
 <body>
@@ -1023,6 +1160,11 @@ tbody tr:active td { background: var(--blue-l) !important; }
               <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovAccBal">—</div>
             </div>
           </div>
+          <!-- Sparkline of daily balances -->
+          <div class="ov-sparkline-wrap">
+            <div class="ov-sparkline-label">Evolución del saldo (últimos 14 días)</div>
+            <svg class="sparkline-svg" id="ovSparkline" height="36" viewBox="0 0 300 36" preserveAspectRatio="none"></svg>
+          </div>
         </div>
 
         <!-- Gastos + Ingresos del mes en una sola tarjeta -->
@@ -1045,6 +1187,25 @@ tbody tr:active td { background: var(--blue-l) !important; }
             <div style="font-size:12px;color:var(--t2);font-weight:500;">Neto del mes</div>
             <div style="font-size:16px;font-weight:700;font-family:var(--mono);" id="ovNetMonth">—</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Quick stats strip -->
+      <div class="ov-quick-stats" id="ovQuickStats">
+        <div class="ov-qs">
+          <div class="ov-qs-label">Esta semana</div>
+          <div class="ov-qs-val" id="ovWeekAmt">—</div>
+          <div class="ov-qs-sub" id="ovWeekSub">—</div>
+        </div>
+        <div class="ov-qs">
+          <div class="ov-qs-label">Promedio/día</div>
+          <div class="ov-qs-val" id="ovAvgDay">—</div>
+          <div class="ov-qs-sub">este mes</div>
+        </div>
+        <div class="ov-qs">
+          <div class="ov-qs-label">Mayor gasto</div>
+          <div class="ov-qs-val" id="ovMaxTx">—</div>
+          <div class="ov-qs-sub" id="ovMaxTxName">—</div>
         </div>
       </div>
 
@@ -1099,6 +1260,21 @@ tbody tr:active td { background: var(--blue-l) !important; }
             </div>
             <div class="ov-card-body" id="ovBanks">
               <div style="padding:24px;text-align:center;color:var(--t3);font-size:13px;">Loading…</div>
+            </div>
+          </div>
+
+          <!-- Top categorías mini -->
+          <div class="ov-card">
+            <div class="ov-card-head">
+              <div>
+                <div class="ov-card-title">Top categorías</div>
+                <div class="ov-card-sub" id="ovCatMiniSub">Este mes</div>
+              </div>
+            </div>
+            <div class="ov-card-body" style="padding:14px 18px;">
+              <div class="ov-cat-mini" id="ovCatMini">
+                <div style="color:var(--t3);font-size:13px;">Loading…</div>
+              </div>
             </div>
           </div>
 
@@ -1904,6 +2080,100 @@ async function renderOverview(){
   const monthLblEl = $("ovMonthLabel");
   if(monthLblEl) monthLblEl.textContent = monthName;
   $("ovTxSub").textContent = monthName+" · "+monthRows.length+" transacciones";
+
+
+  // ── Quick stats ─────────────────────────────────────────────────
+  // This week
+  const today2 = new Date();
+  const weekStart = new Date(today2); weekStart.setDate(today2.getDate()-7);
+  const weekIso = weekStart.toISOString().slice(0,10);
+  const weekRows = S.all.filter(r=>idir(r)==="out"&&isoDay(r.created_at||"")>=weekIso);
+  const weekAmt  = weekRows.reduce((s,r)=>s+Number(r.amount||0),0);
+  const prevWeekStart = new Date(today2); prevWeekStart.setDate(today2.getDate()-14);
+  const prevWeekIso = prevWeekStart.toISOString().slice(0,10);
+  const prevWeekRows = S.all.filter(r=>idir(r)==="out"&&isoDay(r.created_at||"")>=prevWeekIso&&isoDay(r.created_at||"")<weekIso);
+  const prevWeekAmt  = prevWeekRows.reduce((s,r)=>s+Number(r.amount||0),0);
+  const weekDiff = prevWeekAmt>0?Math.round((weekAmt-prevWeekAmt)/prevWeekAmt*100):0;
+
+  const wEl=$("ovWeekAmt"); if(wEl) animateNumber(wEl,0,weekAmt,600," KWD");
+  const wSub=$("ovWeekSub"); if(wSub){
+    const arrow=weekDiff===0?"→":weekDiff>0?"↑":"↓";
+    const cls=weekDiff===0?"":"color:"+(weekDiff>0?"var(--red)":"var(--green)");
+    wSub.innerHTML=`<span style="${cls}">${arrow} ${weekDiff>0?"+":""}${weekDiff}% vs sem. ant.</span>`;
+  }
+
+  // Avg per day this month
+  const daysElapsed = today2.getDate();
+  const avgDay = daysElapsed>0 ? monthExp/daysElapsed : 0;
+  const avgEl=$("ovAvgDay"); if(avgEl) animateNumber(avgEl,0,avgDay,600," KWD");
+
+  // Biggest transaction this month
+  const maxTx = monthRows.filter(r=>idir(r)==="out").sort((a,b)=>Number(b.amount)-Number(a.amount))[0];
+  const maxEl=$("ovMaxTx");   if(maxEl&&maxTx) animateNumber(maxEl,0,Number(maxTx.amount||0),600," KWD");
+  const maxNm=$("ovMaxTxName");if(maxNm&&maxTx) maxNm.textContent=cm(maxTx.merchant_clean||maxTx.merchant_raw||"—").slice(0,16);
+
+  // ── Sparkline — last 14 days running balance ─────────────────────
+  const sparkSvg = document.getElementById("ovSparkline");
+  if(sparkSvg){
+    // Build last 14 days
+    const days14=[];
+    for(let i=13;i>=0;i--){
+      const d=new Date(today2.getFullYear(),today2.getMonth(),today2.getDate()-i);
+      days14.push(d.toISOString().slice(0,10));
+    }
+    // Running daily spend
+    const dailySpend=days14.map(d=>{
+      return S.all.filter(r=>idir(r)==="out"&&isoDay(r.created_at||"")===d)
+                  .reduce((s,r)=>s+Number(r.amount||0),0);
+    });
+    const maxSpend=Math.max(...dailySpend,0.01);
+    const W=300,H=36,pad=3;
+    const pts=dailySpend.map((v,i)=>{
+      const x=pad+(i/(days14.length-1))*(W-pad*2);
+      const y=H-pad-(v/maxSpend)*(H-pad*2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    // Area fill
+    const first=pts.split(" ")[0], last=pts.split(" ").slice(-1)[0];
+    const fx=first.split(",")[0], lx=last.split(",")[0];
+    sparkSvg.innerHTML=`
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,.35)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,.02)"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${fx},${H} ${pts} ${lx},${H}" fill="url(#sparkGrad)"/>
+      <polyline points="${pts}" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    `;
+  }
+
+  // ── Top categories mini bars ──────────────────────────────────────
+  const catMini = document.getElementById("ovCatMini");
+  const catMiniSub = document.getElementById("ovCatMiniSub"); 
+  if(catMiniSub) catMiniSub.textContent = monthName;
+  if(catMini){
+    const catMap=new Map();
+    for(const r of monthRows.filter(r=>idir(r)==="out")){
+      const c=(r.category||"other").toLowerCase();
+      catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));
+    }
+    const sorted=[...catMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxCat=sorted[0]?.[1]||1;
+    if(sorted.length){
+      catMini.innerHTML=sorted.map(([cat,val])=>`
+        <div class="ov-cat-row">
+          <div class="ov-cat-icon">${CAT_ICONS[cat]||"❓"}</div>
+          <div class="ov-cat-name">${tc(cat)}</div>
+          <div class="ov-cat-track">
+            <div class="ov-cat-fill" style="width:${Math.round(val/maxCat*100)}%;background:${CAT_COLORS[cat]||"var(--blue)"};"></div>
+          </div>
+          <div class="ov-cat-amt">${val.toFixed(2)}</div>
+        </div>`).join("");
+    } else {
+      catMini.innerHTML='<div style="color:var(--t3);font-size:13px;">Sin gastos este mes</div>';
+    }
+  }
 
   // Re-apply privacy after values update
   if(window._privacyOn&&window._privacyOn()) setTimeout(()=>window._privacyApply&&window._privacyApply(),100);
