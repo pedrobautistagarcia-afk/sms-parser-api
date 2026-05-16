@@ -1096,6 +1096,94 @@ tbody tr:active td { background: var(--blue-l) !important; }
 .ov-week-badge.up   { background: var(--green-l); color: var(--green); }
 .ov-week-badge.down { background: var(--red-l); color: var(--red); }
 
+
+/* ═══════════════════════════════════════
+   BOTTOM NAV BAR (mobile only)
+═══════════════════════════════════════ */
+.bottom-nav {
+  display: none; /* hidden on desktop */
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 400;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 24px rgba(0,0,0,.12);
+  transition: background .25s, border-color .25s;
+}
+[data-theme="dark"] .bottom-nav {
+  background: #0a0f1c;
+  border-top-color: rgba(255,255,255,.07);
+  box-shadow: 0 -4px 24px rgba(0,0,0,.4);
+}
+.bottom-nav-inner {
+  display: flex; align-items: stretch;
+  height: 56px;
+}
+.bn-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px; cursor: pointer;
+  padding: 6px 4px;
+  color: var(--t3);
+  transition: color .15s, background .15s;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.bn-item:active { background: var(--blue-l); }
+.bn-item.active { color: var(--blue); }
+.bn-item.active .bn-ic { transform: scale(1.1); }
+.bn-ic {
+  font-size: 20px; line-height: 1;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.bn-lbl {
+  font-size: 10px; font-weight: 600;
+  font-family: var(--font); letter-spacing: .2px;
+  transition: color .15s;
+}
+.bn-badge {
+  position: absolute; top: 5px; right: calc(50% - 14px);
+  background: var(--blue); color: #fff;
+  font-size: 9px; font-weight: 700;
+  min-width: 16px; height: 16px;
+  border-radius: 999px; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+.bn-badge.show { display: flex; }
+
+/* Active indicator line */
+.bn-item.active::before {
+  content: '';
+  position: absolute; top: 0; left: 25%; right: 25%;
+  height: 2px; border-radius: 0 0 2px 2px;
+  background: var(--blue);
+}
+
+/* Content padding to avoid bottom nav overlap */
+body.fm .content { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 14px) !important; }
+@media (max-width: 768px) {
+  .bottom-nav { display: block; }
+  .content { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 14px); }
+  /* Hide sidebar on mobile — bottom nav replaces it */
+  .sidebar { display: none !important; }
+}
+body.fm .bottom-nav { display: block; }
+body.fm .sidebar { display: none !important; }
+
+/* Swipe container */
+.views-container {
+  flex: 1; display: flex; overflow: hidden; position: relative;
+}
+.view {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 24px;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.view.active { position: relative; }
+
 </style>
 </head>
 <body>
@@ -2790,6 +2878,8 @@ function switchView(name){
     if(name==="rules")         loadRules();
     if(name==="transactions")  { updateRangeLabel(); applyFiltersWithWindow(); }
     haptic("light");
+    // Sync bottom nav
+    document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));
   }
 }
 
@@ -2855,7 +2945,7 @@ function bind(){
     body.fm .nav.active { background:transparent!important; border-bottom-color:var(--blue)!important; }
     body.fm .nav-badge { display:none!important; }
     body.fm .main { overflow:visible!important; min-width:0!important; }
-    body.fm .content { padding:14px!important; }
+    body.fm .content { padding:14px!important; padding-bottom:calc(56px + env(safe-area-inset-bottom,0px) + 14px)!important; }
     body.fm .topbar { padding:10px 14px!important; }
     body.fm .tb-title { font-size:15px!important; }
     body.fm .status-pill { display:none!important; }
@@ -2890,6 +2980,9 @@ function bind(){
     document.body.classList.toggle("fm", on);
     btn.textContent = on ? "🖥️" : "📱";
     btn.title = on ? "Switch to desktop view" : "Switch to mobile view";
+    // Show/hide bottom nav
+    const bnav = document.getElementById("bottomNav");
+    if(bnav) bnav.style.display = on ? "block" : "";
   }
   apply();
 
@@ -3597,6 +3690,137 @@ function initSearchAndWindow(){
   updateRangeLabel();
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// BOTTOM NAV + SWIPE BETWEEN VIEWS
+// ═══════════════════════════════════════════════════════════════
+(function(){
+  const VIEWS = ['overview','transactions','analytics','investments','balance','rules'];
+  let currentIdx = 0;
+
+  // ── Sync bottom nav with switchView ──────────────────────────
+  const origSwitchView = window.switchView || null;
+
+  function syncBottomNav(name){
+    document.querySelectorAll('.bn-item').forEach(item=>{
+      const active = item.dataset.view === name;
+      item.classList.toggle('active', active);
+    });
+    currentIdx = VIEWS.indexOf(name);
+    if(currentIdx < 0) currentIdx = 0;
+  }
+
+  // Wire bottom nav clicks
+  document.querySelectorAll('.bn-item[data-view]').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const view = item.dataset.view;
+      if(typeof switchView === 'function') switchView(view);
+      syncBottomNav(view);
+      haptic('light');
+    });
+  });
+
+  // Patch switchView to also sync bottom nav
+  const _origSV = window.switchView;
+  if(typeof _origSV === 'function'){
+    // Will be called after switchView is defined — use MutationObserver trick
+  }
+
+  // Hook into nav clicks to sync bottom nav
+  document.querySelectorAll('.nav[data-view]').forEach(n=>{
+    n.addEventListener('click', ()=> syncBottomNav(n.dataset.view));
+  });
+
+  // ── Swipe gesture detection ───────────────────────────────────
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let isSwiping = false;
+  const SWIPE_THRESHOLD = 60;   // min horizontal px
+  const SWIPE_MAX_Y = 80;       // max vertical drift
+  const SWIPE_MAX_TIME = 400;   // ms
+
+  const content = document.querySelector('.content');
+  if(!content) return;
+
+  content.addEventListener('touchstart', e=>{
+    touchStartX    = e.touches[0].clientX;
+    touchStartY    = e.touches[0].clientY;
+    touchStartTime = Date.now();
+    isSwiping      = false;
+  }, { passive: true });
+
+  content.addEventListener('touchmove', e=>{
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    // If moving more horizontally than vertically, it's a swipe
+    if(Math.abs(dx) > 20 && dy < SWIPE_MAX_Y) isSwiping = true;
+  }, { passive: true });
+
+  content.addEventListener('touchend', e=>{
+    if(!isSwiping) return;
+    const dx   = e.changedTouches[0].clientX - touchStartX;
+    const dt   = Date.now() - touchStartTime;
+    const dy   = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+    if(Math.abs(dx) < SWIPE_THRESHOLD || dt > SWIPE_MAX_TIME || dy > SWIPE_MAX_Y) return;
+
+    // Don't swipe if user is scrolling horizontally in a table/chart
+    const target = e.target.closest('.inv-table-wrap, .bar-chart, .ov-bars, select');
+    if(target) return;
+
+    const isLeft  = dx < 0; // swipe left = next view
+    const isRight = dx > 0; // swipe right = prev view
+
+    // Only swipe through main views (not rules which is config)
+    const mainViews = ['overview','transactions','analytics','investments','balance'];
+    const curView   = document.querySelector('.view.active')?.id?.replace('view-','');
+    const curMainIdx = mainViews.indexOf(curView);
+    if(curMainIdx < 0) return;
+
+    let nextView = null;
+    if(isLeft  && curMainIdx < mainViews.length-1) nextView = mainViews[curMainIdx+1];
+    if(isRight && curMainIdx > 0)                   nextView = mainViews[curMainIdx-1];
+
+    if(nextView){
+      // Swipe animation
+      const current = document.querySelector('.view.active');
+      if(current){
+        current.style.transition = 'transform .25s ease, opacity .25s ease';
+        current.style.transform  = isLeft ? 'translateX(-30px)' : 'translateX(30px)';
+        current.style.opacity    = '0';
+        setTimeout(()=>{
+          current.style.transition = '';
+          current.style.transform  = '';
+          current.style.opacity    = '';
+        }, 260);
+      }
+      if(typeof switchView === 'function') switchView(nextView);
+      syncBottomNav(nextView);
+      haptic('light');
+    }
+    isSwiping = false;
+  }, { passive: true });
+
+  // ── Update badge count ────────────────────────────────────────
+  const origUpdateBadges = window.updateBadges;
+  window.updateBadges = function(){
+    if(typeof origUpdateBadges === 'function') origUpdateBadges();
+    const badge = document.getElementById('bnTxBadge');
+    if(badge && S.view && S.view.length > 0){
+      badge.textContent = S.view.length > 99 ? '99+' : S.view.length;
+      badge.classList.toggle('show', S.view.length > 0);
+    }
+  };
+
+  // ── Hide sidebar rules link on mobile (rules accessible via topbar) ─
+  // Rules is not in bottom nav — accessible from sidebar on desktop
+
+  // Init sync with current active view
+  const activeNav = document.querySelector('.nav.active');
+  if(activeNav) syncBottomNav(activeNav.dataset.view || 'overview');
+})();
+
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
 
@@ -3741,5 +3965,33 @@ bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout
   }
 })();
 </script>
+
+<!-- Bottom navigation bar (mobile) -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-inner">
+    <div class="bn-item active" data-view="overview" id="bn-overview">
+      <span class="bn-ic">🏠</span>
+      <span class="bn-lbl">Inicio</span>
+    </div>
+    <div class="bn-item" data-view="transactions" id="bn-transactions">
+      <span class="bn-ic">📋</span>
+      <span class="bn-lbl">Gastos</span>
+      <span class="bn-badge" id="bnTxBadge"></span>
+    </div>
+    <div class="bn-item" data-view="analytics" id="bn-analytics">
+      <span class="bn-ic">📊</span>
+      <span class="bn-lbl">Analytics</span>
+    </div>
+    <div class="bn-item" data-view="investments" id="bn-investments">
+      <span class="bn-ic">📈</span>
+      <span class="bn-lbl">Inversiones</span>
+    </div>
+    <div class="bn-item" data-view="balance" id="bn-balance">
+      <span class="bn-ic">💰</span>
+      <span class="bn-lbl">Balance</span>
+    </div>
+  </div>
+</nav>
+
 </body>
 </html>
