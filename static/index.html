@@ -977,26 +977,34 @@ tr.sk td{padding:13px 14px!important;}
     <div class="view" id="view-investments">
 
       <!-- Hero strip -->
-      <div class="inv-hero-strip">
-        <div class="inv-hero accent">
-          <div class="inv-lbl">Valor liquidativo</div>
-          <div class="inv-val">€59,067</div>
-          <div class="inv-sub">Abril 30, 2026 · IBKR</div>
+      <div class="inv-hero-strip" style="grid-template-columns:repeat(5,1fr);">
+        <div class="inv-hero accent" style="grid-column:span 2;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div>
+              <div class="inv-lbl">Valor liquidativo (NAV)</div>
+              <div class="inv-val" style="font-size:28px;" id="invNAV">€60,629</div>
+              <div class="inv-sub" id="invNAVSub">May 15, 2026 · IBKR · U16775860</div>
+            </div>
+            <button id="invUploadBtn" title="Subir informe IBKR PDF" style="flex-shrink:0;padding:7px 12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:9px;color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;">
+              📄 Subir informe
+            </button>
+            <input type="file" id="invFileInput" accept=".pdf" style="display:none;"/>
+          </div>
         </div>
         <div class="inv-hero">
-          <div class="inv-lbl">Acciones</div>
-          <div class="inv-val">€42,584</div>
-          <div class="inv-sub">Long · 17 posiciones</div>
+          <div class="inv-lbl">Rentab. acumulada</div>
+          <div class="inv-val pos" id="invCumReturn">+16.60%</div>
+          <div class="inv-sub">Feb 2025 – May 2026</div>
         </div>
         <div class="inv-hero">
-          <div class="inv-lbl">Efectivo</div>
-          <div class="inv-val">€16,482</div>
-          <div class="inv-sub">EUR + USD</div>
+          <div class="inv-lbl">Este mes</div>
+          <div class="inv-val pos" id="invMonthReturn">+2.64%</div>
+          <div class="inv-sub" id="invMonthSub">Mayo 2026</div>
         </div>
         <div class="inv-hero">
-          <div class="inv-lbl">Rentabilidad abril</div>
-          <div class="inv-val pos">+6.58%</div>
-          <div class="inv-sub">+€3,647 vs marzo</div>
+          <div class="inv-lbl">Mejor / Peor mes</div>
+          <div class="inv-val" style="font-size:15px;"><span class="pos">+6.58%</span> / <span class="neg">-4.79%</span></div>
+          <div class="inv-sub">Abr 2026 / Mar 2025</div>
         </div>
       </div>
 
@@ -1030,20 +1038,82 @@ tr.sk td{padding:13px 14px!important;}
           </div>
           <div class="inv-cash-row" style="margin-top:8px;padding-top:12px;border-top:2px solid var(--border);border-bottom:none;">
             <span class="inv-cash-lbl" style="font-weight:700;color:var(--t1);">Total efectivo</span>
-            <span class="inv-cash-val" style="font-size:16px;">€16,482</span>
+            <span class="inv-cash-val" style="font-size:16px;">€16,562</span>
           </div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
             <div class="inv-card-title" style="margin-bottom:10px;">Resumen del mes</div>
-            <div class="inv-cash-row"><span class="inv-cash-lbl">Mark-to-Market</span><span class="inv-cash-val pos">+€3,648</span></div>
-            <div class="inv-cash-row"><span class="inv-cash-lbl">Dividendos</span><span class="inv-cash-val pos">+€15.75</span></div>
-            <div class="inv-cash-row"><span class="inv-cash-lbl">Comisiones</span><span class="inv-cash-val neg">-€1.88</span></div>
-            <div class="inv-cash-row"><span class="inv-cash-lbl">Compras realizadas</span><span class="inv-cash-val neg">-€1,212</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">MTM total acumulado</span><span class="inv-cash-val pos">+€10,433</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Dividendos totales</span><span class="inv-cash-val pos">+€95.71</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Comisiones totales</span><span class="inv-cash-val neg">-€83.94</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Depósitos realizados</span><span class="inv-cash-val">+€51,900</span></div>
           </div>
         </div>
       </div>
 
 
-            <div class="inv-section-title">📊 Posiciones en EUR</div>
+            <!-- Key stats strip -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;" id="invStatsStrip">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">ETFs</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);">€35,426</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px;">58.4% del portfolio</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Acciones</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);">€8,641</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px;">14.3% del portfolio</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">3 meses</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green);">+4.70%</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px;">Mar – May 2026</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Sharpe / Dev</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);">0.76 / 3.14%</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px;">Max drawdown: 6.36%</div>
+        </div>
+      </div>
+
+      <!-- Top performers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">🏆 Top performers (contribución)</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">IUSE</div><div style="font-size:11px;color:var(--t3);">iShares S&P 500</div></div>
+              <div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;color:var(--green);">€17,205</div><div style="font-size:11px;color:var(--green);">CTR +7.24%</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">NQSE</div><div style="font-size:11px;color:var(--t3);">NASDAQ 100</div></div>
+              <div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;color:var(--green);">€8,511</div><div style="font-size:11px;color:var(--green);">CTR +4.92%</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">GOOG</div><div style="font-size:11px;color:var(--t3);">Alphabet</div></div>
+              <div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;color:var(--green);">€2,546</div><div style="font-size:11px;color:var(--green);">CTR +2.76%</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">📉 Bottom performers</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">B 08/14/25</div><div style="font-size:11px;color:var(--t3);">Treasury Bill</div></div>
+              <div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;">€0</div><div style="font-size:11px;color:var(--red);">CTR -3.97%</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">KD</div><div style="font-size:11px;color:var(--t3);">Kyndryl</div></div>
+              <div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;">€263</div><div style="font-size:11px;color:var(--red);">CTR -0.13%</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">GLUG</div><div style="font-size:11px;color:var(--t3);">Clean Water ETF</div></div>
+              <div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;">€358</div><div style="font-size:11px;color:var(--red);">CTR -0.04%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-section-title">📊 Posiciones en EUR</div>
       <div class="inv-table-wrap">
         <table class="inv-table">
           <thead>
@@ -1235,7 +1305,7 @@ tr.sk td{padding:13px 14px!important;}
       </div>
 
       <div style="margin-top:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-m);font-size:12px;color:var(--t3);">
-        📄 Datos del informe IBKR · Abril 1–30, 2026 · Cuenta U16775860 · Divisa base EUR · Tasa de rendimiento ponderada: <strong>+6.58%</strong>
+        📄 PortfolioAnalyst · Feb 11, 2025 – May 15, 2026 · Cuenta U16775860 · Divisa base EUR · Sharpe Ratio: <strong>0.76</strong> · Max Drawdown: <strong>6.36%</strong> · Std Dev: <strong>3.14%</strong>
       </div>
     </div>
 
@@ -2105,16 +2175,17 @@ const INV_POSITIONS = [
 ];
 
 // Clean positions for donut (top 6 + rest)
+// Updated from PortfolioAnalyst snapshot May 15, 2026
 const INV_DATA = [
-  {ticker:"IUSE",    name:"iShares S&P 500 EUR-H",    val:16597, cost:13626, cur:"EUR", color:"#3b82f6"},
-  {ticker:"NQSE",    name:"iShares NASDAQ 100 EUR-H",  val:7931,  cost:6127,  cur:"EUR", color:"#06b6d4"},
-  {ticker:"VDEM",    name:"Vanguard FTSE Emerging",    val:4650,  cost:3704,  cur:"USD", color:"#10b981"},
-  {ticker:"DFEN",    name:"VanEck Defense ETF",        val:4063,  cost:3536,  cur:"EUR", color:"#7c3aed"},
-  {ticker:"GOOG",    name:"Alphabet Inc",              val:2874,  cost:1250,  cur:"USD", color:"#f59e0b"},
-  {ticker:"TSLA",    name:"Tesla Inc",                 val:1647,  cost:1233,  cur:"USD", color:"#ef4444"},
-  {ticker:"Resto",   name:"ASTS+BTCWUSD+IGLN+INTC+KD+OSCR+PLTR+RED+TSM", val:5067, cost:4100, cur:"MIX", color:"#94a3b8"},
+  {ticker:"IUSE",    name:"iShares S&P 500 EUR-H",    val:17205, cost:13626, cur:"EUR", color:"#3b82f6"},
+  {ticker:"NQSE",    name:"iShares NASDAQ 100 EUR-H",  val:8511,  cost:6127,  cur:"EUR", color:"#06b6d4"},
+  {ticker:"VDEM",    name:"Vanguard FTSE Emerging",    val:4800,  cost:3704,  cur:"USD", color:"#10b981"},
+  {ticker:"DFEN",    name:"VanEck Defense ETF",        val:4200,  cost:3536,  cur:"EUR", color:"#7c3aed"},
+  {ticker:"GOOG",    name:"Alphabet Inc",              val:2546,  cost:1250,  cur:"USD", color:"#f59e0b"},
+  {ticker:"TSLA",    name:"Tesla Inc",                 val:1700,  cost:1233,  cur:"USD", color:"#ef4444"},
+  {ticker:"Resto",   name:"ASTS+BTCWUSD+IGLN+INTC+KD+OSCR+PLTR+RED+TSM", val:3970, cost:3700, cur:"MIX", color:"#94a3b8"},
 ];
-const INV_TOTAL = INV_DATA.reduce((s,p)=>s+p.val,0); // ≈ 42829
+const INV_TOTAL = INV_DATA.reduce((s,p)=>s+p.val,0); // ≈ 42932 equities
 
 function buildInvDonut(){
   const svg = document.getElementById("invDonut");
@@ -2146,7 +2217,7 @@ function buildInvDonut(){
     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${SW}"/>
     ${segments}
     <text x="${CX}" y="${CY-7}" text-anchor="middle" font-size="10" fill="var(--t3)" font-family="var(--font)">Total</text>
-    <text x="${CX}" y="${CY+8}" text-anchor="middle" font-size="12" fill="var(--t1)" font-weight="700" font-family="var(--mono)">€42.8K</text>
+    <text x="${CX}" y="${CY+8}" text-anchor="middle" font-size="12" fill="var(--t1)" font-weight="700" font-family="var(--mono)">€42.9K</text>
   `;
 
   // Legend
@@ -2266,6 +2337,165 @@ function checkMonthlyReminder(){
   }
 }
 
+
+
+// ─── IBKR PDF UPLOAD ─────────────────────────────────────────────
+(function(){
+  function initUpload(){
+    const btn = document.getElementById("invUploadBtn");
+    const input = document.getElementById("invFileInput");
+    if(!btn || !input) return;
+
+    btn.addEventListener("click", ()=> input.click());
+
+    input.addEventListener("change", async ()=>{
+      const file = input.files[0];
+      if(!file) return;
+
+      // Show loading state
+      btn.textContent = "⏳ Procesando…";
+      btn.disabled = true;
+
+      try{
+        // Read PDF as text using FileReader + basic text extraction
+        const text = await readPDFText(file);
+        const data = parseIBKRReport(text);
+        if(data){
+          applyIBKRData(data);
+          showUploadSuccess(file.name);
+        } else {
+          showUploadError("No se pudo extraer datos. Asegúrate de subir un informe IBKR válido.");
+        }
+      }catch(e){
+        showUploadError("Error al procesar: "+e.message);
+      }finally{
+        btn.textContent = "📄 Subir informe";
+        btn.disabled = false;
+        input.value = "";
+      }
+    });
+  }
+
+  async function readPDFText(file){
+    // Use PDF.js if available, otherwise read as ArrayBuffer and extract text
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        // Extract readable ASCII text from PDF binary
+        const arr = new Uint8Array(e.target.result);
+        let text = "";
+        for(let i=0; i<arr.length; i++){
+          const c = arr[i];
+          if(c >= 32 && c < 127) text += String.fromCharCode(c);
+          else if(c === 10 || c === 13) text += " ";
+        }
+        resolve(text);
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  function parseIBKRReport(text){
+    const data = {};
+
+    // NAV / Ending NAV
+    let m = text.match(/Ending NAV\s+([\d,]+\.?\d*)/i);
+    if(!m) m = text.match(/Net Asset Value.*?([\d,]+\.?\d*)/i);
+    if(m) data.nav = parseFloat(m[1].replace(/,/g,""));
+
+    // Cumulative return
+    m = text.match(/CUMULATIVE RETURN\s+([\d.]+)%/i);
+    if(m) data.cumReturn = parseFloat(m[1]);
+
+    // 1 month return
+    m = text.match(/1 MONTH RETURN\s+([\d.]+)%/i);
+    if(m) data.monthReturn = parseFloat(m[1]);
+
+    // 3 month return
+    m = text.match(/3 MONTH RETURN\s+([\d.]+)%/i);
+    if(m) data.threeMonthReturn = parseFloat(m[1]);
+
+    // ETFs, Stocks, Cash allocation
+    m = text.match(/ETFs\s+([\d,]+\.?\d*)/i);
+    if(m) data.etfs = parseFloat(m[1].replace(/,/g,""));
+
+    m = text.match(/Stocks\s+([\d,]+\.?\d*)/i);
+    if(m) data.stocks = parseFloat(m[1].replace(/,/g,""));
+
+    m = text.match(/Cash\s+([\d,]+\.?\d*)/i);
+    if(m) data.cash = parseFloat(m[1].replace(/,/g,""));
+
+    // Report date
+    m = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+    if(m) data.date = m[1];
+
+    // Need at least NAV to be valid
+    if(!data.nav) return null;
+    return data;
+  }
+
+  function applyIBKRData(data){
+    // Update hero cards
+    const navEl = document.getElementById("invNAV");
+    if(navEl && data.nav) navEl.textContent = "€"+Math.round(data.nav).toLocaleString();
+
+    const navSub = document.getElementById("invNAVSub");
+    if(navSub && data.date) navSub.textContent = data.date+" · IBKR · U16775860";
+
+    const cumRet = document.getElementById("invCumReturn");
+    if(cumRet && data.cumReturn != null){
+      cumRet.textContent = (data.cumReturn>=0?"+":"")+data.cumReturn.toFixed(2)+"%";
+      cumRet.className = "inv-val "+(data.cumReturn>=0?"pos":"neg");
+    }
+
+    const monthRet = document.getElementById("invMonthReturn");
+    if(monthRet && data.monthReturn != null){
+      monthRet.textContent = (data.monthReturn>=0?"+":"")+data.monthReturn.toFixed(2)+"%";
+      monthRet.className = "inv-val "+(data.monthReturn>=0?"pos":"neg");
+    }
+
+    // Save to localStorage for persistence
+    localStorage.setItem("ibkr_data", JSON.stringify(data));
+    localStorage.setItem("ibkr_data_date", new Date().toISOString());
+  }
+
+  function showUploadSuccess(filename){
+    const banner = document.createElement("div");
+    banner.style.cssText = "position:fixed;bottom:80px;right:20px;z-index:600;background:var(--green-l);border:1px solid rgba(5,150,105,.3);border-radius:12px;padding:12px 16px;font-size:13px;font-family:var(--font);box-shadow:var(--shadow);animation:slideIn .3s ease;max-width:300px;";
+    banner.innerHTML = `<div style="font-weight:700;color:var(--green);margin-bottom:3px;">✅ Informe actualizado</div><div style="color:var(--t2);font-size:12px;">${filename}</div>`;
+    document.body.appendChild(banner);
+    setTimeout(()=>banner.remove(), 4000);
+  }
+
+  function showUploadError(msg){
+    const banner = document.createElement("div");
+    banner.style.cssText = "position:fixed;bottom:80px;right:20px;z-index:600;background:var(--red-l);border:1px solid rgba(220,38,38,.3);border-radius:12px;padding:12px 16px;font-size:13px;font-family:var(--font);box-shadow:var(--shadow);max-width:320px;";
+    banner.innerHTML = `<div style="font-weight:700;color:var(--red);margin-bottom:3px;">❌ Error</div><div style="color:var(--t2);font-size:12px;">${msg}</div>`;
+    document.body.appendChild(banner);
+    setTimeout(()=>banner.remove(), 6000);
+  }
+
+  // Load saved data on startup
+  function loadSavedData(){
+    const saved = localStorage.getItem("ibkr_data");
+    const savedDate = localStorage.getItem("ibkr_data_date");
+    if(!saved) return;
+    try{
+      const data = JSON.parse(saved);
+      // Only auto-apply if saved within last 60 days
+      if(savedDate){
+        const age = (Date.now() - new Date(savedDate).getTime()) / (1000*60*60*24);
+        if(age > 60) return;
+      }
+      applyIBKRData(data);
+    }catch(_){}
+  }
+
+  // Init after DOM ready
+  setTimeout(initUpload, 300);
+  setTimeout(loadSavedData, 400);
+})();
 
 bind();load();loadRules();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
