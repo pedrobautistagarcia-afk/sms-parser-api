@@ -730,6 +730,60 @@ tr.sk td{padding:13px 14px!important;}
 .inv-cash-lbl { color: var(--t2); display: flex; align-items: center; gap: 6px; }
 .inv-cash-val { font-family: var(--mono); font-weight: 600; }
 
+
+/* Privacy mode */
+.privacy-hidden {
+  filter: blur(8px);
+  user-select: none;
+  transition: filter .25s;
+}
+.privacy-hidden:hover { filter: blur(8px); }
+body.privacy .privacy-hidden { filter: blur(8px); }
+body:not(.privacy) .privacy-hidden { filter: none; }
+
+.privacy-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 11px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-s); color: var(--t2);
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.privacy-btn:hover { background: var(--bg); border-color: var(--border2); color: var(--t1); }
+.privacy-btn.active { background: var(--amber-l); border-color: rgba(217,119,6,.25); color: var(--amber); }
+
+
+/* Investments mobile */
+@media (max-width: 768px) {
+  .inv-hero-strip { grid-template-columns: 1fr !important; }
+  .inv-hero-strip .inv-hero[style*="grid-column:span 2"] { grid-column: span 1 !important; }
+  .inv-grid { grid-template-columns: 1fr !important; }
+  .inv-table { font-size: 11px !important; }
+  .inv-table thead th, .inv-table tbody td { padding: 8px 8px !important; }
+  .inv-table thead th:nth-child(3),
+  .inv-table thead th:nth-child(4),
+  .inv-table tbody td:nth-child(3),
+  .inv-table tbody td:nth-child(4) { display: none !important; }
+  #invStatsStrip { grid-template-columns: 1fr 1fr !important; }
+  .inv-alloc-wrap { flex-direction: column !important; align-items: center !important; }
+  .inv-alloc-legend { width: 100% !important; }
+}
+body.fm .inv-hero-strip { grid-template-columns: 1fr !important; }
+body.fm .inv-hero[style*="grid-column:span 2"] { grid-column: span 1 !important; }
+body.fm .inv-grid { grid-template-columns: 1fr !important; }
+body.fm .inv-table { font-size: 11px !important; }
+body.fm .inv-table thead th, body.fm .inv-table tbody td { padding: 8px 8px !important; }
+body.fm .inv-table thead th:nth-child(3),
+body.fm .inv-table thead th:nth-child(4),
+body.fm .inv-table tbody td:nth-child(3),
+body.fm .inv-table tbody td:nth-child(4) { display: none !important; }
+body.fm #invStatsStrip { grid-template-columns: 1fr 1fr !important; }
+body.fm .inv-alloc-wrap { flex-direction: column !important; align-items: center !important; }
+body.fm .inv-alloc-legend { width: 100% !important; }
+
+/* Overview mobile */
+body.fm .ov-hero-strip { grid-template-columns: 1fr !important; }
+
 </style>
 </head>
 <body>
@@ -766,6 +820,7 @@ tr.sk td{padding:13px 14px!important;}
     </div>
     <div class="tb-right">
       <div class="status-pill"><div class="dot"></div><span id="statusPill">loading…</span></div>
+      <button class="privacy-btn" id="privacyBtn" title="Ocultar datos sensibles">👁 Ocultar</button>
       <div class="theme-btn" id="themeBtn">☀️</div>
       <button class="btn btn-ic" id="refreshBtn">🔄</button>
     </div>
@@ -782,15 +837,15 @@ tr.sk td{padding:13px 14px!important;}
         <div class="ov-hero accent">
           <div class="ov-hero-lbl">Saldo NBK</div>
           <div class="ov-hero-sub" id="ovBalSub">Último saldo conocido</div>
-          <div class="ov-hero-val" id="ovBalKWD">—</div>
+          <div class="ov-hero-val" id="ovBalKWD" class="privacy-hidden">—</div>
           <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);display:flex;gap:16px;">
             <div>
               <div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Último SMS</div>
-              <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovLastSMSDate">—</div>
+              <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovLastSMSDate" class="privacy-hidden">—</div>
             </div>
             <div>
               <div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Balance acumulado</div>
-              <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovAccBal">—</div>
+              <div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovAccBal" class="privacy-hidden">—</div>
             </div>
           </div>
         </div>
@@ -804,16 +859,16 @@ tr.sk td{padding:13px 14px!important;}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
             <div style="background:var(--green-l);border:1px solid rgba(5,150,105,.15);border-radius:var(--radius-s);padding:12px;">
               <div style="font-size:10px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">↑ Ingresos</div>
-              <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green);" id="ovIncMonth">—</div>
+              <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green);" id="ovIncMonth" class="privacy-hidden">—</div>
             </div>
             <div style="background:var(--red-l);border:1px solid rgba(220,38,38,.15);border-radius:var(--radius-s);padding:12px;">
               <div style="font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">↓ Gastos</div>
-              <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--red);" id="ovExpMonth">—</div>
+              <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--red);" id="ovExpMonth" class="privacy-hidden">—</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);">
             <div style="font-size:12px;color:var(--t2);font-weight:500;">Neto del mes</div>
-            <div style="font-size:16px;font-weight:700;font-family:var(--mono);" id="ovNetMonth">—</div>
+            <div style="font-size:16px;font-weight:700;font-family:var(--mono);" id="ovNetMonth" class="privacy-hidden">—</div>
           </div>
         </div>
       </div>
@@ -902,12 +957,12 @@ tr.sk td{padding:13px 14px!important;}
       <div class="stat-strip">
         <div class="stat-card hero">
           <div class="sc-label">Total balance</div>
-          <div class="sc-val" id="scTotal">—</div>
+          <div class="sc-val privacy-hidden" id="scTotal">—</div>
           <div class="sc-sub">All currencies</div>
         </div>
         <div class="stat-card">
           <div class="sc-label">This month</div>
-          <div class="sc-val" id="scMonth">—</div>
+          <div class="sc-val privacy-hidden" id="scMonth">—</div>
           <div class="sc-sub">Total expenses</div>
         </div>
         <div class="stat-card">
@@ -961,7 +1016,7 @@ tr.sk td{padding:13px 14px!important;}
           <div class="ana-card-title">Monthly spending</div>
           <div class="chart-header">
             <div>
-              <span class="chart-total" id="chartTotal">—</span>
+              <span class="chart-total privacy-hidden" id="chartTotal">—</span>
               <span class="chart-total-sub">total in EUR</span>
             </div>
             <span class="chart-eur-note" id="chartEurNote">Loading FX rates…</span>
@@ -1005,7 +1060,7 @@ tr.sk td{padding:13px 14px!important;}
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
             <div>
               <div class="inv-lbl">Valor liquidativo (NAV)</div>
-              <div class="inv-val" style="font-size:28px;" id="invNAV">€60,629</div>
+              <div class="inv-val privacy-hidden" style="font-size:28px;" id="invNAV">€60,629</div>
               <div class="inv-sub" id="invNAVSub">May 15, 2026 · IBKR · U16775860</div>
             </div>
             <button id="invUploadBtn" title="Subir informe IBKR PDF" style="flex-shrink:0;padding:7px 12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:9px;color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;">
@@ -1016,12 +1071,12 @@ tr.sk td{padding:13px 14px!important;}
         </div>
         <div class="inv-hero">
           <div class="inv-lbl">Rentab. acumulada</div>
-          <div class="inv-val pos" id="invCumReturn">+16.60%</div>
+          <div class="inv-val pos privacy-hidden" id="invCumReturn">+16.60%</div>
           <div class="inv-sub">Feb 2025 – May 2026</div>
         </div>
         <div class="inv-hero">
           <div class="inv-lbl">Este mes</div>
-          <div class="inv-val pos" id="invMonthReturn">+2.64%</div>
+          <div class="inv-val pos privacy-hidden" id="invMonthReturn">+2.64%</div>
           <div class="inv-sub" id="invMonthSub">Mayo 2026</div>
         </div>
         <div class="inv-hero">
@@ -1336,25 +1391,25 @@ tr.sk td{padding:13px 14px!important;}
     <div class="view" id="view-balance">
       <div class="bal-hero">
         <div class="bh-label">Total Balance (EUR)</div>
-        <div class="bh-val" id="bvTotal">—</div>
+        <div class="bh-val privacy-hidden" id="bvTotal">—</div>
         <div class="bh-sub">Live FX conversion · All currencies</div>
       </div>
       <div class="bal-grid">
         <div class="bal-card kwd">
           <div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#fff"/><rect width="20" height="4.7" fill="#0B7A3B"/><rect y="9.3" width="20" height="4.7" fill="#C8102E"/><path d="M0 0h6L9 7 6 14H0z" fill="#000"/></svg><span class="bc-cur">KWD</span></div><div class="bc-dot" style="background:var(--teal)"></div></div>
-          <div class="bc-val" id="bvKWD">—</div><div class="bc-name">Kuwaiti Dinar</div>
+          <div class="bc-val privacy-hidden" id="bvKWD">—</div><div class="bc-name">Kuwaiti Dinar</div>
         </div>
         <div class="bal-card usd">
           <div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#B22234"/><rect y="1.2" width="20" height="2" fill="#fff"/><rect y="5" width="20" height="2" fill="#fff"/><rect y="8.8" width="20" height="2" fill="#fff"/><rect y="12.6" width="20" height="2" fill="#fff"/><rect width="9" height="8" fill="#3C3B6E"/></svg><span class="bc-cur">USD</span></div><div class="bc-dot" style="background:var(--blue)"></div></div>
-          <div class="bc-val" id="bvUSD">—</div><div class="bc-name">US Dollar</div>
+          <div class="bc-val privacy-hidden" id="bvUSD">—</div><div class="bc-name">US Dollar</div>
         </div>
         <div class="bal-card eur">
           <div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#003399"/><g fill="#FFCC00"><circle cx="10" cy="2.2" r=".55"/><circle cx="13" cy="3.2" r=".55"/><circle cx="14.8" cy="5.5" r=".55"/><circle cx="15.3" cy="7" r=".55"/><circle cx="14.8" cy="8.5" r=".55"/><circle cx="13" cy="10.8" r=".55"/><circle cx="10" cy="11.8" r=".55"/><circle cx="7" cy="10.8" r=".55"/><circle cx="5.2" cy="8.5" r=".55"/><circle cx="4.7" cy="7" r=".55"/><circle cx="5.2" cy="5.5" r=".55"/><circle cx="7" cy="3.2" r=".55"/></g></svg><span class="bc-cur">EUR</span></div><div class="bc-dot" style="background:var(--purple)"></div></div>
-          <div class="bc-val" id="bvEUR">—</div><div class="bc-name">Euro</div>
+          <div class="bc-val privacy-hidden" id="bvEUR">—</div><div class="bc-name">Euro</div>
         </div>
         <div class="bal-card aed">
           <div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#fff"/><rect x="4" width="16" height="4.7" fill="#00732F"/><rect x="4" y="9.3" width="16" height="4.7" fill="#000"/><rect width="4" height="14" fill="#FF0000"/></svg><span class="bc-cur">AED</span></div><div class="bc-dot" style="background:var(--green)"></div></div>
-          <div class="bc-val" id="bvAED">—</div><div class="bc-name">UAE Dirham</div>
+          <div class="bc-val privacy-hidden" id="bvAED">—</div><div class="bc-name">UAE Dirham</div>
         </div>
       </div>
     </div>
@@ -2544,6 +2599,37 @@ function checkMonthlyReminder(){
   // Init after DOM ready
   setTimeout(initUpload, 300);
   setTimeout(loadSavedData, 400);
+})();
+
+
+// ─── PRIVACY MODE ────────────────────────────────────────────────
+(function(){
+  let on = localStorage.getItem("privacyMode") === "1";
+
+  function apply(){
+    document.body.classList.toggle("privacy", on);
+    document.querySelectorAll(".privacy-hidden").forEach(el=>{
+      el.style.filter = on ? "blur(8px)" : "none";
+      el.style.userSelect = on ? "none" : "";
+    });
+    const btn = document.getElementById("privacyBtn");
+    if(btn){
+      btn.textContent = on ? "🙈 Mostrar" : "👁 Ocultar";
+      btn.classList.toggle("active", on);
+    }
+  }
+
+  setTimeout(()=>{
+    apply();
+    const btn = document.getElementById("privacyBtn");
+    if(btn){
+      btn.addEventListener("click",()=>{
+        on = !on;
+        localStorage.setItem("privacyMode", on?"1":"0");
+        apply();
+      });
+    }
+  }, 200);
 })();
 
 bind();load();loadRules();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
