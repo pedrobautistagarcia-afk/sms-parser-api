@@ -1657,6 +1657,8 @@ async function GET(p){const r=await fetch(API+p);if(!r.ok)throw new Error("HTTP 
 async function POST(p,b){const s=p.includes("?")?"&":"?";const r=await fetch(API+p+s+"api_key="+encodeURIComponent(AK),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})});const t=await r.text();if(!r.ok)throw new Error(r.status+": "+t);try{return JSON.parse(t);}catch(_){return{ok:true};}}
 
 const S={all:[],view:[],sortKey:"created_at",sortDir:"desc",categories:new Set(),currencies:new Set(),selected:new Set(),undoTimer:null,rules:[],anaYear:null};
+const TX_WINDOW={months:1};
+let _searchQ="";
 const FX={ts:0,rates:null};
 
 async function getFX(){
@@ -1704,7 +1706,7 @@ function setQ(mode){
   aQ=mode;const map={today:"btnToday",week:"btnWeek",month:"btnMonth",year:"btnYear"};$(map[mode])?.classList.add("active");
   const today=new Date(),iso=d=>d.toISOString().slice(0,10),to=iso(today);let from="";
   if(mode==="today")from=to;else if(mode==="week"){const d=new Date(today);d.setDate(d.getDate()-7);from=iso(d);}else if(mode==="month"){const d=new Date(today);d.setMonth(d.getMonth()-1);from=iso(d);}else if(mode==="year"){const d=new Date(today);d.setMonth(0);d.setDate(1);from=iso(d);}
-  $("dateFrom").value=from;$("dateTo").value=to;TX_WINDOW.months=0;applyFiltersWithWindow();
+  $("dateFrom").value=from;$("dateTo").value=to;if(typeof TX_WINDOW!=="undefined")TX_WINDOW.months=0;if(typeof applyFiltersWithWindow==="function")applyFiltersWithWindow();else applyFilters();
 }
 function sortView(){const k=S.sortKey,dir=S.sortDir==="asc"?1:-1;S.view.sort((a,b)=>{let av=a[k],bv=b[k];if(k==="amount"){av=Number(av||0);bv=Number(bv||0);}else{av=String(av||"");bv=String(bv||"");}return av<bv?-dir:av>bv?dir:0;});$("shDate").textContent=S.sortKey==="created_at"?(S.sortDir==="asc"?"↑":"↓"):"";}
 
@@ -2399,7 +2401,7 @@ async function load(fromCache=false){
         S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
         if(!S.categories.size) S.categories.add("other");
         if(!S.currencies.size) S.currencies.add("KWD");
-        buildFilters(); applyFiltersWithWindow();
+        buildFilters(); (typeof applyFiltersWithWindow==="function"?applyFiltersWithWindow:applyFilters)();
         ss(S.view.length+" transactions (caché)");
         renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
         load(true); // refresh in background
@@ -2415,7 +2417,7 @@ async function load(fromCache=false){
     S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
     if(!S.categories.size) S.categories.add("other");
     if(!S.currencies.size) S.currencies.add("KWD");
-    buildFilters(); applyFiltersWithWindow();
+    buildFilters(); (typeof applyFiltersWithWindow==="function"?applyFiltersWithWindow:applyFilters)();
     ss(S.view.length+" transactions");
     renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
     if(fromCache) showToast2("🔄","Datos actualizados","","var(--blue)",2500);
@@ -3126,8 +3128,7 @@ function updateBadges(){
 
 
 // ─── TRANSACTIONS: SEARCH + DATE WINDOW ──────────────────────────
-const TX_WINDOW = { months: 1 }; // default: show current month only
-let _searchQ = "";
+// TX_WINDOW and _searchQ declared at top
 
 function getWindowStartDate(months){
   const now = new Date();
