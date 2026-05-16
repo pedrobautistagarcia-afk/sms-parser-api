@@ -413,9 +413,9 @@ tr.sk td{padding:13px 14px!important;}
 .ov-tx-cur { font-size: 11px; color: var(--t3); margin-top: 2px; }
 
 /* Mini bar chart */
-.ov-bars { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 0 18px; margin-bottom: 8px; }
-.ov-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; }
-.ov-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; min-height: 0; }
+.ov-bars { display: flex; align-items: flex-end; gap: 8px; height: auto; padding: 0 18px 0; margin-bottom: 8px; }
+.ov-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; }
+.ov-bar-wrap { width: 100%; display: flex; align-items: flex-end; justify-content: center; height: 140px; }
 .ov-bar {
   width: 100%; border-radius: 5px 5px 0 0;
   background: linear-gradient(180deg, var(--blue), var(--teal));
@@ -455,6 +455,62 @@ tr.sk td{padding:13px 14px!important;}
 .ov-bank-sub { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
 .ov-bank-inc { font-size: 11px; color: var(--green); font-family: var(--mono); font-weight: 600; }
 .ov-bank-exp { font-size: 11px; color: var(--red); font-family: var(--mono); font-weight: 600; }
+
+
+/* Donut tooltip & popup */
+.ov-donut-wrap { position: relative; }
+.donut-tooltip {
+  position: absolute; pointer-events: none;
+  background: var(--t1); color: var(--surface);
+  font-size: 11px; font-family: var(--mono); font-weight: 600;
+  padding: 5px 9px; border-radius: 7px; white-space: nowrap;
+  opacity: 0; transition: opacity .15s;
+  z-index: 10; transform: translate(-50%,-110%);
+}
+.donut-tooltip.show { opacity: 1; }
+
+/* Cat popup overlay */
+.cat-popup-ovl {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px); z-index: 800;
+  display: none; align-items: center; justify-content: center;
+}
+[data-theme="dark"] .cat-popup-ovl { background: rgba(0,0,0,.65); }
+.cat-popup-ovl.open { display: flex; }
+.cat-popup {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 24px 48px rgba(0,0,0,.2);
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  animation: mIn .2s ease; overflow: hidden; display: flex; flex-direction: column;
+}
+.cat-popup-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.cat-popup-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.cat-popup-sub { font-size: 12px; color: var(--t3); margin-top: 2px; }
+.cat-popup-body { overflow-y: auto; flex: 1; padding: 8px 0; }
+.cat-popup-tx {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background .1s;
+}
+.cat-popup-tx:last-child { border-bottom: none; }
+.cat-popup-tx:hover { background: var(--bg); }
+.cat-popup-tx-left { flex: 1; min-width: 0; }
+.cat-popup-tx-merch { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-popup-tx-date { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.cat-popup-tx-amt { font-size: 13px; font-family: var(--mono); font-weight: 700; color: var(--red); flex-shrink: 0; }
+
+
+/* Rules edit inline */
+.ri-editing { background: var(--blue-l) !important; border-color: var(--blue) !important; flex-wrap: wrap; gap: 8px; }
+.ri-edit-row { display: flex; gap: 6px; width: 100%; align-items: center; }
+.ri-edit-input { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-s); color: var(--t1); font-family: var(--mono); font-size: 13px; padding: 6px 10px; outline: none; }
+.ri-edit-input:focus { border-color: var(--blue); }
+.ri-edit-select { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-s); color: var(--t1); font-family: var(--font); font-size: 13px; padding: 6px 9px; outline: none; }
+.ri-edit-btns { display: flex; gap: 6px; margin-left: auto; }
 
 </style>
 </head>
@@ -971,10 +1027,11 @@ async function renderOverview(){
       const parts = ym.split("-");
       const lbl = MS[+parts[1]-1]+"'"+parts[0].slice(2);
       const isPeak = i===peakIdx&&v>0;
+      const px = maxBar>0 ? Math.max(Math.round(v/maxBar*140), v>0?6:0) : 0;
       return `<div class="ov-bar-col${isPeak?" ov-peak":""}">
         <div class="ov-bar-val">${v>0?"€"+Math.round(v):""}</div>
         <div class="ov-bar-wrap">
-          <div class="ov-bar" style="height:${pct}%;width:100%;"></div>
+          <div class="ov-bar" style="height:${px}px;width:100%;"></div>
         </div>
         <div class="ov-bar-lbl">${lbl}</div>
       </div>`;
@@ -1061,10 +1118,54 @@ async function renderOverview(){
 
   const donut=$("ovDonut");
   if(donut){
+    // Build segments with hover/click
+    let segOffset=0;
+    const segData=sortedCats.map(([cat,val])=>{
+      const pct=val/totalCat;
+      const dash=pct*circ;
+      const gap=circ-dash;
+      const clr=CAT_COLORS[cat]||"#94a3b8";
+      const seg={cat,val,pct,dash,gap,offset:segOffset,clr};
+      segOffset+=dash;
+      return seg;
+    });
+
     donut.innerHTML=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${strokeW}"/>
-    ${segments}
+    ${segData.map(s=>`<circle class="donut-seg" data-cat="${s.cat}" data-val="${s.val.toFixed(3)}" data-pct="${Math.round(s.pct*100)}"
+      cx="${CX}" cy="${CY}" r="${R}" fill="none"
+      stroke="${s.clr}" stroke-width="${strokeW}"
+      stroke-dasharray="${s.dash.toFixed(2)} ${(circ-s.dash).toFixed(2)}"
+      stroke-dashoffset="${(-s.offset).toFixed(2)}"
+      transform="rotate(-90 ${CX} ${CY})"
+      style="cursor:pointer;transition:stroke-width .15s,opacity .15s;"/>`).join("")}
     <text x="${CX}" y="${CY-6}" text-anchor="middle" font-size="11" fill="var(--t3)" font-family="var(--font)">Total</text>
     <text x="${CX}" y="${CY+10}" text-anchor="middle" font-size="12" fill="var(--t1)" font-weight="700" font-family="var(--mono)">${totalCat.toFixed(0)}</text>`;
+
+    // Tooltip element
+    let tipEl=donut.parentElement.querySelector('.donut-tooltip');
+    if(!tipEl){tipEl=document.createElement('div');tipEl.className='donut-tooltip';donut.parentElement.style.position='relative';donut.parentElement.appendChild(tipEl);}
+
+    donut.querySelectorAll('.donut-seg').forEach(seg=>{
+      seg.addEventListener('mouseenter',e=>{
+        seg.setAttribute('stroke-width', strokeW+6+'');
+        const cat=seg.dataset.cat, val=seg.dataset.val, pct=seg.dataset.pct;
+        tipEl.textContent=`${CAT_ICONS[cat]||""} ${tc(cat)}: ${val} KWD (${pct}%)`;
+        tipEl.classList.add('show');
+      });
+      seg.addEventListener('mousemove',e=>{
+        const rect=donut.getBoundingClientRect();
+        const wrap=donut.parentElement.getBoundingClientRect();
+        tipEl.style.left=(e.clientX-wrap.left)+'px';
+        tipEl.style.top=(e.clientY-wrap.top)+'px';
+      });
+      seg.addEventListener('mouseleave',()=>{
+        seg.setAttribute('stroke-width',strokeW+'');
+        tipEl.classList.remove('show');
+      });
+      seg.addEventListener('click',()=>{
+        openCatPopup(seg.dataset.cat, ym);
+      });
+    });
   }
 
   // Legend
@@ -1087,6 +1188,51 @@ async function renderOverview(){
     }).join("")||"<div style='color:var(--t3);font-size:13px;'>Sin datos este mes</div>";
   }
 }
+
+
+// ─── CATEGORY POPUP ──────────────────────────────────────────
+function openCatPopup(cat, ym){
+  const rows = S.all.filter(r=>
+    idir(r)==="out" &&
+    (r.category||"other").toLowerCase()===cat &&
+    (r.created_at||"").startsWith(ym)
+  ).sort((a,b)=>Number(b.amount||0)-Number(a.amount||0));
+
+  const icon = CAT_ICONS[cat]||"❓";
+  const clr  = CAT_COLORS[cat]||"#94a3b8";
+  const total = rows.reduce((s,r)=>s+Number(r.amount||0),0);
+  const now = new Date();
+  const monthName = MO[now.getMonth()]+" "+now.getFullYear();
+
+  $("catPopupTitle").innerHTML = `<span>${icon}</span> ${tc(cat)}`;
+  $("catPopupSub").textContent = `${rows.length} transacciones · ${total.toFixed(3)} KWD · ${monthName}`;
+
+  $("catPopupBody").innerHTML = rows.length
+    ? rows.map(r=>{
+        const merch=cm(r.merchant_clean||r.merchant_raw||"—");
+        const d=isoDay(r.created_at||"");
+        const dateStr=d?`${+d.slice(8,10)} ${MO[+d.slice(5,7)-1].slice(0,3)}`:"";
+        return `<div class="cat-popup-tx" data-id="${r.id}">
+          <div class="cat-popup-tx-left">
+            <div class="cat-popup-tx-merch">${merch}</div>
+            <div class="cat-popup-tx-date">${dateStr} · ${(r.currency||"").toUpperCase()}</div>
+          </div>
+          <div class="cat-popup-tx-amt">-${fm(r.amount)}</div>
+        </div>`;
+      }).join("")
+    : `<div style="padding:24px;text-align:center;color:var(--t3);">Sin transacciones</div>`;
+
+  // Wire clicks to open tx detail
+  $("catPopupBody").querySelectorAll(".cat-popup-tx").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const item=S.all.find(x=>String(x.id)===el.dataset.id);
+      if(item){ closeCatPopup(); openTx(item); }
+    });
+  });
+
+  $("catPopupOvl").classList.add("open");
+}
+function closeCatPopup(){ $("catPopupOvl").classList.remove("open"); }
 
 // ─── ANALYTICS ───────────────────────────────────────────────
 function getYears(){const y=new Set();for(const r of S.all){const d=isoDay(r.created_at||"");if(d)y.add(d.slice(0,4));}return[...y].sort().reverse();}
@@ -1265,11 +1411,82 @@ async function renderAnalytics(){
 async function loadRules(){try{const j=await GET("/rules?user_id="+UID);S.rules=j.rules||[];$("rulesCount").textContent=S.rules.length;renderRules();}catch(e){console.error(e);}}
 function catClr(cat){const m={coffee:"var(--amber)",food:"var(--teal)",groceries:"var(--green)",pharmacy:"var(--red)",transport:"var(--blue)",utilities:"var(--purple)",shopping:"var(--purple)",entertainment:"var(--pink)",health:"var(--red)",travel:"var(--teal)",education:"var(--amber)",salary:"var(--green)",income:"var(--green)",other:"var(--t3)"};return m[cat]||"var(--t3)";}
 function renderRules(){
-  const el=$("ruleList");if(!el)return;
-  if(!S.rules.length){el.innerHTML=`<div class="r-empty"><b>No rules yet</b>Create rules to auto-categorize transactions.</div>`;return;}
-  el.innerHTML=S.rules.map(r=>`<div class="ri"><span class="r-pat">${r.pattern||"—"}</span><span class="r-arr">→</span><span class="r-cat" style="background:${catClr(r.set_category)}18;color:${catClr(r.set_category)};border:1px solid ${catClr(r.set_category)}30;">${tc(r.set_category||"—")}</span><span class="r-type">${r.match_type||"contains"}</span><button class="r-del" data-id="${r.id}">✕</button></div>`).join("");
-  el.querySelectorAll(".r-del").forEach(btn=>{btn.addEventListener("click",async()=>{if(!confirm("Delete this rule?"))return;try{await fetch(API+"/rules/"+btn.dataset.id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"});await loadRules();}catch(e){se("Delete rule failed");}});});
+  const el=$("ruleList"); if(!el) return;
+  if(!S.rules.length){
+    el.innerHTML=`<div class="r-empty"><b>No rules yet</b>Create rules to auto-categorize transactions.</div>`;
+    return;
+  }
+  const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];
+  const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();
+
+  el.innerHTML=S.rules.map(r=>`
+    <div class="ri" data-rid="${r.id}">
+      <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);flex:1;">${r.pattern||"—"}</span>
+      <span style="color:var(--t3);font-size:13px;padding:0 4px;">→</span>
+      <span style="font-size:12px;padding:4px 10px;border-radius:999px;font-weight:600;background:${catClr(r.set_category)}18;color:${catClr(r.set_category)};border:1px solid ${catClr(r.set_category)}30;">${CAT_ICONS[r.set_category]||""} ${tc(r.set_category||"—")}</span>
+      <span style="font-size:11px;color:var(--t3);margin-left:auto;padding:0 6px;">${r.match_type||"contains"}</span>
+      <button class="btn" style="padding:4px 9px;font-size:12px;" data-edit="${r.id}">✏️ Edit</button>
+      <button class="btn btn-red" style="padding:4px 9px;font-size:12px;" data-del="${r.id}">✕</button>
+    </div>
+  `).join("");
+
+  // ── Edit ──
+  el.querySelectorAll("[data-edit]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=String(btn.dataset.edit);
+      const rule=S.rules.find(r=>String(r.id)===id); if(!rule) return;
+      const ri=btn.closest(".ri"); if(!ri) return;
+      ri.style.flexWrap="wrap"; ri.style.gap="8px";
+      ri.innerHTML=`
+        <div style="display:flex;gap:6px;width:100%;align-items:center;">
+          <input id="ep_${id}" value="${rule.pattern||""}" placeholder="patron…"
+            style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-s);color:var(--t1);font-family:var(--mono);font-size:13px;padding:7px 10px;outline:none;"/>
+          <span style="color:var(--t3);">→</span>
+          <select id="ec_${id}"
+            style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-s);color:var(--t1);font-family:var(--font);font-size:13px;padding:7px 10px;outline:none;">
+            ${allCats.map(c=>`<option value="${c}"${c===rule.set_category?" selected":""}>${CAT_ICONS[c]||""} ${tc(c)}</option>`).join("")}
+          </select>
+          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;" id="es_${id}">Save</button>
+          <button class="btn" style="padding:6px 12px;font-size:12px;" id="ec2_${id}">Cancel</button>
+        </div>`;
+
+      document.getElementById("ec2_"+id)?.addEventListener("click",renderRules);
+      document.getElementById("es_"+id)?.addEventListener("click",async()=>{
+        const pat=document.getElementById("ep_"+id)?.value.trim();
+        const cat=document.getElementById("ec_"+id)?.value;
+        if(!pat){se("Merchant pattern required");return;}
+        se("");
+        try{
+          // Try delete old first
+          await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"}).catch(()=>{});
+          await POST("/add_rule",{userid:UID,merchant:pat,category:cat,match_mode:"contains"});
+          await loadRules();
+        }catch(err){se("Error guardando: "+err.message);}
+      });
+    });
+  });
+
+  // ── Delete ──
+  el.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      const id=btn.dataset.del;
+      if(!confirm("¿Borrar esta regla?")) return;
+      se("");
+      try{
+        const r=await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"});
+        if(r.ok||r.status===405||r.status===404){
+          // If 405 Method Not Allowed, backend doesn't have DELETE endpoint
+          if(r.status===405) se("El backend no tiene DELETE /rules/{id}. Añade el endpoint al main.py (ver instrucciones).");
+          else await loadRules();
+          return;
+        }
+        const txt=await r.text();
+        se("Error: "+txt);
+      }catch(e){se("Error al borrar: "+e.message);}
+    });
+  });
 }
+
 
 function openTx(item){
   const merch=cm(item.merchant_clean||item.merchant_raw||"")||"Transaction";
@@ -1315,5 +1532,20 @@ function bind(){
 
 bind();load();loadRules();getFX().catch(()=>{});
 </script>
+
+<!-- Category popup -->
+<div class="cat-popup-ovl" id="catPopupOvl">
+  <div class="cat-popup">
+    <div class="cat-popup-head">
+      <div>
+        <div class="cat-popup-title" id="catPopupTitle">Category</div>
+        <div class="cat-popup-sub" id="catPopupSub">—</div>
+      </div>
+      <button class="mc" id="catPopupClose">✕</button>
+    </div>
+    <div class="cat-popup-body" id="catPopupBody"></div>
+  </div>
+</div>
+
 </body>
 </html>
