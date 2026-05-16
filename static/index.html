@@ -3720,6 +3720,38 @@ function initSearchAndWindow(){
     });
   });
 
+  // ── Bottom nav SLIDER — desliza el dedo por la barra ──
+const bnav = document.getElementById('bottomNav');
+if(bnav){
+  let _bnLastView = null;
+
+  function _getViewFromX(clientX){
+    const items = [...bnav.querySelectorAll('.bn-item[data-view]')];
+    for(const item of items){
+      const rect = item.getBoundingClientRect();
+      if(clientX >= rect.left && clientX <= rect.right) return item.dataset.view;
+    }
+    return null;
+  }
+
+  bnav.addEventListener('touchstart', e=>{
+    _bnLastView = _getViewFromX(e.touches[0].clientX);
+  }, { passive: true });
+
+  bnav.addEventListener('touchmove', e=>{
+    const view = _getViewFromX(e.touches[0].clientX);
+    if(view && view !== _bnLastView){
+      _bnLastView = view;
+      if(typeof switchView === 'function') switchView(view);
+      syncBottomNav(view);
+      haptic('light');
+    }
+  }, { passive: true });
+
+  bnav.addEventListener('touchend', ()=>{
+    _bnLastView = null;
+  }, { passive: true });
+}
   // Patch switchView to also sync bottom nav
   const _origSV = window.switchView;
   if(typeof _origSV === 'function'){
@@ -3837,10 +3869,6 @@ bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout
     <div class="cat-popup-body" id="catPopupBody"></div>
   </div>
 </div>
-
-
-<!-- Mobile view toggle -->
-<button class="mobile-toggle" id="mobileToggle" title="Switch layout">📱</button>
 
 <!-- Pull to refresh indicator -->
 <div class="ptr-indicator" id="ptrIndicator">
