@@ -2406,7 +2406,10 @@ function bind(){
   $("btnNewRule").addEventListener("click",()=>{$("ruleOvl").classList.add("open");$("ruleMerchant").value="";$("rStat").textContent="";$("ruleMerchant").focus();});
   $("ruleCancel").addEventListener("click",()=>$("ruleOvl").classList.remove("open"));$("ruleOvl").addEventListener("click",e=>{if(e.target===$("ruleOvl"))$("ruleOvl").classList.remove("open");});
   $("ruleSave").addEventListener("click",async()=>{const merchant=$("ruleMerchant").value.trim(),category=$("ruleCat").value;if(!merchant){$("rStat").textContent="Enter a merchant pattern.";return;}$("rStat").textContent="Saving…";try{await POST("/add_rule",{userid:UID,merchant,category,match_mode:"contains"});$("rStat").textContent="✅ Saved!"; haptic("success"); showToast2("✅","Regla guardada","","var(--green)",2500);setTimeout(()=>$("ruleOvl").classList.remove("open"),700);await load();await loadRules();}catch(e){$("rStat").textContent="Error: "+e.message;}});
-  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");closeMonthDetail();}});
+  // Cat popup close
+  $("catPopupClose")?.addEventListener("click", closeCatPopup);
+  $("catPopupOvl")?.addEventListener("click", e=>{ if(e.target===$("catPopupOvl")) closeCatPopup(); });
+  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");closeMonthDetail();closeCatPopup();}});
 }
 
 
