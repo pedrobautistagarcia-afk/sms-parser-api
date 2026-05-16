@@ -1,9 +1,16 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Expense Tracker</title>
+<script>
+  // Apply saved theme immediately to avoid flash
+  (function(){
+    const t = localStorage.getItem("theme") || "dark";
+    document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2177,7 +2184,7 @@ function switchView(name){
 
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
-  $("themeBtn").addEventListener("click",()=>{const isDark=document.documentElement.getAttribute("data-theme")==="dark";document.documentElement.setAttribute("data-theme",isDark?"light":"dark");$("themeBtn").textContent=isDark?"☀️":"🌙";});
+  $("themeBtn").addEventListener("click",()=>{const isDark=document.documentElement.getAttribute("data-theme")==="dark";const next=isDark?"light":"dark";document.documentElement.setAttribute("data-theme",next);localStorage.setItem("theme",next);$("themeBtn").textContent=isDark?"☀️":"🌙";});
   $("refreshBtn").addEventListener("click",load);
   $("curFilter").addEventListener("change",applyFilters);$("catFilter").addEventListener("change",applyFilters);$("dateFrom").addEventListener("change",applyFilters);$("dateTo").addEventListener("change",applyFilters);
   $("btnToday").addEventListener("click",()=>setQ("today"));$("btnWeek").addEventListener("click",()=>setQ("week"));$("btnMonth").addEventListener("click",()=>setQ("month"));$("btnYear").addEventListener("click",()=>setQ("year"));
