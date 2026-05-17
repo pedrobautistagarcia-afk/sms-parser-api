@@ -1425,7 +1425,8 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
   }
 
   // Small delay to let app render first
-  setTimeout(init, 300);
+ localStorage.removeItem('app_unlocked_at');
+setTimeout(init, 300);
 
   // Re-lock when app comes back from background
   document.addEventListener('visibilitychange', ()=>{
