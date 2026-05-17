@@ -1416,219 +1416,6 @@ tr.high-amount .amt { font-weight: 800; }
   letter-spacing: .3px;
 }
 
-
-/* ═══════════════════════════════════════
-   EMPTY STATES
-═══════════════════════════════════════ */
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 56px 32px; text-align: center;
-  gap: 0;
-}
-.empty-state-svg { margin-bottom: 20px; opacity: .8; }
-.empty-state-title {
-  font-size: 16px; font-weight: 700; color: var(--t1);
-  margin-bottom: 8px; letter-spacing: -.2px;
-}
-.empty-state-sub {
-  font-size: 13px; color: var(--t3); line-height: 1.6;
-  max-width: 280px; margin-bottom: 20px;
-}
-.empty-state-action {
-  padding: 9px 20px; background: var(--blue-l);
-  border: 1px solid rgba(37,99,235,.2); border-radius: var(--radius-s);
-  color: var(--blue); font-family: var(--font); font-size: 13px;
-  font-weight: 600; cursor: pointer; transition: all .15s;
-}
-.empty-state-action:hover { background: var(--blue); color: #fff; }
-[data-theme="gold"] .empty-state-action { background: var(--blue-l); border-color: rgba(240,180,41,.2); color: var(--amber); }
-[data-theme="gold"] .empty-state-action:hover { background: var(--amber); color: #0a0805; }
-
-/* ═══════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════ */
-#onboardingModal {
-  position: fixed; inset: 0; z-index: 9997;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(12px);
-  display: none; align-items: center; justify-content: center;
-  padding: 20px;
-}
-#onboardingModal.open { display: flex; }
-.onboarding-box {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 24px; width: min(480px, 100%);
-  max-height: calc(100vh - 40px); overflow-y: auto;
-  box-shadow: 0 32px 80px rgba(0,0,0,.5);
-  animation: mIn .25s ease;
-}
-[data-theme="dark"] .onboarding-box {
-  background: #0e1826;
-  border-color: rgba(79,142,247,.15);
-}
-[data-theme="gold"] .onboarding-box {
-  background: #16120a;
-  border-color: rgba(240,180,41,.2);
-}
-.ob-step {
-  display: none; flex-direction: column; align-items: center;
-  padding: 32px 28px; text-align: center;
-}
-.ob-step.active { display: flex; }
-.ob-icon {
-  width: 80px; height: 80px; border-radius: 22px;
-  background: linear-gradient(135deg, var(--blue), var(--teal));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 36px; margin-bottom: 22px;
-  box-shadow: 0 12px 32px var(--blue-g);
-}
-[data-theme="gold"] .ob-icon { background: linear-gradient(135deg,#f0b429,#c8910d); box-shadow: 0 12px 32px rgba(240,180,41,.35); }
-.ob-step-num {
-  font-size: 11px; font-weight: 700; color: var(--t3);
-  text-transform: uppercase; letter-spacing: .8px;
-  margin-bottom: 10px;
-}
-.ob-title {
-  font-size: 22px; font-weight: 800; color: var(--t1);
-  letter-spacing: -.4px; margin-bottom: 10px; line-height: 1.2;
-}
-.ob-desc {
-  font-size: 14px; color: var(--t2); line-height: 1.7;
-  margin-bottom: 24px; max-width: 360px;
-}
-.ob-code {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-m); padding: 14px 18px;
-  font-family: var(--mono); font-size: 12px; color: var(--t2);
-  text-align: left; width: 100%; margin-bottom: 20px;
-  line-height: 1.8; word-break: break-all;
-}
-[data-theme="dark"] .ob-code { background: #090d1a; }
-[data-theme="gold"] .ob-code { background: #0d0a06; }
-.ob-code strong { color: var(--blue); }
-[data-theme="gold"] .ob-code strong { color: var(--amber); }
-.ob-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; padding: 0 28px 28px;
-}
-.ob-dots { display: flex; gap: 6px; }
-.ob-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--border); transition: all .2s;
-}
-.ob-dot.active { background: var(--blue); width: 20px; border-radius: 4px; }
-[data-theme="gold"] .ob-dot.active { background: var(--amber); }
-.ob-skip { font-size: 12px; color: var(--t3); cursor: pointer; transition: color .15s; }
-.ob-skip:hover { color: var(--t1); }
-.ob-next {
-  padding: 10px 24px; background: var(--blue); border: none;
-  border-radius: var(--radius-s); color: #fff; font-family: var(--font);
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: all .15s; box-shadow: 0 4px 16px var(--blue-g);
-}
-[data-theme="gold"] .ob-next { background: var(--amber); color: #0a0805; box-shadow: 0 4px 16px rgba(240,180,41,.35); }
-.ob-next:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--blue-g); }
-.ob-highlight {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--blue-l); border: 1px solid rgba(37,99,235,.2);
-  border-radius: 6px; padding: 4px 10px; font-size: 13px;
-  font-weight: 600; color: var(--blue); margin: 4px;
-}
-[data-theme="gold"] .ob-highlight { background: var(--blue-l); border-color: rgba(240,180,41,.2); color: var(--amber); }
-
-/* WIDGET SECTION in settings */
-.widget-preview {
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
-  border-radius: 20px; padding: 16px 18px;
-  margin: 12px 0; position: relative; overflow: hidden;
-}
-.widget-preview::before {
-  content: ''; position: absolute; top: -30px; right: -30px;
-  width: 120px; height: 120px; border-radius: 50%;
-  background: rgba(79,142,247,.15);
-}
-.wp-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
-.wp-bal { font-size: 26px; font-weight: 800; font-family: var(--mono); color: #fff; letter-spacing: -.5px; margin-bottom: 2px; }
-.wp-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-bottom: 12px; }
-.wp-row { display: flex; gap: 12px; }
-.wp-item { flex: 1; }
-.wp-item-label { font-size: 9px; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
-.wp-item-val { font-size: 14px; font-weight: 700; font-family: var(--mono); }
-.wp-item-val.neg { color: #fb7185; }
-.wp-item-val.pos { color: #34d399; }
-
-
-/* ═══════════════════════════════════════
-   EMPTY STATES
-═══════════════════════════════════════ */
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 60px 32px; text-align: center;
-}
-.empty-state-svg { margin-bottom: 20px; opacity: .7; }
-.empty-state-title { font-size: 17px; font-weight: 700; color: var(--t1); margin-bottom: 8px; letter-spacing: -.2px; }
-.empty-state-sub { font-size: 13px; color: var(--t3); line-height: 1.6; max-width: 280px; }
-.empty-state-btn { margin-top: 20px; }
-
-/* ═══════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════ */
-#onboardingScreen {
-  position: fixed; inset: 0; z-index: 9997;
-  background: var(--bg);
-  display: none; flex-direction: column;
-  overflow-y: auto;
-}
-#onboardingScreen.show { display: flex; }
-.ob-wrap {
-  max-width: 480px; margin: 0 auto;
-  padding: 48px 32px; display: flex;
-  flex-direction: column; align-items: center;
-  min-height: 100vh; justify-content: center;
-  gap: 0;
-}
-.ob-step { display: none; flex-direction: column; align-items: center; width: 100%; }
-.ob-step.active { display: flex; }
-.ob-logo {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--blue), var(--teal));
-  border-radius: 22px; font-size: 32px;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 32px var(--blue-g);
-  margin-bottom: 28px;
-}
-.ob-step-num {
-  font-size: 11px; font-weight: 700; color: var(--blue);
-  text-transform: uppercase; letter-spacing: .8px;
-  margin-bottom: 12px;
-}
-.ob-title { font-size: 26px; font-weight: 800; color: var(--t1); letter-spacing: -.5px; text-align: center; margin-bottom: 10px; line-height: 1.2; }
-.ob-sub { font-size: 14px; color: var(--t2); text-align: center; line-height: 1.7; margin-bottom: 32px; max-width: 360px; }
-.ob-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px;
-  width: 100%; margin-bottom: 12px;
-  box-shadow: var(--shadow-m);
-}
-.ob-card-title { font-size: 13px; font-weight: 700; color: var(--t1); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.ob-card-sub { font-size: 12px; color: var(--t2); line-height: 1.6; }
-.ob-code {
-  font-family: var(--mono); font-size: 12px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-s); padding: 10px 14px;
-  color: var(--blue); margin-top: 8px; word-break: break-all;
-  line-height: 1.6;
-}
-.ob-progress { display: flex; gap: 6px; margin-bottom: 32px; }
-.ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background .2s; }
-.ob-dot.active { background: var(--blue); }
-.ob-dot.done { background: var(--green); }
-.ob-btns { display: flex; gap: 10px; width: 100%; justify-content: center; }
-.ob-btns .btn { min-width: 140px; justify-content: center; }
-[data-theme="dark"] .ob-card { background: #0e1826; border-color: rgba(255,255,255,.08); }
-[data-theme="gold"] .ob-card { background: #16120a; border-color: rgba(240,180,41,.1); }
-
 </style>
 </head>
 <body>
@@ -1639,115 +1426,6 @@ tr.high-amount .amt { font-weight: 800; }
   <div class="splash-name">Expense Tracker</div>
   <div class="splash-sub">Personal Finance</div>
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
-</div>
-
-
-<!-- ONBOARDING -->
-<div id="onboardingScreen">
-  <div class="ob-wrap">
-    <div class="ob-progress">
-      <div class="ob-dot active" id="obDot0"></div>
-      <div class="ob-dot" id="obDot1"></div>
-      <div class="ob-dot" id="obDot2"></div>
-      <div class="ob-dot" id="obDot3"></div>
-    </div>
-
-    <!-- Step 0: Welcome -->
-    <div class="ob-step active" id="obStep0">
-      <div class="ob-logo">💳</div>
-      <div class="ob-step-num">Bienvenido</div>
-      <div class="ob-title">Tu finanzas,<br>bajo control</div>
-      <div class="ob-sub">Expense Tracker registra automáticamente tus gastos a partir de los SMS de tu banco NBK. Sin introducir nada a mano.</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:32px;">
-        <div class="ob-card" style="text-align:center;padding:16px;">
-          <div style="font-size:28px;margin-bottom:6px;">📱</div>
-          <div style="font-size:12px;font-weight:700;color:var(--t1);">SMS automático</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:3px;">El iPhone reenvía cada SMS al instante</div>
-        </div>
-        <div class="ob-card" style="text-align:center;padding:16px;">
-          <div style="font-size:28px;margin-bottom:6px;">📊</div>
-          <div style="font-size:12px;font-weight:700;color:var(--t1);">Dashboard en tiempo real</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:3px;">Gráficos, categorías y análisis</div>
-        </div>
-        <div class="ob-card" style="text-align:center;padding:16px;">
-          <div style="font-size:28px;margin-bottom:6px;">🎯</div>
-          <div style="font-size:12px;font-weight:700;color:var(--t1);">Presupuestos</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:3px;">Define límites por categoría</div>
-        </div>
-        <div class="ob-card" style="text-align:center;padding:16px;">
-          <div style="font-size:28px;margin-bottom:6px;">🔒</div>
-          <div style="font-size:12px;font-weight:700;color:var(--t1);">Privado y seguro</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:3px;">PIN + Face ID, datos solo tuyos</div>
-        </div>
-      </div>
-      <div class="ob-btns"><button class="btn btn-primary" onclick="obNext()">Empezar →</button></div>
-    </div>
-
-    <!-- Step 1: iPhone Shortcut -->
-    <div class="ob-step" id="obStep1">
-      <div class="ob-logo" style="font-size:28px;">⚡</div>
-      <div class="ob-step-num">Paso 1 de 3</div>
-      <div class="ob-title">Configura el<br>Shortcut de iPhone</div>
-      <div class="ob-sub">Necesitas crear una automatización en la app Atajos de iOS que envíe cada SMS del banco a esta app automáticamente.</div>
-      <div class="ob-card" style="width:100%;margin-bottom:12px;">
-        <div class="ob-card-title">📱 Cómo configurarlo</div>
-        <div class="ob-card-sub">
-          1. Abre <strong>Atajos</strong> en tu iPhone<br>
-          2. Ve a <strong>Automatización</strong> → <strong>+</strong> → <strong>Mensaje recibido</strong><br>
-          3. Filtro: mensajes de <strong>NBK</strong><br>
-          4. Acción: <strong>Obtener contenido de URL</strong><br>
-          5. URL:
-          <div class="ob-code">https://sms-parser-api.onrender.com/ingest?api_key=ElPortichuelo99</div>
-          6. Método: <strong>POST</strong> · Cuerpo JSON:<br>
-          <div class="ob-code">{"user_id": "pedro", "sms": "<span style="color:var(--amber);">Shortcut.message</span>"}</div>
-        </div>
-      </div>
-      <div class="ob-btns">
-        <button class="btn" onclick="obPrev()">← Atrás</button>
-        <button class="btn btn-primary" onclick="obNext()">Listo →</button>
-      </div>
-    </div>
-
-    <!-- Step 2: First transaction -->
-    <div class="ob-step" id="obStep2">
-      <div class="ob-logo" style="font-size:28px;">🧪</div>
-      <div class="ob-step-num">Paso 2 de 3</div>
-      <div class="ob-title">Prueba que<br>funciona</div>
-      <div class="ob-sub">Envía un SMS de prueba para verificar que la conexión está configurada correctamente.</div>
-      <div class="ob-card" style="width:100%;">
-        <div class="ob-card-title">📤 SMS de prueba manual</div>
-        <div class="ob-card-sub">Puedes enviar este SMS de prueba directamente desde la consola o el Shortcut:</div>
-        <div class="ob-code">Your purchase of KWD 5.000 at Test Merchant. Your Avl. balance is KWD 100.000</div>
-      </div>
-      <div style="margin-top:12px;padding:14px 16px;background:var(--green-l);border:1px solid rgba(5,150,105,.2);border-radius:var(--radius-m);font-size:12px;color:var(--t2);width:100%;">
-        ✅ <strong>¿Ves transacciones en el dashboard?</strong> Entonces todo está funcionando.
-      </div>
-      <div class="ob-btns" style="margin-top:20px;">
-        <button class="btn" onclick="obPrev()">← Atrás</button>
-        <button class="btn btn-primary" onclick="obNext()">Perfecto →</button>
-      </div>
-    </div>
-
-    <!-- Step 3: Done -->
-    <div class="ob-step" id="obStep3">
-      <div class="ob-logo" style="font-size:32px;animation:splashPulse 1.5s ease infinite alternate;">🎉</div>
-      <div class="ob-step-num">¡Todo listo!</div>
-      <div class="ob-title">Ya puedes<br>empezar</div>
-      <div class="ob-sub">A partir de ahora cada vez que recibas un SMS del banco NBK aparecerá automáticamente en tu dashboard.</div>
-      <div class="ob-card" style="width:100%;margin-bottom:12px;">
-        <div class="ob-card-title">💡 Consejos</div>
-        <div class="ob-card-sub">
-          · Configura <strong>presupuestos</strong> por categoría en la pestaña Budget<br>
-          · Activa <strong>Face ID</strong> en Settings para acceso rápido<br>
-          · Usa <strong>Rules</strong> para categorizar automáticamente merchants frecuentes<br>
-          · Genera un <strong>extracto PDF</strong> mensual desde el botón 📄 arriba
-        </div>
-      </div>
-      <div class="ob-btns">
-        <button class="btn btn-primary" style="min-width:200px;" onclick="obFinish()">Ir al dashboard →</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- LOCK SCREEN — first in body so it renders on top immediately -->
@@ -1806,7 +1484,15 @@ tr.high-amount .amt { font-weight: 800; }
 </nav>
 
 <div class="main">
-
+  <div class="topbar-live" id="topbarLive">
+    <div class="topbar-live-item"><span class="topbar-live-label">NBK</span><span class="topbar-live-val" id="liveBal">—</span></div>
+    <div class="topbar-live-sep"></div>
+    <div class="topbar-live-item"><span class="topbar-live-label">Mes</span><span class="topbar-live-val" id="liveMonth">—</span></div>
+    <div class="topbar-live-sep"></div>
+    <div class="topbar-live-item"><span class="topbar-live-label">Neto</span><span class="topbar-live-val" id="liveNet">—</span></div>
+    <div class="topbar-live-sep"></div>
+    <div class="topbar-live-item"><span class="topbar-live-label" id="liveFxLabel">FX</span><span class="topbar-live-val" id="liveFx">—</span></div>
+  </div>
   <div class="topbar">
     <div><div class="tb-title" id="tbTitle">Overview</div><div class="tb-sub" id="tbSub">Vista general</div></div>
     <div class="tb-right">
@@ -2145,48 +1831,6 @@ tr.high-amount .amt { font-weight: 800; }
           </div>
         </div>
 
-        <!-- Widget -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
-          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
-            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">📲 Widget iOS</div>
-          </div>
-          <div style="padding:16px 18px;">
-            <div class="widget-preview" id="widgetPreview">
-              <div class="wp-title">💳 Expense Tracker</div>
-              <div class="wp-bal" id="wpBal">—,——— KWD</div>
-              <div class="wp-sub">Saldo NBK · actualizado ahora</div>
-              <div class="wp-row">
-                <div class="wp-item"><div class="wp-item-label">Gastado</div><div class="wp-item-val neg" id="wpExp">—</div></div>
-                <div class="wp-item"><div class="wp-item-label">Ingresos</div><div class="wp-item-val pos" id="wpInc">—</div></div>
-                <div class="wp-item"><div class="wp-item-label">Neto</div><div class="wp-item-val" id="wpNet">—</div></div>
-              </div>
-            </div>
-            <div style="font-size:13px;font-weight:700;color:var(--t1);margin:14px 0 8px;">Cómo instalar el widget</div>
-            <div style="font-size:12px;color:var(--t2);line-height:1.8;">
-              <div style="margin-bottom:6px;">1. Instala la app <strong>Scriptable</strong> desde la App Store (gratis)</div>
-              <div style="margin-bottom:6px;">2. Copia el script pulsando el botón de abajo</div>
-              <div style="margin-bottom:6px;">3. En Scriptable → <strong>+</strong> → pega el código → guarda como <strong>"Expense Widget"</strong></div>
-              <div style="margin-bottom:6px;">4. Mantén pulsado en la pantalla de inicio → <strong>+</strong> → Scriptable → elige tamaño</div>
-              <div>5. Selecciona el script <strong>"Expense Widget"</strong> y listo</div>
-            </div>
-            <button class="btn btn-primary" id="btnCopyWidget" style="width:100%;justify-content:center;margin-top:14px;padding:12px;">📋 Copiar código del widget</button>
-            <div id="widgetCopyMsg" style="font-size:12px;color:var(--green);text-align:center;margin-top:8px;min-height:16px;"></div>
-          </div>
-        </div>
-
-        <!-- Onboarding -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
-          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
-            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">👋 Guía de configuración</div>
-          </div>
-          <div style="padding:0;">
-            <div class="settings-row">
-              <div><div class="settings-label">Ver guía de inicio</div><div class="settings-sub">Instrucciones para configurar el Shortcut de iPhone</div></div>
-              <button class="btn" id="btnShowOnboarding" style="font-size:12px;padding:6px 12px;">Ver guía →</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Info -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
           <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
@@ -2219,97 +1863,6 @@ tr.high-amount .amt { font-weight: 800; }
     <div class="confirm-btns">
       <button class="btn" id="confirmCancel">Cancelar</button>
       <button class="btn btn-red" id="confirmOk">Eliminar</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ONBOARDING MODAL -->
-<div id="onboardingModal">
-  <div class="onboarding-box">
-
-    <!-- Step 1: Welcome -->
-    <div class="ob-step active" id="obStep0">
-      <div class="ob-icon">💳</div>
-      <div class="ob-step-num">Bienvenido</div>
-      <div class="ob-title">Tu tracker financiero personal</div>
-      <div class="ob-desc">Expense Tracker conecta con los SMS de tu banco NBK para registrar tus gastos automáticamente, sin introducir nada a mano.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;">
-        <span class="ob-highlight">📱 iPhone Shortcuts</span>
-        <span class="ob-highlight">🏦 NBK Kuwait</span>
-        <span class="ob-highlight">📊 Analytics</span>
-      </div>
-    </div>
-
-    <!-- Step 2: How it works -->
-    <div class="ob-step" id="obStep1">
-      <div class="ob-icon">📱</div>
-      <div class="ob-step-num">Paso 1 de 3</div>
-      <div class="ob-title">Configura el Shortcut de iPhone</div>
-      <div class="ob-desc">Cada vez que NBK te manda un SMS, un Shortcut automático lo envía a esta app. Solo se configura una vez.</div>
-      <div class="ob-code">
-        1. Abre <strong>Shortcuts</strong> en iPhone<br>
-        2. Crea una automatización → <strong>Mensaje recibido</strong><br>
-        3. Remitente: <strong>NBK</strong> (o el número del banco)<br>
-        4. Acción: <strong>Obtener contenido de URL</strong><br>
-        5. URL: <strong>https://sms-parser-api.onrender.com/ingest?api_key=ElPortichuelo99</strong><br>
-        6. Método: <strong>POST</strong> · Cuerpo JSON: <strong>{"sms": "[Mensaje]", "user_id": "pedro"}</strong>
-      </div>
-    </div>
-
-    <!-- Step 3: PIN & Security -->
-    <div class="ob-step" id="obStep2">
-      <div class="ob-icon">🔒</div>
-      <div class="ob-step-num">Paso 2 de 3</div>
-      <div class="ob-title">Tu app está protegida</div>
-      <div class="ob-desc">Acabas de crear un PIN de acceso. También puedes activar Face ID para abrir más rápido. Tus datos nunca salen del servidor.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-        <span class="ob-highlight">🔐 PIN de 4 dígitos</span>
-        <span class="ob-highlight">👁 Face ID</span>
-        <span class="ob-highlight">☁️ Servidor propio</span>
-      </div>
-    </div>
-
-    <!-- Step 4: Widget -->
-    <div class="ob-step" id="obStep3">
-      <div class="ob-icon">📲</div>
-      <div class="ob-step-num">Paso 3 de 3</div>
-      <div class="ob-title">Añade el widget a tu iPhone</div>
-      <div class="ob-desc">Consulta tu saldo y gasto del mes directamente desde la pantalla de inicio, sin abrir la app.</div>
-      <div class="widget-preview">
-        <div class="wp-title">💳 Expense Tracker</div>
-        <div class="wp-bal">—,—— KWD</div>
-        <div class="wp-sub">Saldo NBK · actualizado ahora</div>
-        <div class="wp-row">
-          <div class="wp-item"><div class="wp-item-label">Gastado</div><div class="wp-item-val neg">-—.—— KWD</div></div>
-          <div class="wp-item"><div class="wp-item-label">Ingresos</div><div class="wp-item-val pos">+—.—— KWD</div></div>
-          <div class="wp-item"><div class="wp-item-label">Neto</div><div class="wp-item-val">—.—— KWD</div></div>
-        </div>
-      </div>
-      <div class="ob-desc" style="margin-top:12px;margin-bottom:0;">
-        Ve a <strong>Settings → Widget iOS</strong> para las instrucciones de instalación paso a paso.
-      </div>
-    </div>
-
-    <!-- Step 5: Done -->
-    <div class="ob-step" id="obStep4">
-      <div class="ob-icon">✅</div>
-      <div class="ob-step-num">¡Listo!</div>
-      <div class="ob-title">Todo configurado</div>
-      <div class="ob-desc">Ya puedes empezar a usar Expense Tracker. Cuando llegue el primer SMS de NBK se registrará automáticamente.</div>
-      <button class="ob-next" style="width:100%;padding:14px;" onclick="closeOnboarding()">Empezar →</button>
-    </div>
-
-    <div class="ob-nav">
-      <span class="ob-skip" id="obSkip" onclick="closeOnboarding()">Omitir</span>
-      <div class="ob-dots">
-        <div class="ob-dot active" id="obDot0"></div>
-        <div class="ob-dot" id="obDot1"></div>
-        <div class="ob-dot" id="obDot2"></div>
-        <div class="ob-dot" id="obDot3"></div>
-        <div class="ob-dot" id="obDot4"></div>
-      </div>
-      <button class="ob-next" id="obNext" onclick="obNextStep()">Siguiente →</button>
     </div>
   </div>
 </div>
@@ -2378,23 +1931,7 @@ let aQ=null;
 function setQ(mode){document.querySelectorAll(".qbtn").forEach(b=>b.classList.remove("active"));if(aQ===mode){aQ=null;$("dateFrom").value="";$("dateTo").value="";TX_WINDOW.months=1;applyFiltersWithWindow();return;}aQ=mode;const map={today:"btnToday",week:"btnWeek",month:"btnMonth",year:"btnYear"};$(map[mode])?.classList.add("active");const today=new Date(),iso=d=>d.toISOString().slice(0,10),to=iso(today);let from="";if(mode==="today")from=to;else if(mode==="week"){const d=new Date(today);d.setDate(d.getDate()-7);from=iso(d);}else if(mode==="month"){const d=new Date(today);d.setMonth(d.getMonth()-1);from=iso(d);}else if(mode==="year"){const d=new Date(today);d.setMonth(0);d.setDate(1);from=iso(d);}$("dateFrom").value=from;$("dateTo").value=to;TX_WINDOW.months=0;applyFiltersWithWindow();}
 function sortView(){const k=S.sortKey,dir=S.sortDir==="asc"?1:-1;S.view.sort((a,b)=>{let av=a[k],bv=b[k];if(k==="amount"){av=Number(av||0);bv=Number(bv||0);}else{av=String(av||"");bv=String(bv||"");}return av<bv?-dir:av>bv?dir:0;});$("shDate").textContent=S.sortKey==="created_at"?(S.sortDir==="asc"?"↑":"↓"):"";}
 function catH(id,cur){const cats=[...S.categories].sort();return`<select class="cs" data-id="${id}" data-cat="${cur||"other"}">${cats.map(c=>`<option value="${c}"${c===cur?" selected":""}>${tc(c)}</option>`).join("")}<option value="__add__">+ Add…</option></select>`;}
-function render(){const tb=$("tbody");tb.innerHTML="";
-  if(!S.view.length){
-    tb.innerHTML=`<tr><td colspan="6"><div class="empty-state">
-      <svg class="empty-state-svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
-        <rect width="80" height="80" rx="20" fill="var(--blue-l)"/>
-        <rect x="18" y="24" width="44" height="6" rx="3" fill="var(--blue)" opacity=".3"/>
-        <rect x="18" y="36" width="30" height="6" rx="3" fill="var(--blue)" opacity=".5"/>
-        <rect x="18" y="48" width="38" height="6" rx="3" fill="var(--blue)" opacity=".3"/>
-        <rect x="18" y="60" width="20" height="6" rx="3" fill="var(--blue)" opacity=".2"/>
-      </svg>
-      <div class="empty-state-title">Sin transacciones</div>
-      <div class="empty-state-sub">No hay transacciones en el período seleccionado. Prueba a ampliar el rango de fechas.</div>
-      <button class="empty-state-action" onclick="TX_WINDOW.months=0;applyFiltersWithWindow();">Ver todas →</button>
-    </div></td></tr>`;
-    ss("0 transactions");updateStatCards();return;
-  }
-  for(const r of S.view){const id=r.id,dir=idir(r),diso=isoDay(r.created_at||r.date_iso||""),cur=(r.currency||"").toUpperCase(),cat=(r.category||"other").toLowerCase(),merch=cm(r.merchant_clean||r.merchant_raw||"");const tr=document.createElement("tr");tr.dataset.day=diso;tr.dataset.id=id;if(S.selected.has(id))tr.classList.add("sel");const avatarClr=merchantColor(merch||'?');const avatarIni=merchantInitials(merch||'?');const isHigh=isHighAmount(r);if(isHigh)tr.classList.add('high-amount');
+function render(){const tb=$("tbody");tb.innerHTML="";for(const r of S.view){const id=r.id,dir=idir(r),diso=isoDay(r.created_at||r.date_iso||""),cur=(r.currency||"").toUpperCase(),cat=(r.category||"other").toLowerCase(),merch=cm(r.merchant_clean||r.merchant_raw||"");const tr=document.createElement("tr");tr.dataset.day=diso;tr.dataset.id=id;if(S.selected.has(id))tr.classList.add("sel");const avatarClr=merchantColor(merch||'?');const avatarIni=merchantInitials(merch||'?');const isHigh=isHighAmount(r);if(isHigh)tr.classList.add('high-amount');
     tr.innerHTML=`<td class="selcol"><input class="cbRow" type="checkbox" data-id="${id}"${S.selected.has(id)?" checked":""}></td><td title="${diso}">${fd(diso)}</td><td><div style="display:flex;align-items:center;"><div class="merch-avatar" style="background:${avatarClr}18;color:${avatarClr};">${avatarIni}</div><input class="me" data-id="${id}" value="${merch.replace(/"/g,"&quot;")}" style="flex:1;"/></div>${isHigh?'<span class="high-badge">⚡ alto</span>':''}</td><td>${catH(id,cat)}</td><td class="amt ${dir==="in"?"pos":"neg"}">${fm(r.amount)}</td><td><div class="cur-cell"><span class="flag">${flag(cur)}</span><span class="cur-lbl">${cur}</span></div></td>`;tb.appendChild(tr);}ss(S.view.length+" transactions");updateStatCards();wireInputs();wireSelection();rebuildDayHeaders();if(window._privacyOn&&window._privacyOn())setTimeout(()=>window._privacyApply&&window._privacyApply(),50);}
 function wireInputs(){document.querySelectorAll(".me").forEach(inp=>{inp.addEventListener("keydown",e=>{if(e.key==="Enter")inp.blur();});inp.addEventListener("blur",async()=>{const id=Number(inp.dataset.id),val=inp.value.trim();try{await POST("/update_field",{userid:UID,id,field:"merchant_clean",value:val});const row=S.all.find(x=>x.id===id);if(row)row.merchant_clean=val;}catch(e){se("Save failed: "+e.message);}});});document.querySelectorAll(".cs").forEach(sel=>{sel.addEventListener("change",async()=>{const id=Number(sel.dataset.id),v=sel.value;if(v==="__add__"){const name=prompt("New category name:");if(!name){const row=S.all.find(x=>x.id===id);sel.value=row?.category||"other";return;}const cat=name.trim().toLowerCase();S.categories.add(cat);buildFilters();await scat(id,cat);return;}sel.dataset.cat=v;await scat(id,v);});});}
 async function scat(id,cat){try{se("");await POST("/update_field",{userid:UID,id,field:"category",value:cat});const row=S.all.find(x=>x.id===id);if(row)row.category=cat;applyFilters();}catch(e){se("Save failed: "+e.message);applyFilters();}}
@@ -2463,18 +2000,9 @@ async function renderOverview(){
   if(catMiniSub)catMiniSub.textContent=monthName;
   if(catMini){const catMap=new Map();for(const r of monthRows.filter(r=>idir(r)==="out")){const c=(r.category||"other").toLowerCase();catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));}const sorted=[...catMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);const maxCat=sorted[0]?.[1]||1;catMini.innerHTML=sorted.length?sorted.map(([cat,val])=>`<div class="ov-cat-row"><div class="ov-cat-icon">${CAT_ICONS[cat]||"❓"}</div><div class="ov-cat-name">${tc(cat)}</div><div class="ov-cat-track"><div class="ov-cat-fill" style="width:${Math.round(val/maxCat*100)}%;background:${CAT_COLORS[cat]||"var(--blue)"};"></div></div><div class="ov-cat-amt">${val.toFixed(2)}</div></div>`).join(""):'<div style="color:var(--t3);">Sin gastos este mes</div>';}
   if(window._privacyOn&&window._privacyOn())setTimeout(()=>window._privacyApply&&window._privacyApply(),100);
-  // Update live bar after overview renders
-  updateLiveBar();
   const recent=[...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))).slice(0,20);
   const txList=$("ovTxList");
-  if(txList){txList.innerHTML=recent.map(r=>{const dir=idir(r),merch=cm(r.merchant_clean||r.merchant_raw||"—"),cat=(r.category||"other").toLowerCase(),icon=CAT_ICONS[cat]||"❓",clr=CAT_COLORS[cat]||"#94a3b8",d=isoDay(r.created_at||""),dateStr=d?`${+d.slice(8,10)} ${MO[+d.slice(5,7)-1].slice(0,3)}`:"",amtStr=(dir==="in"?"+":"-")+fm(r.amount);return`<div class="ov-tx-item" data-id="${r.id}"><div class="ov-tx-icon" style="background:${clr}18;">${icon}</div><div class="ov-tx-info"><div class="ov-tx-merchant">${merch}</div><div class="ov-tx-meta">${tc(cat)} · ${dateStr}</div></div><div class="ov-tx-right"><div class="ov-tx-amt ${dir==="in"?"pos":"neg"}">${amtStr}</div><div class="ov-tx-cur">${(r.currency||"").toUpperCase()}</div></div></div>`;}).join("")||`<div class="empty-state" style="padding:32px 24px;">
-      <svg class="empty-state-svg" width="56" height="56" viewBox="0 0 56 56" fill="none">
-        <rect width="56" height="56" rx="14" fill="var(--blue-l)"/>
-        <path d="M14 28h28M14 36h20M14 20h28" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>
-      </svg>
-      <div class="empty-state-title">Sin transacciones este mes</div>
-      <div class="empty-state-sub">Los SMS de NBK aparecerán aquí automáticamente.</div>
-    </div>`;txList.querySelectorAll(".ov-tx-item").forEach(el=>el.addEventListener("click",()=>{const item=S.all.find(x=>x.id===Number(el.dataset.id));if(item)openTx(item);}));}
+  if(txList){txList.innerHTML=recent.map(r=>{const dir=idir(r),merch=cm(r.merchant_clean||r.merchant_raw||"—"),cat=(r.category||"other").toLowerCase(),icon=CAT_ICONS[cat]||"❓",clr=CAT_COLORS[cat]||"#94a3b8",d=isoDay(r.created_at||""),dateStr=d?`${+d.slice(8,10)} ${MO[+d.slice(5,7)-1].slice(0,3)}`:"",amtStr=(dir==="in"?"+":"-")+fm(r.amount);return`<div class="ov-tx-item" data-id="${r.id}"><div class="ov-tx-icon" style="background:${clr}18;">${icon}</div><div class="ov-tx-info"><div class="ov-tx-merchant">${merch}</div><div class="ov-tx-meta">${tc(cat)} · ${dateStr}</div></div><div class="ov-tx-right"><div class="ov-tx-amt ${dir==="in"?"pos":"neg"}">${amtStr}</div><div class="ov-tx-cur">${(r.currency||"").toUpperCase()}</div></div></div>`;}).join("")||"<div style='padding:24px;text-align:center;color:var(--t3);'>No hay transacciones</div>";txList.querySelectorAll(".ov-tx-item").forEach(el=>el.addEventListener("click",()=>{const item=S.all.find(x=>x.id===Number(el.dataset.id));if(item)openTx(item);}));}
   const rates=FX.rates||{KWD:3.28,USD:0.93,AED:0.25};
   const barNote=$("ovBarNote");if(barNote)barNote.textContent=FX.rates?`1 KWD ≈ €${(1/rates.KWD).toFixed(2)}`:"Tasas aproximadas";
   const months5=[];for(let i=4;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months5.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
@@ -2501,25 +2029,16 @@ function openMonthDetail(mo,moEUR,rates){selectedMo=mo;const rows=_moData[mo]||[
 async function renderAnalytics(){buildYearTabs();const year=S.anaYear||String(new Date().getFullYear());const expRows=S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(year));_moData={};for(let i=1;i<=12;i++)_moData[String(i).padStart(2,"0")]=[];for(const r of expRows){const d=isoDay(r.created_at||"");if(!d)continue;const mo=d.slice(5,7);if(_moData[mo])_moData[mo].push(r);}const mm={};for(const mo of Object.keys(_moData)){mm[mo]={KWD:0,USD:0,EUR:0,AED:0};for(const r of _moData[mo]){const cur=(r.currency||"KWD").toUpperCase();if(mm[mo][cur]!==undefined)mm[mo][cur]+=Number(r.amount||0);}}let rates=FX.rates;const eurNote=$("chartEurNote");if(!rates){getFX().then(r=>{if(r)renderAnalytics();}).catch(()=>{});rates={KWD:3.28,USD:0.93,AED:0.25};if(eurNote)eurNote.textContent="Approximate…";}else{if(eurNote)eurNote.textContent=`Live FX · 1 KWD ≈ €${(1/rates.KWD).toFixed(2)}`;}const moEUR={};for(const [mo,b] of Object.entries(mm))moEUR[mo]=(b.KWD/(rates.KWD||3.28))+(b.USD/(rates.USD||0.93))+b.EUR+(b.AED/(rates.AED||0.25));const eurVals=Object.values(moEUR),maxEUR=Math.max(...eurVals,1),totalEUR=eurVals.reduce((s,v)=>s+v,0),peakMo=Object.entries(moEUR).sort((a,b)=>b[1]-a[1])[0]?.[0];const ct=$("chartTotal");if(ct)ct.textContent=totalEUR>0?`€${totalEUR.toFixed(0)}`:"€0";const bc=$("barChart"),bl=$("barLabels");if(bc){bc.innerHTML=Object.entries(moEUR).map(([mo,v])=>{const pct=maxEUR>0?Math.max(Math.round(v/maxEUR*100),v>0?2:0):0;return`<div class="bar-col${mo===peakMo&&v>0?" peak":""}${v<0.01?" empty":""}${mo===selectedMo?" selected":""}" data-mo="${mo}"><div class="bar-val-tip">${v>0?`€${v.toFixed(0)}`:"–"}</div><div style="flex:1;width:100%;display:flex;align-items:flex-end;"><div class="bar" style="height:${pct}%;width:100%;"></div></div></div>`;}).join("");bc.querySelectorAll(".bar-col").forEach(col=>col.addEventListener("click",()=>{const mo=col.dataset.mo;if(selectedMo===mo){closeMonthDetail();return;}bc.querySelectorAll(".bar-col").forEach(c=>c.classList.remove("selected"));if(bl)bl.querySelectorAll(".bar-lbl-col").forEach(c=>c.classList.remove("selected-lbl"));col.classList.add("selected");if(bl){const idx=Array.from(bc.querySelectorAll(".bar-col")).indexOf(col);const lbls=bl.querySelectorAll(".bar-lbl-col");if(lbls[idx])lbls[idx].classList.add("selected-lbl");}openMonthDetail(mo,moEUR[mo],rates);}));}if(bl)bl.innerHTML=Object.keys(moEUR).map((mo)=>`<div class="bar-lbl-col${mo===selectedMo?" selected-lbl":""}">${MS[+mo-1]}</div>`).join("");const catMap=new Map();for(const r of expRows){const c=r.category||"other";catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));}const tC=[...catMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6),mC=tC[0]?.[1]||1;const cEl=$("catBars");if(cEl)cEl.innerHTML=tC.length?tC.map(([c,v])=>`<div class="h-bar-row"><div class="h-bar-lbl" style="display:flex;align-items:center;gap:5px;"><span>${CAT_ICONS[c]||"❓"}</span>${tc(c)}</div><div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(v/mC*100)}%;background:var(--blue);"></div></div><div class="h-bar-val">${v.toFixed(2)}</div></div>`).join(""):`<p style="color:var(--t3)">No data for ${year}</p>`;const mMap=new Map();for(const r of expRows){const m=cm(r.merchant_clean||r.merchant_raw||"").trim()||"—";mMap.set(m,(mMap.get(m)||0)+Number(r.amount||0));}const tM=[...mMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6),mMv=tM[0]?.[1]||1;const mEl=$("mBars");if(mEl)mEl.innerHTML=tM.length?tM.map(([m,v])=>`<div class="h-bar-row"><div class="h-bar-lbl">${m}</div><div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(v/mMv*100)}%;background:var(--teal);"></div></div><div class="h-bar-val">${v.toFixed(2)}</div></div>`).join(""):`<p style="color:var(--t3)">No data for ${year}</p>`;const tInc=S.all.filter(r=>idir(r)==="in"&&(r.created_at||"").startsWith(year)).reduce((s,r)=>s+Number(r.amount||0),0);const sEl=$("sumStats");if(sEl)sEl.innerHTML=[["Year",year],["Expenses (KWD)",expRows.filter(r=>r.currency==="KWD").reduce((s,r)=>s+Number(r.amount||0),0).toFixed(3)],["Expenses (EUR)",`€${totalEUR.toFixed(0)}`],["Income",tInc.toFixed(3)],["Transactions",expRows.length],["Avg/month",`€${(totalEUR/12).toFixed(0)}`]].map(([k,v])=>`<div class="stat-row"><span class="sr-k">${k}</span><span class="sr-v">${v}</span></div>`).join("");const curMap=new Map();for(const r of expRows){const c=(r.currency||"—").toUpperCase();curMap.set(c,(curMap.get(c)||0)+Number(r.amount||0));}const tCu=[...curMap.entries()].sort((a,b)=>b[1]-a[1]),mCu=tCu[0]?.[1]||1;const cuEl=$("curBars");if(cuEl)cuEl.innerHTML=tCu.length?tCu.map(([c,v])=>`<div class="h-bar-row"><div class="h-bar-lbl" style="display:flex;align-items:center;gap:5px;"><span class="flag">${flag(c)}</span>${c}</div><div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(v/mCu*100)}%;background:var(--purple);"></div></div><div class="h-bar-val">${v.toFixed(2)}</div></div>`).join(""):`<p style="color:var(--t3)">No data for ${year}</p>`;}
 async function loadRules(){try{const j=await GET("/rules?user_id="+UID);S.rules=j.rules||[];$("rulesCount").textContent=S.rules.length;renderRules();}catch(e){console.error(e);}}
 function catClr(cat){const m={coffee:"var(--amber)",food:"var(--teal)",groceries:"var(--green)",pharmacy:"var(--red)",transport:"var(--blue)",utilities:"var(--purple)",shopping:"var(--purple)",entertainment:"var(--pink)",health:"var(--red)",travel:"var(--teal)",education:"var(--amber)",salary:"var(--green)",income:"var(--green)",other:"var(--t3)"};return m[cat]||"var(--t3)";}
-function renderRules(){const el=$("ruleList");if(!el)return;if(!S.rules.length){el.innerHTML=`<div class="empty-state" style="padding:40px 24px;">
-    <svg class="empty-state-svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
-      <rect width="64" height="64" rx="16" fill="var(--blue-l)"/>
-      <path d="M20 28h24M20 36h16" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" opacity=".6"/>
-      <circle cx="44" cy="36" r="6" fill="var(--blue)" opacity=".4"/>
-      <path d="M42 36l2 2 4-4" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" opacity=".9"/>
-    </svg>
-    <div class="empty-state-title">Sin reglas todavía</div>
-    <div class="empty-state-sub">Las reglas categorizan tus transacciones automáticamente según el merchant.</div>
-  </div>`;return;}const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();el.innerHTML=S.rules.map(r=>`<div class="ri" data-rid="${r.id}"><span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);flex:1;">${r.pattern||"—"}</span><span style="color:var(--t3);font-size:13px;padding:0 4px;">→</span><span style="font-size:12px;padding:4px 10px;border-radius:999px;font-weight:600;background:${catClr(r.set_category)}18;color:${catClr(r.set_category)};border:1px solid ${catClr(r.set_category)}30;">${CAT_ICONS[r.set_category]||""} ${tc(r.set_category||"—")}</span><span style="font-size:11px;color:var(--t3);margin-left:auto;padding:0 6px;">${r.match_type||"contains"}</span><button class="btn" style="padding:4px 9px;font-size:12px;" data-edit="${r.id}">✏️ Edit</button><button class="btn btn-red" style="padding:4px 9px;font-size:12px;" data-del="${r.id}">✕</button></div>`).join("");el.querySelectorAll("[data-edit]").forEach(btn=>{btn.addEventListener("click",()=>{const id=String(btn.dataset.edit),rule=S.rules.find(r=>String(r.id)===id);if(!rule)return;const ri=btn.closest(".ri");if(!ri)return;ri.style.flexWrap="wrap";ri.style.gap="8px";ri.innerHTML=`<div style="display:flex;gap:6px;width:100%;align-items:center;"><input id="ep_${id}" value="${rule.pattern||""}" class="ri-edit-input" placeholder="patron…"/><span style="color:var(--t3);">→</span><select id="ec_${id}" class="ri-edit-select">${allCats.map(c=>`<option value="${c}"${c===rule.set_category?" selected":""}>${CAT_ICONS[c]||""} ${tc(c)}</option>`).join("")}</select><button class="btn btn-primary" style="padding:6px 12px;font-size:12px;" id="es_${id}">Save</button><button class="btn" style="padding:6px 12px;font-size:12px;" id="ec2_${id}">Cancel</button></div>`;document.getElementById("ec2_"+id)?.addEventListener("click",renderRules);document.getElementById("es_"+id)?.addEventListener("click",async()=>{const pat=document.getElementById("ep_"+id)?.value.trim(),cat=document.getElementById("ec_"+id)?.value;if(!pat){se("Pattern required");return;}se("");try{await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"}).catch(()=>{});await POST("/add_rule",{userid:UID,merchant:pat,category:cat,match_mode:"contains"});await loadRules();}catch(err){se("Error: "+err.message);}});});});el.querySelectorAll("[data-del]").forEach(btn=>{btn.addEventListener("click",async()=>{const id=btn.dataset.del;if(!confirm("¿Borrar esta regla?"))return;se("");try{const r=await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"});if(r.ok||r.status===404){await loadRules();return;}se("Error: no se pudo borrar");}catch(e){se("Error: "+e.message);}});});}
+function renderRules(){const el=$("ruleList");if(!el)return;if(!S.rules.length){el.innerHTML=`<div class="r-empty"><b>No rules yet</b>Create rules to auto-categorize transactions.</div>`;return;}const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();el.innerHTML=S.rules.map(r=>`<div class="ri" data-rid="${r.id}"><span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);flex:1;">${r.pattern||"—"}</span><span style="color:var(--t3);font-size:13px;padding:0 4px;">→</span><span style="font-size:12px;padding:4px 10px;border-radius:999px;font-weight:600;background:${catClr(r.set_category)}18;color:${catClr(r.set_category)};border:1px solid ${catClr(r.set_category)}30;">${CAT_ICONS[r.set_category]||""} ${tc(r.set_category||"—")}</span><span style="font-size:11px;color:var(--t3);margin-left:auto;padding:0 6px;">${r.match_type||"contains"}</span><button class="btn" style="padding:4px 9px;font-size:12px;" data-edit="${r.id}">✏️ Edit</button><button class="btn btn-red" style="padding:4px 9px;font-size:12px;" data-del="${r.id}">✕</button></div>`).join("");el.querySelectorAll("[data-edit]").forEach(btn=>{btn.addEventListener("click",()=>{const id=String(btn.dataset.edit),rule=S.rules.find(r=>String(r.id)===id);if(!rule)return;const ri=btn.closest(".ri");if(!ri)return;ri.style.flexWrap="wrap";ri.style.gap="8px";ri.innerHTML=`<div style="display:flex;gap:6px;width:100%;align-items:center;"><input id="ep_${id}" value="${rule.pattern||""}" class="ri-edit-input" placeholder="patron…"/><span style="color:var(--t3);">→</span><select id="ec_${id}" class="ri-edit-select">${allCats.map(c=>`<option value="${c}"${c===rule.set_category?" selected":""}>${CAT_ICONS[c]||""} ${tc(c)}</option>`).join("")}</select><button class="btn btn-primary" style="padding:6px 12px;font-size:12px;" id="es_${id}">Save</button><button class="btn" style="padding:6px 12px;font-size:12px;" id="ec2_${id}">Cancel</button></div>`;document.getElementById("ec2_"+id)?.addEventListener("click",renderRules);document.getElementById("es_"+id)?.addEventListener("click",async()=>{const pat=document.getElementById("ep_"+id)?.value.trim(),cat=document.getElementById("ec_"+id)?.value;if(!pat){se("Pattern required");return;}se("");try{await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"}).catch(()=>{});await POST("/add_rule",{userid:UID,merchant:pat,category:cat,match_mode:"contains"});await loadRules();}catch(err){se("Error: "+err.message);}});});});el.querySelectorAll("[data-del]").forEach(btn=>{btn.addEventListener("click",async()=>{const id=btn.dataset.del;if(!confirm("¿Borrar esta regla?"))return;se("");try{const r=await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"});if(r.ok||r.status===404){await loadRules();return;}se("Error: no se pudo borrar");}catch(e){se("Error: "+e.message);}});});}
 function openTx(item){const merch=cm(item.merchant_clean||item.merchant_raw||"")||"Transaction";$("txT").textContent=merch;$("txS").textContent=fdn(item.created_at)+" · "+(item.currency||"").toUpperCase()+" "+fm(item.amount);const grid=$("txGrid");grid.innerHTML="";for(const [k,v] of[["Merchant",merch],["Amount",(item.currency||"").toUpperCase()+" "+fm(item.amount)],["Category",tc(item.category||"other")],["Direction",item.direction||"—"],["Date",fdn(item.created_at)]]){const ke=document.createElement("div");ke.className="mk";ke.textContent=k;const ve=document.createElement("div");ve.className="mv";ve.textContent=v;grid.appendChild(ke);grid.appendChild(ve);}const pills=$("txPills");pills.innerHTML="";for(const [k,v] of[["ID",item.id],["Currency",item.currency],["Direction",item.direction]]){const el=document.createElement("div");el.className="mpill";el.textContent=k+": "+(v??"—");pills.appendChild(el);}$("txSms").textContent=item.sms||item.sms_raw||"—";$("txOvl").classList.add("open");}
 // SMART CACHE
 const CACHE_KEY="expense_cache_v1",CACHE_TTL=5*60*1000;
 function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data}));}catch(_){}}
 function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const{ts,data}=JSON.parse(raw);if(Date.now()-ts>CACHE_TTL)return null;return data;}catch(_){return null;}}
-async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
+async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
     // If offline, use cache
-    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
-    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
+    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
+    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
@@ -3142,12 +2661,6 @@ function renderSettings(){
   },{once:true});
 
   // Change PIN
-  // Widget copy button
-  document.getElementById('btnCopyWidget')?.addEventListener('click', copyWidgetScript, {once:true});
-  // Show onboarding button
-  document.getElementById('btnShowOnboarding')?.addEventListener('click', showOnboarding);
-  // Update widget preview
-  updateWidgetPreview();
   document.getElementById('btnChangePIN')?.addEventListener('click',()=>{
     if(confirm('¿Cambiar el PIN? Tendrás que crear uno nuevo.')){
       localStorage.removeItem('app_pin_hash');
@@ -3370,7 +2883,7 @@ function fmPro(n, decimals=3, currency=''){
 
 // ── Live topbar data ─────────────────────────────────────────────
 function updateLiveBar(){
-  if(!S.all.length){ setTimeout(updateLiveBar, 1000); return; }
+  if(!S.all.length)return;
   const now=new Date(),ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   // NBK balance
   const sorted=[...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
@@ -3561,219 +3074,6 @@ async function generateMonthlyPDF(){
   .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; }
   .high-row td { background: #fffbeb !important; }
   @media print { body { padding: 20px; } }
-
-/* ═══════════════════════════════════════
-   EMPTY STATES
-═══════════════════════════════════════ */
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 56px 32px; text-align: center;
-  gap: 0;
-}
-.empty-state-svg { margin-bottom: 20px; opacity: .8; }
-.empty-state-title {
-  font-size: 16px; font-weight: 700; color: var(--t1);
-  margin-bottom: 8px; letter-spacing: -.2px;
-}
-.empty-state-sub {
-  font-size: 13px; color: var(--t3); line-height: 1.6;
-  max-width: 280px; margin-bottom: 20px;
-}
-.empty-state-action {
-  padding: 9px 20px; background: var(--blue-l);
-  border: 1px solid rgba(37,99,235,.2); border-radius: var(--radius-s);
-  color: var(--blue); font-family: var(--font); font-size: 13px;
-  font-weight: 600; cursor: pointer; transition: all .15s;
-}
-.empty-state-action:hover { background: var(--blue); color: #fff; }
-[data-theme="gold"] .empty-state-action { background: var(--blue-l); border-color: rgba(240,180,41,.2); color: var(--amber); }
-[data-theme="gold"] .empty-state-action:hover { background: var(--amber); color: #0a0805; }
-
-/* ═══════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════ */
-#onboardingModal {
-  position: fixed; inset: 0; z-index: 9997;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(12px);
-  display: none; align-items: center; justify-content: center;
-  padding: 20px;
-}
-#onboardingModal.open { display: flex; }
-.onboarding-box {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 24px; width: min(480px, 100%);
-  max-height: calc(100vh - 40px); overflow-y: auto;
-  box-shadow: 0 32px 80px rgba(0,0,0,.5);
-  animation: mIn .25s ease;
-}
-[data-theme="dark"] .onboarding-box {
-  background: #0e1826;
-  border-color: rgba(79,142,247,.15);
-}
-[data-theme="gold"] .onboarding-box {
-  background: #16120a;
-  border-color: rgba(240,180,41,.2);
-}
-.ob-step {
-  display: none; flex-direction: column; align-items: center;
-  padding: 32px 28px; text-align: center;
-}
-.ob-step.active { display: flex; }
-.ob-icon {
-  width: 80px; height: 80px; border-radius: 22px;
-  background: linear-gradient(135deg, var(--blue), var(--teal));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 36px; margin-bottom: 22px;
-  box-shadow: 0 12px 32px var(--blue-g);
-}
-[data-theme="gold"] .ob-icon { background: linear-gradient(135deg,#f0b429,#c8910d); box-shadow: 0 12px 32px rgba(240,180,41,.35); }
-.ob-step-num {
-  font-size: 11px; font-weight: 700; color: var(--t3);
-  text-transform: uppercase; letter-spacing: .8px;
-  margin-bottom: 10px;
-}
-.ob-title {
-  font-size: 22px; font-weight: 800; color: var(--t1);
-  letter-spacing: -.4px; margin-bottom: 10px; line-height: 1.2;
-}
-.ob-desc {
-  font-size: 14px; color: var(--t2); line-height: 1.7;
-  margin-bottom: 24px; max-width: 360px;
-}
-.ob-code {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-m); padding: 14px 18px;
-  font-family: var(--mono); font-size: 12px; color: var(--t2);
-  text-align: left; width: 100%; margin-bottom: 20px;
-  line-height: 1.8; word-break: break-all;
-}
-[data-theme="dark"] .ob-code { background: #090d1a; }
-[data-theme="gold"] .ob-code { background: #0d0a06; }
-.ob-code strong { color: var(--blue); }
-[data-theme="gold"] .ob-code strong { color: var(--amber); }
-.ob-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; padding: 0 28px 28px;
-}
-.ob-dots { display: flex; gap: 6px; }
-.ob-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--border); transition: all .2s;
-}
-.ob-dot.active { background: var(--blue); width: 20px; border-radius: 4px; }
-[data-theme="gold"] .ob-dot.active { background: var(--amber); }
-.ob-skip { font-size: 12px; color: var(--t3); cursor: pointer; transition: color .15s; }
-.ob-skip:hover { color: var(--t1); }
-.ob-next {
-  padding: 10px 24px; background: var(--blue); border: none;
-  border-radius: var(--radius-s); color: #fff; font-family: var(--font);
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: all .15s; box-shadow: 0 4px 16px var(--blue-g);
-}
-[data-theme="gold"] .ob-next { background: var(--amber); color: #0a0805; box-shadow: 0 4px 16px rgba(240,180,41,.35); }
-.ob-next:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--blue-g); }
-.ob-highlight {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--blue-l); border: 1px solid rgba(37,99,235,.2);
-  border-radius: 6px; padding: 4px 10px; font-size: 13px;
-  font-weight: 600; color: var(--blue); margin: 4px;
-}
-[data-theme="gold"] .ob-highlight { background: var(--blue-l); border-color: rgba(240,180,41,.2); color: var(--amber); }
-
-/* WIDGET SECTION in settings */
-.widget-preview {
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
-  border-radius: 20px; padding: 16px 18px;
-  margin: 12px 0; position: relative; overflow: hidden;
-}
-.widget-preview::before {
-  content: ''; position: absolute; top: -30px; right: -30px;
-  width: 120px; height: 120px; border-radius: 50%;
-  background: rgba(79,142,247,.15);
-}
-.wp-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
-.wp-bal { font-size: 26px; font-weight: 800; font-family: var(--mono); color: #fff; letter-spacing: -.5px; margin-bottom: 2px; }
-.wp-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-bottom: 12px; }
-.wp-row { display: flex; gap: 12px; }
-.wp-item { flex: 1; }
-.wp-item-label { font-size: 9px; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
-.wp-item-val { font-size: 14px; font-weight: 700; font-family: var(--mono); }
-.wp-item-val.neg { color: #fb7185; }
-.wp-item-val.pos { color: #34d399; }
-
-
-/* ═══════════════════════════════════════
-   EMPTY STATES
-═══════════════════════════════════════ */
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 60px 32px; text-align: center;
-}
-.empty-state-svg { margin-bottom: 20px; opacity: .7; }
-.empty-state-title { font-size: 17px; font-weight: 700; color: var(--t1); margin-bottom: 8px; letter-spacing: -.2px; }
-.empty-state-sub { font-size: 13px; color: var(--t3); line-height: 1.6; max-width: 280px; }
-.empty-state-btn { margin-top: 20px; }
-
-/* ═══════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════ */
-#onboardingScreen {
-  position: fixed; inset: 0; z-index: 9997;
-  background: var(--bg);
-  display: none; flex-direction: column;
-  overflow-y: auto;
-}
-#onboardingScreen.show { display: flex; }
-.ob-wrap {
-  max-width: 480px; margin: 0 auto;
-  padding: 48px 32px; display: flex;
-  flex-direction: column; align-items: center;
-  min-height: 100vh; justify-content: center;
-  gap: 0;
-}
-.ob-step { display: none; flex-direction: column; align-items: center; width: 100%; }
-.ob-step.active { display: flex; }
-.ob-logo {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--blue), var(--teal));
-  border-radius: 22px; font-size: 32px;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 32px var(--blue-g);
-  margin-bottom: 28px;
-}
-.ob-step-num {
-  font-size: 11px; font-weight: 700; color: var(--blue);
-  text-transform: uppercase; letter-spacing: .8px;
-  margin-bottom: 12px;
-}
-.ob-title { font-size: 26px; font-weight: 800; color: var(--t1); letter-spacing: -.5px; text-align: center; margin-bottom: 10px; line-height: 1.2; }
-.ob-sub { font-size: 14px; color: var(--t2); text-align: center; line-height: 1.7; margin-bottom: 32px; max-width: 360px; }
-.ob-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px;
-  width: 100%; margin-bottom: 12px;
-  box-shadow: var(--shadow-m);
-}
-.ob-card-title { font-size: 13px; font-weight: 700; color: var(--t1); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.ob-card-sub { font-size: 12px; color: var(--t2); line-height: 1.6; }
-.ob-code {
-  font-family: var(--mono); font-size: 12px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-s); padding: 10px 14px;
-  color: var(--blue); margin-top: 8px; word-break: break-all;
-  line-height: 1.6;
-}
-.ob-progress { display: flex; gap: 6px; margin-bottom: 32px; }
-.ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background .2s; }
-.ob-dot.active { background: var(--blue); }
-.ob-dot.done { background: var(--green); }
-.ob-btns { display: flex; gap: 10px; width: 100%; justify-content: center; }
-.ob-btns .btn { min-width: 140px; justify-content: center; }
-[data-theme="dark"] .ob-card { background: #0e1826; border-color: rgba(255,255,255,.08); }
-[data-theme="gold"] .ob-card { background: #16120a; border-color: rgba(240,180,41,.1); }
-
 </style>
 </head>
 <body>
@@ -3849,202 +3149,7 @@ ${catSorted.map(([cat,val])=>`<div class="cat-row">
   showToast2('📄','Extracto generado','Usa Imprimir → Guardar como PDF','var(--blue)',4000);
 }
 
-
-// ══════════════════════════════════════════════════════════════
-// ONBOARDING
-// ══════════════════════════════════════════════════════════════
-let _obStep = 0;
-const OB_STEPS = 5;
-
-function obNextStep(){
-  _obStep++;
-  if(_obStep >= OB_STEPS){ closeOnboarding(); return; }
-  document.querySelectorAll('.ob-step').forEach((s,i)=>s.classList.toggle('active',i===_obStep));
-  document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===_obStep));
-  const nextBtn = document.getElementById('obNext');
-  const skipEl  = document.getElementById('obSkip');
-  if(_obStep === OB_STEPS-1){
-    if(nextBtn){ nextBtn.style.display='none'; }
-    if(skipEl) skipEl.style.display='none';
-  }
-}
-
-function closeOnboarding(){
-  document.getElementById('onboardingModal')?.classList.remove('open');
-  localStorage.setItem('onboarding_done','1');
-}
-
-function showOnboarding(){
-  _obStep = 0;
-  document.querySelectorAll('.ob-step').forEach((s,i)=>s.classList.toggle('active',i===0));
-  document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===0));
-  const nextBtn = document.getElementById('obNext');
-  const skipEl  = document.getElementById('obSkip');
-  if(nextBtn){ nextBtn.style.display=''; nextBtn.textContent='Siguiente →'; }
-  if(skipEl) skipEl.style.display='';
-  document.getElementById('onboardingModal')?.classList.add('open');
-  document.getElementById('onboardingModal').onclick=e=>{if(e.target===document.getElementById('onboardingModal'))closeOnboarding();};
-}
-
-// Show onboarding on first visit (no data + no onboarding_done flag)
-setTimeout(()=>{
-  const done = localStorage.getItem('onboarding_done');
-  const hasData = S.all.length > 0;
-  if(!done && !hasData){ showOnboarding(); }
-}, 1500);
-
-// ══════════════════════════════════════════════════════════════
-// SCRIPTABLE WIDGET CODE
-// ══════════════════════════════════════════════════════════════
-const WIDGET_SCRIPT = `// Expense Tracker Widget — Scriptable
-// Instala Scriptable desde App Store, pega este código y crea un widget
-
-const API = "https://sms-parser-api.onrender.com";
-const UID = "pedro";
-const AK  = "ElPortichuelo99";
-
-async function fetchData(){
-  try{
-    const url = API + "/expenses?user_id=" + UID + "&limit=200";
-    const req = new Request(url);
-    const res = await req.loadJSON();
-    return res.expenses || [];
-  }catch(e){ return []; }
-}
-
-function idir(r){
-  const d=(r.direction||"").toLowerCase();
-  if(["income","in","credit","credited"].includes(d))return"in";
-  if(["expense","out","debit","debited"].includes(d))return"out";
-  return(r.sms||r.sms_raw||"").toLowerCase().includes("credited")?"in":"out";
-}
-
-async function run(){
-  const rows = await fetchData();
-  const now  = new Date();
-  const ym   = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-
-  // NBK balance from SMS
-  let nbkBal = null;
-  const sorted = [...rows].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
-  for(const r of sorted){
-    const sms = r.sms || r.sms_raw || "";
-    const m = sms.match(/(?:avl\.?\\s*balance\\s*(?:is)?|balance[:\\s]+)\\s*KWD\\s*([\\d,]+\\.?\\d*)/i);
-    if(m){ nbkBal = parseFloat(m[1].replace(/,/g,"")); break; }
-  }
-
-  // Month totals
-  const monthRows = rows.filter(r=>(r.created_at||"").startsWith(ym));
-  const exp = monthRows.filter(r=>idir(r)==="out").reduce((s,r)=>s+Number(r.amount||0),0);
-  const inc = monthRows.filter(r=>idir(r)==="in").reduce((s,r)=>s+Number(r.amount||0),0);
-  const net = inc - exp;
-
-  function fmt(n){ return n.toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}); }
-
-  // Build widget
-  const w = new ListWidget();
-  w.backgroundColor = new Color("#0b1120");
-  w.url = "https://sms-parser-api.onrender.com";
-
-  // Header
-  const hStack = w.addStack();
-  hStack.layoutHorizontally();
-  const emoji = hStack.addText("💳");
-  emoji.font = Font.systemFont(14);
-  hStack.addSpacer(6);
-  const title = hStack.addText("EXPENSE TRACKER");
-  title.font = Font.boldSystemFont(10);
-  title.textColor = new Color("#4f8ef7");
-  title.textOpacity = 0.8;
-  w.addSpacer(6);
-
-  // NBK Balance
-  const balLabel = w.addText("SALDO NBK");
-  balLabel.font = Font.mediumSystemFont(8);
-  balLabel.textColor = new Color("#ffffff", 0.4);
-  const balVal = w.addText(nbkBal !== null ? fmt(nbkBal) + " KWD" : "— KWD");
-  balVal.font = Font.boldSystemFont(20);
-  balVal.textColor = Color.white();
-  w.addSpacer(8);
-
-  // Row: exp | inc | net
-  const row = w.addStack();
-  row.layoutHorizontally();
-  row.spacing = 8;
-
-  function addItem(stack, label, value, color){
-    const col = stack.addStack();
-    col.layoutVertically();
-    const lbl = col.addText(label);
-    lbl.font = Font.mediumSystemFont(7);
-    lbl.textColor = new Color("#ffffff", 0.35);
-    const val = col.addText(value);
-    val.font = Font.boldSystemFont(12);
-    val.textColor = new Color(color);
-    stack.addSpacer();
-  }
-  addItem(row, "GASTOS",   "-"+fmt(exp), "#fb7185");
-  addItem(row, "INGRESOS", "+"+fmt(inc), "#34d399");
-  addItem(row, "NETO",     (net>=0?"+":"")+fmt(net), net>=0?"#34d399":"#fb7185");
-  w.addSpacer(4);
-
-  // Updated time
-  const updTime = w.addDate(new Date());
-  updTime.font = Font.systemFont(7);
-  updTime.textColor = new Color("#ffffff", 0.25);
-  updTime.applyTimeStyle();
-
-  Script.setWidget(w);
-  w.presentMedium();
-  Script.complete();
-}
-run();`;
-
-function copyWidgetScript(){
-  // Try clipboard API
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(WIDGET_SCRIPT).then(()=>{
-      const msg = document.getElementById('widgetCopyMsg');
-      if(msg){ msg.textContent = '✅ Código copiado al portapapeles'; setTimeout(()=>msg.textContent='',3000); }
-      haptic('success');
-      showToast2('✅','Código copiado','Pégalo en Scriptable','var(--green)',3000);
-    }).catch(()=> showWidgetInModal());
-  } else {
-    showWidgetInModal();
-  }
-}
-
-function showWidgetInModal(){
-  // Fallback: show in a textarea for manual copy
-  const el = document.createElement('textarea');
-  el.value = WIDGET_SCRIPT;
-  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(600px,90vw);height:300px;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;font-family:monospace;font-size:11px;color:var(--t1);';
-  document.body.appendChild(el);
-  el.select();
-  document.execCommand('copy');
-  setTimeout(()=>el.remove(), 3000);
-  showToast2('✅','Selecciona y copia','Ctrl+C / Cmd+C','var(--blue)',3000);
-}
-
-// Update widget preview with real data
-function updateWidgetPreview(){
-  if(!S.all.length) return;
-  const now=new Date(),ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-  const sorted=[...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
-  let nbk=null;
-  for(const r of sorted){const sms=r.sms||r.sms_raw||"";const m=sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);if(m){nbk=parseFloat(m[1].replace(/,/g,""));break;}}
-  const monthRows=S.all.filter(r=>(r.created_at||"").startsWith(ym));
-  const exp=monthRows.filter(r=>idir(r)==="out").reduce((s,r)=>s+Number(r.amount||0),0);
-  const inc=monthRows.filter(r=>idir(r)==="in").reduce((s,r)=>s+Number(r.amount||0),0);
-  const net=inc-exp;
-  const fmt=n=>fmPro(n,3);
-  const wpBal=document.getElementById('wpBal');if(wpBal)wpBal.textContent=nbk!==null?fmt(nbk)+' KWD':'—,——— KWD';
-  const wpExp=document.getElementById('wpExp');if(wpExp)wpExp.textContent='-'+fmt(exp)+' KWD';
-  const wpInc=document.getElementById('wpInc');if(wpInc)wpInc.textContent='+'+fmt(inc)+' KWD';
-  const wpNet=document.getElementById('wpNet');if(wpNet){wpNet.textContent=(net>=0?'+':'')+fmt(net)+' KWD';wpNet.className='wp-item-val '+(net>=0?'pos':'neg');}
-}
-
-bind();load();loadRules();initSearchAndWindow();getFX().then(()=>updateLiveBar()).catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
+bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
 
 
