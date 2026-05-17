@@ -34,6 +34,23 @@ async def global_exception_handler(request, exc):
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# ── PWA static file routes ──────────────────────────────────────
+@app.get("/manifest.json")
+async def serve_manifest():
+    return FileResponse("static/manifest.json", media_type="application/json")
+
+@app.get("/sw.js")
+async def serve_sw():
+    return FileResponse("static/sw.js", media_type="application/javascript")
+
+@app.get("/icon-192.png")
+async def serve_icon192():
+    return FileResponse("static/icon-192.png", media_type="image/png")
+
+@app.get("/icon-512.png")
+async def serve_icon512():
+    return FileResponse("static/icon-512.png", media_type="image/png")
+
 
 # ======================================================
 # CATEGORIES — rules applied in order, first match wins
@@ -123,13 +140,12 @@ CATEGORY_RULES = [
         "udemy", "coursera", "skillshare", "pluralsight",
         "book", "bookstore", "jarir bookstore", "virgin books",
     ]),
-    # --- SALARY / INCOME --- (direction=income handled separately)
+    # --- SALARY / INCOME ---
     ("salary", [
         "salary", "payroll", "wage",
     ]),
 ]
 
-# Flat lookup for fast matching: keyword -> category
 _KW_MAP: Dict[str, str] = {}
 for _cat, _keywords in CATEGORY_RULES:
     for _kw in _keywords:
@@ -137,23 +153,16 @@ for _cat, _keywords in CATEGORY_RULES:
 
 
 def categorize(merchant: str, sms: str) -> str:
-    """
-    Categorize based on merchant name and SMS text.
-    Returns category string.
-    """
     targets = [
         (merchant or "").lower(),
         (sms or "").lower(),
     ]
-
     for target in targets:
         if not target:
             continue
-        # exact keyword match (longest first to avoid partial false matches)
         for kw in sorted(_KW_MAP.keys(), key=len, reverse=True):
             if kw in target:
                 return _KW_MAP[kw]
-
     return "other"
 
 
@@ -161,24 +170,12 @@ def categorize(merchant: str, sms: str) -> str:
 # MERCHANT CLEANING
 # ======================================================
 def clean_merchant(raw: str) -> str:
-    """
-    Strip NBK SMS noise from merchant name.
-    Input:  "THE SULTAN CENTER , SALMIYA.Your Avl. balance is KWD 8,197.004"
-    Output: "THE SULTAN CENTER"
-    """
     if not raw:
         return ""
     m = raw.strip()
-
-    # Remove from "Avl. balance" onwards (with optional "Your" prefix)
     m = re.sub(r'\.?\s*(?:your\s+)?avl\.?\s*balance.*$', '', m, flags=re.IGNORECASE).strip()
-
-    # Remove trailing city: ", SALMIYA" or ", KUWAIT" etc.
     m = re.sub(r'\s*,\s*[A-Z][A-Z\s\-]{1,20}$', '', m).strip()
-
-    # Remove trailing punctuation
     m = m.rstrip('.,- ').strip()
-
     return m or raw.strip()
 
 
@@ -188,31 +185,21 @@ def clean_merchant(raw: str) -> str:
 CURRENCIES = ("KWD", "USD", "EUR", "AED")
 
 def extract_amount_currency(text: str):
-    """
-    Extract (amount, currency) from bank SMS.
-    Supports: "KWD 1,766.000", "1,766.000 KWD", "with 1,766.000 KWD"
-    """
     if not text:
         return None, None
-
     t = text.replace("\u00a0", " ")
-
-    # Pattern 1: CUR AMOUNT
     m = re.search(r'\b([A-Z]{3})\s*([0-9][0-9,]*\.?[0-9]*)\b', t)
     if m and m.group(1) in CURRENCIES:
         try:
             return float(m.group(2).replace(",", "")), m.group(1).upper()
         except ValueError:
             pass
-
-    # Pattern 2: AMOUNT CUR
     m = re.search(r'\b([0-9][0-9,]*\.?[0-9]*)\s*([A-Z]{3})\b', t)
     if m and m.group(2) in CURRENCIES:
         try:
             return float(m.group(1).replace(",", "")), m.group(2).upper()
         except ValueError:
             pass
-
     return None, None
 
 
@@ -241,12 +228,7 @@ def sha256(s: str) -> str:
 
 def parse_sms(sms: str) -> Dict[str, Any]:
     txt = sms.strip()
-    lower = txt.lower()
-
-    # --- Amount & Currency ---
     amount, currency = extract_amount_currency(txt)
-
-    # Fallback for salary pattern: "with 1,766.000 KWD"
     if not amount:
         m = re.search(r'\bwith\s+([0-9][0-9,]*\.?[0-9]*)\s*(KWD|USD|EUR|AED)\b', txt, re.IGNORECASE)
         if m:
@@ -255,37 +237,21 @@ def parse_sms(sms: str) -> Dict[str, Any]:
                 currency = m.group(2).upper()
             except ValueError:
                 pass
-
     amount = amount or 0.0
     currency = currency or "KWD"
-
-    # --- Direction ---
     direction = detect_direction(txt)
-
-    # --- Merchant ---
     merchant_raw = ""
-    # Try "for XXX" pattern
     m = re.search(r'\bfor\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}|\.your\s+avl|,\s*your\s+avl|$)', txt, re.IGNORECASE)
     if not m:
-        # Try "from XXX" pattern
         m = re.search(r'\bfrom\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}|\.your\s+avl|,\s*your\s+avl|$)', txt, re.IGNORECASE)
     if not m:
-        # Try "at XXX" pattern
         m = re.search(r'\bat\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}|\.your\s+avl|,\s*your\s+avl|$)', txt, re.IGNORECASE)
-
     if m:
         merchant_raw = m.group(1).strip().strip(",").strip()
-
     merchant_clean = clean_merchant(merchant_raw) if merchant_raw else ""
-
-    # --- Category ---
     category = categorize(merchant_clean or merchant_raw, txt)
-
-    # If income and no specific category, mark as income
     if direction == "income" and category == "other":
         category = "income"
-
-    # --- Date ---
     date_raw = ""
     date_iso = ""
     m_date = re.search(DATE_RE, txt)
@@ -300,7 +266,6 @@ def parse_sms(sms: str) -> Dict[str, Any]:
         dt = datetime.now(timezone.utc)
         date_iso = dt.isoformat()
         date_raw = dt.strftime("%Y-%m-%d %H:%M:%S")
-
     return {
         "direction": direction,
         "amount": amount,
@@ -316,7 +281,7 @@ def parse_sms(sms: str) -> Dict[str, Any]:
 
 
 # ======================================================
-# RULES ENGINE (DB rules override parsed category)
+# RULES ENGINE
 # ======================================================
 def apply_rules(user_id: str, parsed: Dict[str, Any]) -> Dict[str, Any]:
     conn = db()
@@ -327,20 +292,15 @@ def apply_rules(user_id: str, parsed: Dict[str, Any]) -> Dict[str, Any]:
     )
     rules = cur.fetchall()
     conn.close()
-
     merch_l = (parsed.get("merchant_clean") or parsed.get("merchant_raw") or "").lower()
     sms_l   = (parsed.get("sms_raw") or "").lower()
-
     for r in rules:
         match_field = (r["match_field"] or "merchant_clean").strip().lower()
         match_type  = (r["match_type"] or "contains").strip().lower()
         pattern     = (r["pattern"] or "").strip()
-
         if not pattern:
             continue
-
         target = sms_l if match_field in ("sms", "sms_raw") else merch_l
-
         ok = False
         if match_type == "contains":
             ok = pattern.lower() in target
@@ -351,13 +311,11 @@ def apply_rules(user_id: str, parsed: Dict[str, Any]) -> Dict[str, Any]:
                 ok = bool(re.search(pattern, target, re.IGNORECASE))
             except re.error:
                 ok = False
-
         if ok:
             if r["set_category"]:
                 parsed["category"] = r["set_category"]
             if r["set_merchant_clean"]:
                 parsed["merchant_clean"] = r["set_merchant_clean"]
-
     return parsed
 
 
@@ -380,7 +338,6 @@ def db() -> sqlite3.Connection:
 def init_db() -> None:
     conn = db()
     cur = conn.cursor()
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -400,7 +357,6 @@ def init_db() -> None:
             sms_raw TEXT
         )
     """)
-
     cur.execute("PRAGMA table_info(expenses)")
     cols = {row[1] for row in cur.fetchall()}
     for col, coltype in [
@@ -411,14 +367,12 @@ def init_db() -> None:
     ]:
         if col not in cols:
             cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} {coltype}")
-
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_expenses_hash ON expenses(hash)")
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_sms_hash ON expenses(sms_hash)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_currency ON expenses(currency)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)")
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS rules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -433,7 +387,6 @@ def init_db() -> None:
             created_at TEXT NOT NULL
         )
     """)
-
     cur.execute("PRAGMA table_info(rules)")
     rcols = {row[1] for row in cur.fetchall()}
     for col, coltype in [
@@ -443,7 +396,6 @@ def init_db() -> None:
     ]:
         if col not in rcols:
             cur.execute(f"ALTER TABLE rules ADD COLUMN {col} {coltype}")
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS deleted_expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -454,12 +406,9 @@ def init_db() -> None:
         )
     """)
     cur.execute("CREATE INDEX IF NOT EXISTS idx_deleted_user_time ON deleted_expenses(user_id, deleted_at)")
-
-    # Backfill direction for old rows
     cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%credited%'")
     cur.execute("UPDATE expenses SET direction='income' WHERE (direction IS NULL OR direction='') AND lower(sms) LIKE '%salary%'")
     cur.execute("UPDATE expenses SET direction='expense' WHERE (direction IS NULL OR direction='')")
-
     conn.commit()
     conn.close()
 
@@ -501,40 +450,30 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "db_path": DB_PATH, "version": "2026-05-14-clean"}
+    return {"ok": True, "db_path": DB_PATH, "version": "2026-05-17-icons"}
 
 
 @app.post("/ingest")
 async def ingest(payload: IngestRequest):
     user_id = payload.user_id.strip()
     sms     = payload.sms.strip()
-
     if not sms:
         return {"inserted": False, "reason": "empty sms"}
-
     parsed = parse_sms(sms)
     parsed["user_id"] = user_id
-
-    # Apply DB rules (override category/merchant if rules match)
     parsed = apply_rules(user_id, parsed)
-
-    # Hashes for deduplication
     sms_hash = sha256(sms)
     row_hash = sha256(
         f"{user_id}|{parsed.get('amount')}|{parsed.get('currency')}|"
         f"{parsed.get('merchant_clean')}|{parsed.get('date_iso')}|{sms_hash}"
     )
-
     conn = db()
     cur  = conn.cursor()
-
-    # Dedup check
     cur.execute("SELECT id FROM expenses WHERE sms_hash=?", (sms_hash,))
     existing = cur.fetchone()
     if existing:
         conn.close()
         return {"inserted": False, "reason": "duplicate", "existing_id": existing["id"]}
-
     try:
         cur.execute("""
             INSERT INTO expenses
@@ -600,7 +539,6 @@ async def delete_expense(payload: dict, api_key: str = Query(None)):
         row_id = int(row_id)
     except Exception:
         raise HTTPException(status_code=400, detail="id must be int")
-
     conn = db()
     try:
         cur = conn.cursor()
@@ -608,7 +546,6 @@ async def delete_expense(payload: dict, api_key: str = Query(None)):
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Row not found")
-
         row_dict   = dict(row)
         deleted_at = datetime.now(timezone.utc).isoformat()
         cur.execute(
@@ -628,7 +565,6 @@ async def undo_delete(payload: dict, api_key: str = Query(None)):
     user_id = payload.get("userid") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="Missing userid")
-
     conn = db()
     try:
         cur = conn.cursor()
@@ -639,17 +575,14 @@ async def undo_delete(payload: dict, api_key: str = Query(None)):
         d = cur.fetchone()
         if not d:
             raise HTTPException(status_code=404, detail="Nothing to undo")
-
         deleted_at = datetime.fromisoformat(d["deleted_at"].replace("Z", "+00:00"))
         age = (datetime.now(timezone.utc) - deleted_at).total_seconds()
         if age > 30:
             raise HTTPException(status_code=400, detail="Undo window expired (>30s)")
-
         row = json.loads(d["row_json"])
         original_id = row.get("id")
         cols = [k for k in row.keys() if k != "id"]
         vals = [row[k] for k in cols]
-
         try:
             cur.execute(
                 f'INSERT INTO expenses (id, {",".join(cols)}) VALUES (?,{",".join(["?"]*len(cols))})',
@@ -662,7 +595,6 @@ async def undo_delete(payload: dict, api_key: str = Query(None)):
                 vals
             )
             restored_id = cur.lastrowid
-
         cur.execute("DELETE FROM deleted_expenses WHERE id=?", (d["id"],))
         conn.commit()
         return {"ok": True, "restored_id": restored_id}
@@ -677,7 +609,6 @@ async def update_field(payload: dict, api_key: str = Query(None)):
     row_id  = payload.get("id")
     field   = (payload.get("field") or "").strip()
     value   = payload.get("value")
-
     if not user_id:
         raise HTTPException(status_code=400, detail="Missing userid")
     if row_id is None:
@@ -686,11 +617,9 @@ async def update_field(payload: dict, api_key: str = Query(None)):
         row_id = int(row_id)
     except Exception:
         raise HTTPException(status_code=400, detail="id must be int")
-
     allowed = {"merchant_clean", "category", "currency", "amount", "direction"}
     if field not in allowed:
         raise HTTPException(status_code=400, detail=f"Field not allowed: {field}")
-
     if field == "category":
         value = (str(value).strip().lower() if value else "other") or "other"
     elif field == "currency":
@@ -702,7 +631,6 @@ async def update_field(payload: dict, api_key: str = Query(None)):
             raise HTTPException(status_code=400, detail="amount must be a number")
     elif field == "merchant_clean":
         value = str(value).strip() if value is not None else ""
-
     conn = db()
     try:
         cur = conn.cursor()
@@ -710,7 +638,6 @@ async def update_field(payload: dict, api_key: str = Query(None)):
         db_cols = {r[1] for r in cur.fetchall()}
         if field not in db_cols:
             raise HTTPException(status_code=400, detail=f"Column not in DB: {field}")
-
         cur.execute(
             f"UPDATE expenses SET {field}=? WHERE id=? AND user_id=?",
             (value, row_id, user_id)
@@ -718,7 +645,6 @@ async def update_field(payload: dict, api_key: str = Query(None)):
         conn.commit()
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Row not found")
-
         cur.execute(
             "SELECT id, user_id, amount, currency, merchant_clean, category, created_at, direction FROM expenses WHERE id=? AND user_id=?",
             (row_id, user_id)
@@ -740,6 +666,21 @@ def list_rules(user_id: str = Query("pedro")):
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return {"count": len(rows), "rules": rows}
+
+
+@app.delete("/rules/{rule_id}")
+async def delete_rule(rule_id: int, user_id: str = Query("pedro"), api_key: str = Query(None)):
+    check_key(api_key)
+    conn = db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM rules WHERE id=? AND user_id=?", (rule_id, user_id))
+        conn.commit()
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Rule not found")
+        return {"ok": True, "deleted_id": rule_id}
+    finally:
+        conn.close()
 
 
 @app.post("/rules")
@@ -771,10 +712,8 @@ async def add_rule(req: Request):
     merchant = (body.get("merchant") or body.get("pattern") or "").strip()
     category = (body.get("category") or "").strip().lower()
     match_type = (body.get("match_mode") or body.get("match_type") or "contains").strip().lower()
-
     if not user_id or not merchant or not category:
         return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
-
     now = datetime.now(timezone.utc).isoformat()
     conn = db()
     cur  = conn.cursor()
@@ -820,7 +759,6 @@ def debug_db():
 
 @app.post("/debug/recategorize")
 async def recategorize_all(api_key: str = Query(None)):
-    """Re-run categorization on all existing rows using the new rules."""
     check_key(api_key)
     conn = db()
     cur  = conn.cursor()
@@ -840,7 +778,6 @@ async def recategorize_all(api_key: str = Query(None)):
 
 @app.post("/debug/reclean_merchants")
 async def reclean_merchants(api_key: str = Query(None)):
-    """Re-run merchant cleaning on all existing rows."""
     check_key(api_key)
     conn = db()
     cur  = conn.cursor()
