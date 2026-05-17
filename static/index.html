@@ -1099,6 +1099,23 @@ body.fm .status-pill{display:none!important;}
 <div class="ovl" id="txOvl"><div class="mbox tx"><div class="mhd"><div><div class="mt" id="txT">Transaction</div><div class="ms" id="txS">—</div></div><button class="mc" id="txClose">✕</button></div><div class="mbody"><div class="mgrid" id="txGrid"></div><div class="mpills" id="txPills"></div><div class="msms" id="txSms"></div></div></div></div>
 <div class="ovl" id="ruleOvl"><div class="mbox rule"><h3>Create rule</h3><label class="flbl">Merchant pattern</label><input type="text" class="fin" id="ruleMerchant" placeholder="e.g. talabat, starbucks…"/><label class="flbl">Category</label><select class="fin" id="ruleCat"></select><div class="mac"><button class="btn" id="ruleCancel">Cancel</button><button class="btn btn-primary" id="ruleSave">Save rule</button></div><div id="rStat"></div></div></div>
 <div class="cat-popup-ovl" id="catPopupOvl"><div class="cat-popup"><div class="cat-popup-head"><div><div class="cat-popup-title" id="catPopupTitle">Category</div><div class="cat-popup-sub" id="catPopupSub">—</div></div><button class="mc" id="catPopupClose">✕</button></div><div class="cat-popup-body" id="catPopupBody"></div></div></div>
+
+<!-- BUDGET MODAL -->
+<div class="ovl" id="budgetOvl">
+  <div class="mbox rule">
+    <h3 id="budgetModalTitle">Añadir presupuesto</h3>
+    <label class="flbl">Categoría</label>
+    <select class="fin" id="budgetCatSel"></select>
+    <label class="flbl">Presupuesto mensual (KWD)</label>
+    <input type="number" class="fin" id="budgetAmtInp" placeholder="ej: 50" step="0.1" min="0"/>
+    <div class="mac">
+      <button class="btn" id="budgetCancel">Cancelar</button>
+      <button class="btn btn-primary" id="budgetSave">Guardar</button>
+    </div>
+    <div id="budgetStat" style="font-size:12px;color:var(--t3);margin-top:8px;min-height:16px;"></div>
+  </div>
+</div>
+
 <div class="ptr-indicator" id="ptrIndicator"><div class="ptr-spinner"></div><span id="ptrText">Actualizando…</span></div>
 <div class="toast-v2" id="toastV2"><div class="toast-v2-icon" id="toastV2Icon">✅</div><div class="toast-v2-body"><div class="toast-v2-title" id="toastV2Title">—</div><div class="toast-v2-sub" id="toastV2Sub"></div></div><button class="toast-v2-close" id="toastV2Close">✕</button><div class="toast-v2-progress" id="toastV2Progress"></div></div>
 <nav class="bottom-nav" id="bottomNav">
@@ -1865,22 +1882,6 @@ function renderSettings(){
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
 
-
-<!-- BUDGET MODAL -->
-<div class="ovl" id="budgetOvl">
-  <div class="mbox rule">
-    <h3 id="budgetModalTitle">Añadir presupuesto</h3>
-    <label class="flbl">Categoría</label>
-    <select class="fin" id="budgetCatSel"></select>
-    <label class="flbl">Presupuesto mensual (KWD)</label>
-    <input type="number" class="fin" id="budgetAmtInp" placeholder="ej: 50" step="0.1" min="0"/>
-    <div class="mac">
-      <button class="btn" id="budgetCancel">Cancelar</button>
-      <button class="btn btn-primary" id="budgetSave">Guardar</button>
-    </div>
-    <div id="budgetStat" style="font-size:12px;color:var(--t3);margin-top:8px;min-height:16px;"></div>
-  </div>
-</div>
 
 </body>
 </html>
