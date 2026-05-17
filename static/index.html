@@ -666,6 +666,40 @@ body.fm .status-pill{display:none!important;}
 </head>
 <body>
 
+
+<!-- LOCK SCREEN — first in body so it renders on top immediately -->
+<div id="lockScreen" style="display:none;position:fixed;inset:0;z-index:9999;background:#080c14;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,system-ui,sans-serif;padding:32px;gap:0;">
+  <div class="lock-logo">💳</div>
+  <div class="lock-title">Expense Tracker</div>
+  <div class="lock-sub" id="lockSub">Introduce tu PIN</div>
+  <div class="lock-setup-step" id="lockSetupStep"></div>
+  <div class="lock-dots" id="lockDots">
+    <div class="lock-dot" id="ld0"></div>
+    <div class="lock-dot" id="ld1"></div>
+    <div class="lock-dot" id="ld2"></div>
+    <div class="lock-dot" id="ld3"></div>
+  </div>
+  <div class="lock-numpad">
+    <button class="lock-key" data-n="1">1</button>
+    <button class="lock-key" data-n="2">2</button>
+    <button class="lock-key" data-n="3">3</button>
+    <button class="lock-key" data-n="4">4</button>
+    <button class="lock-key" data-n="5">5</button>
+    <button class="lock-key" data-n="6">6</button>
+    <button class="lock-key" data-n="7">7</button>
+    <button class="lock-key" data-n="8">8</button>
+    <button class="lock-key" data-n="9">9</button>
+    <button class="lock-key empty"></button>
+    <button class="lock-key" data-n="0">0</button>
+    <button class="lock-key del" id="lockDel">⌫</button>
+  </div>
+  <div id="lockBiometric" class="lock-biometric" style="display:none;">
+    <div class="lock-biometric-ic">🔒</div>
+    <div class="lock-biometric-lbl" id="lockBioLbl">Face ID</div>
+  </div>
+  <div class="lock-msg" id="lockMsg"></div>
+</div>
+
 <nav class="sidebar">
   <div class="sb-top"><div class="sb-logo"><div class="sb-mark">💳</div><div><div class="sb-name">Expense</div><div class="sb-tagline">Tracker</div></div></div></div>
   <div class="sb-hr"></div>
@@ -1177,6 +1211,7 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
 
   // ── Show lock screen ─────────────────────────────────────────
   function showLock(){
+    screen.style.cssText = screen.style.cssText.replace('display:none','display:flex');
     screen.style.display='flex';
     document.body.style.overflow='hidden';
   }
@@ -1425,8 +1460,8 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
   }
 
   // Small delay to let app render first
- localStorage.removeItem('app_unlocked_at');
-setTimeout(init, 300);
+  localStorage.removeItem(UNLOCK_KEY);
+  setTimeout(init, 300);
 
   // Re-lock when app comes back from background
   document.addEventListener('visibilitychange', ()=>{
@@ -1448,39 +1483,6 @@ setTimeout(init, 300);
 
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
-
-<!-- LOCK SCREEN -->
-<div id="lockScreen" style="display:none;">
-  <div class="lock-logo">💳</div>
-  <div class="lock-title">Expense Tracker</div>
-  <div class="lock-sub" id="lockSub">Introduce tu PIN</div>
-  <div class="lock-setup-step" id="lockSetupStep"></div>
-  <div class="lock-dots" id="lockDots">
-    <div class="lock-dot" id="ld0"></div>
-    <div class="lock-dot" id="ld1"></div>
-    <div class="lock-dot" id="ld2"></div>
-    <div class="lock-dot" id="ld3"></div>
-  </div>
-  <div class="lock-numpad">
-    <button class="lock-key" data-n="1">1</button>
-    <button class="lock-key" data-n="2">2</button>
-    <button class="lock-key" data-n="3">3</button>
-    <button class="lock-key" data-n="4">4</button>
-    <button class="lock-key" data-n="5">5</button>
-    <button class="lock-key" data-n="6">6</button>
-    <button class="lock-key" data-n="7">7</button>
-    <button class="lock-key" data-n="8">8</button>
-    <button class="lock-key" data-n="9">9</button>
-    <button class="lock-key empty"></button>
-    <button class="lock-key" data-n="0">0</button>
-    <button class="lock-key del" id="lockDel">⌫</button>
-  </div>
-  <div id="lockBiometric" class="lock-biometric" style="display:none;">
-    <div class="lock-biometric-ic">🔒</div>
-    <div class="lock-biometric-lbl" id="lockBioLbl">Face ID</div>
-  </div>
-  <div class="lock-msg" id="lockMsg"></div>
-</div>
 
 </body>
 </html>
