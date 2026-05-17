@@ -662,6 +662,33 @@ body.fm .status-pill{display:none!important;}
   text-align: center;
 }
 
+
+/* OFFLINE BANNER */
+.offline-banner{position:fixed;top:0;left:0;right:0;z-index:500;background:#1e293b;border-bottom:1px solid rgba(255,255,255,.1);color:#94a3b8;font-size:12px;font-family:var(--font);padding:8px 16px;display:none;align-items:center;gap:8px;justify-content:center;}
+.offline-banner.show{display:flex;}
+.offline-dot{width:7px;height:7px;border-radius:50%;background:#f87171;flex-shrink:0;}
+
+
+/* SETTINGS */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);gap:16px;}
+.settings-row:last-child{border-bottom:none;}
+.settings-label{font-size:13px;font-weight:600;color:var(--t1);}
+.settings-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+
+/* BUDGET */
+.budget-cat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow-m);transition:all .15s;}
+.budget-cat-card:hover{box-shadow:var(--shadow);}
+.budget-cat-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.budget-cat-left{display:flex;align-items:center;gap:10px;}
+.budget-cat-icon{font-size:20px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.budget-cat-name{font-size:14px;font-weight:700;}
+.budget-cat-amounts{font-size:11px;color:var(--t3);margin-top:2px;}
+.budget-cat-right{display:flex;align-items:center;gap:8px;}
+.budget-pct{font-size:13px;font-family:var(--mono);font-weight:700;}
+.budget-track{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border);}
+.budget-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.budget-status{font-size:11px;font-weight:600;margin-top:6px;}
+
 </style>
 </head>
 <body>
@@ -700,6 +727,10 @@ body.fm .status-pill{display:none!important;}
   <div class="lock-msg" id="lockMsg"></div>
 </div>
 
+<div class="offline-banner" id="offlineBanner">
+  <div class="offline-dot"></div>
+  <span>Sin conexión — mostrando datos guardados</span>
+</div>
 <nav class="sidebar">
   <div class="sb-top"><div class="sb-logo"><div class="sb-mark">💳</div><div><div class="sb-name">Expense</div><div class="sb-tagline">Tracker</div></div></div></div>
   <div class="sb-hr"></div>
@@ -712,6 +743,8 @@ body.fm .status-pill{display:none!important;}
     <div class="nav" data-view="balance"><span class="nav-ic">💰</span><span>Balance</span></div>
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="rules"><span class="nav-ic">⚡</span><span>Rules</span><span class="nav-badge" id="rulesCount">—</span></div>
+    <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
+    <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
   </div>
   <div class="sb-footer"><div class="sb-av">P</div><div><div class="sb-uname">Pedro</div><div class="sb-urole">Personal account</div></div></div>
 </nav>
@@ -946,6 +979,119 @@ body.fm .status-pill{display:none!important;}
       <div class="rules-hd"><h2>Categorization rules</h2><button class="btn btn-primary" id="btnNewRule">+ New rule</button></div>
       <div class="rule-list" id="ruleList"><div class="r-empty"><b>No rules yet</b>Create rules to auto-categorize transactions.</div></div>
     </div>
+
+    <!-- BUDGET -->
+    <div class="view" id="view-budget">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div><h2 style="font-size:17px;font-weight:700;">Presupuesto mensual</h2><div style="font-size:12px;color:var(--t3);margin-top:3px;" id="budgetMonthLabel">—</div></div>
+        <button class="btn btn-primary" id="btnAddBudget">+ Añadir categoría</button>
+      </div>
+      <!-- Summary hero -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:18px;box-shadow:var(--shadow-m);">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;" id="budgetSummary">
+          <div><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px;">Presupuestado</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="budgetTotal">—</div></div>
+          <div><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px;">Gastado</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="budgetSpent">—</div></div>
+          <div><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px;">Restante</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="budgetLeft">—</div></div>
+        </div>
+        <!-- Overall progress bar -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:8px;"><span>Progreso total del mes</span><span id="budgetPct">0%</span></div>
+          <div style="height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border);">
+            <div id="budgetTotalBar" style="height:100%;border-radius:999px;background:var(--blue);transition:width .6s ease;width:0%;"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Category budgets list -->
+      <div id="budgetList">
+        <div style="text-align:center;padding:48px 24px;color:var(--t3);">
+          <div style="font-size:32px;margin-bottom:12px;">🎯</div>
+          <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px;">Sin presupuestos</div>
+          <div style="font-size:13px;">Añade un presupuesto por categoría para controlar tus gastos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings">
+      <div style="max-width:560px;">
+        <h2 style="font-size:17px;font-weight:700;margin-bottom:20px;">Configuración</h2>
+
+        <!-- Security -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">🔒 Seguridad</div>
+          </div>
+          <div style="padding:0;">
+            <div class="settings-row" id="sRowPin">
+              <div><div class="settings-label">PIN de acceso</div><div class="settings-sub">Protege la app con un código de 4 dígitos</div></div>
+              <button class="btn" id="btnChangePIN" style="font-size:12px;padding:6px 12px;">Cambiar PIN</button>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Tiempo de sesión</div><div class="settings-sub">Tiempo hasta pedir el PIN de nuevo</div></div>
+              <select id="sessionTTLSelect" style="font-size:13px;padding:6px 10px;">
+                <option value="3600000">1 hora</option>
+                <option value="14400000">4 horas</option>
+                <option value="28800000" selected>8 horas</option>
+                <option value="86400000">24 horas</option>
+                <option value="604800000">1 semana</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">📦 Datos</div>
+          </div>
+          <div style="padding:0;">
+            <div class="settings-row">
+              <div><div class="settings-label">Exportar todos los datos</div><div class="settings-sub">Descarga todas las transacciones en CSV</div></div>
+              <button class="btn" id="btnExportAll" style="font-size:12px;padding:6px 12px;">⬇️ Exportar</button>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Limpiar caché local</div><div class="settings-sub">Fuerza recarga de datos desde el servidor</div></div>
+              <button class="btn" id="btnClearCache" style="font-size:12px;padding:6px 12px;">🗑️ Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Display -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">🎨 Apariencia</div>
+          </div>
+          <div style="padding:0;">
+            <div class="settings-row">
+              <div><div class="settings-label">Tema</div><div class="settings-sub">Oscuro o claro</div></div>
+              <select id="themeSelect" style="font-size:13px;padding:6px 10px;">
+                <option value="dark">Oscuro</option>
+                <option value="light">Claro</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Modo privacidad</div><div class="settings-sub">Ocultar cifras al abrir la app</div></div>
+              <label style="display:flex;align-items:center;cursor:pointer;">
+                <input type="checkbox" id="privacyAutoCheck" style="width:18px;height:18px;accent-color:var(--blue);cursor:pointer;">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">ℹ️ Información</div>
+          </div>
+          <div style="padding:0;">
+            <div class="settings-row"><div><div class="settings-label">Transacciones guardadas</div></div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--t2);" id="infoTxCount">—</div></div>
+            <div class="settings-row"><div><div class="settings-label">API</div></div><div style="font-size:12px;color:var(--t3);font-family:var(--mono);">sms-parser-api.onrender.com</div></div>
+            <div class="settings-row"><div><div class="settings-label">Usuario</div></div><div style="font-size:13px;color:var(--t2);font-family:var(--mono);">pedro</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1096,9 +1242,12 @@ function openTx(item){const merch=cm(item.merchant_clean||item.merchant_raw||"")
 const CACHE_KEY="expense_cache_v1",CACHE_TTL=5*60*1000;
 function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data}));}catch(_){}}
 function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const{ts,data}=JSON.parse(raw);if(Date.now()-ts>CACHE_TTL)return null;return data;}catch(_){return null;}}
-async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
-const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules"};
-const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules"};
+async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
+    // If offline, use cache
+    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
+    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
+const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
+const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
 function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
@@ -1120,7 +1269,22 @@ function bind(){
   $("catPopupClose")?.addEventListener("click",closeCatPopup);$("catPopupOvl")?.addEventListener("click",e=>{if(e.target===$("catPopupOvl"))closeCatPopup();});
   $("btnExport")?.addEventListener("click",()=>{const rows=S.view;if(!rows.length){showToast2("⚠️","Sin datos","","var(--amber)",2500);return;}const header=["ID","Fecha","Merchant","Categoría","Importe","Moneda","Dirección"];const lines=rows.map(r=>[r.id,isoDay(r.created_at||""),'"'+(cm(r.merchant_clean||r.merchant_raw||"")).replace(/"/g,'""')+'"',r.category||"other",r.amount,r.currency||"KWD",idir(r)].join(","));const csv=[header.join(","),...lines].join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="gastos_"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url);haptic("success");showToast2("⬇️","CSV exportado",rows.length+" transacciones","var(--blue)",2500);});
   document.getElementById("toastV2Close")?.addEventListener("click",()=>{document.getElementById("toastV2")?.classList.remove("show");clearTimeout(_toastTimer);});
-  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");closeMonthDetail();closeCatPopup();}});
+  // Budget modal
+  $("btnAddBudget")?.addEventListener("click",()=>openBudgetModal());
+  $("budgetCancel")?.addEventListener("click",()=>$("budgetOvl").classList.remove("open"));
+  $("budgetOvl")?.addEventListener("click",e=>{if(e.target===$("budgetOvl"))$("budgetOvl").classList.remove("open");});
+  $("budgetSave")?.addEventListener("click",()=>{
+    const cat=$("budgetCatSel")?.value;
+    const amt=parseFloat($("budgetAmtInp")?.value||"0");
+    const stat=$("budgetStat");
+    if(!cat){if(stat)stat.textContent="Selecciona una categoría";return;}
+    if(!amt||amt<=0){if(stat)stat.textContent="Introduce un importe válido";return;}
+    const b=loadBudgets();b[cat]=amt;saveBudgets(b);
+    $("budgetOvl").classList.remove("open");
+    renderBudget();
+    haptic("success");showToast2("🎯","Presupuesto guardado",tc(cat)+" · "+amt.toFixed(2)+" KWD","var(--green)",2500);
+  });
+  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");$("budgetOvl").classList.remove("open");closeMonthDetail();closeCatPopup();}});
 }
 // AUTO MOBILE — no button
 (function(){let on=window.innerWidth<769;function apply(){document.body.classList.toggle("fm",on);}apply();window.addEventListener("resize",()=>{const should=window.innerWidth<769;if(should!==on){on=should;apply();}});})();
@@ -1135,7 +1299,23 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
 // PRIVACY MODE
 (function(){const PRIVATE_IDS=["ovBalKWD","ovLastSMSDate","ovAccBal","ovIncMonth","ovExpMonth","ovNetMonth","bvKWD","bvUSD","bvEUR","bvAED","bvTotal","scTotal","scMonth","chartTotal","invNAV","invCumReturn","invMonthReturn"];const originals={};let on=localStorage.getItem("privacyMode")==="1";function maskValue(val){if(!val||val==="—")return"••••";return val.replace(/[\d,.]+/g,m=>"•".repeat(Math.min(m.length,6)));}function apply(){PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;if(on){if(!originals[id])originals[id]=el.innerHTML;el.innerHTML=maskValue(el.textContent);el.style.letterSpacing="2px";el.style.opacity="0.6";}else{if(originals[id]!==undefined){el.innerHTML=originals[id];el.style.letterSpacing="";el.style.opacity="";}}});const btn=$("privacyBtn");if(btn){btn.innerHTML=on?"🙈&nbsp;Mostrar":"👁&nbsp;Ocultar";btn.classList.toggle("active",on);}}window._privacyApply=apply;window._privacyOn=()=>on;setTimeout(()=>{if(on)apply();const btn=$("privacyBtn");if(btn)btn.addEventListener("click",()=>{if(!on)PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(el)originals[id]=el.innerHTML;});on=!on;localStorage.setItem("privacyMode",on?"1":"0");apply();});},800);})();
 // PREMIUM UX
-function animateNumber(el,from,to,duration=600,suffix=""){if(!el)return;const start=performance.now(),range=to-from;function step(now){const pct=Math.min((now-start)/duration,1),ease=1-Math.pow(1-pct,3),val=from+range*ease,decimals=String(to).includes('.')?String(to).split('.')[1].length:0;el.textContent=(val>=0&&to>=0?"":val<0?"-":"+")+Math.abs(val).toFixed(decimals)+suffix;if(pct<1)requestAnimationFrame(step);else if(window._privacyOn&&window._privacyOn())window._privacyApply&&window._privacyApply();}requestAnimationFrame(step);}
+function animateNumber(el,from,to,duration=600,suffix=""){
+  if(!el)return;
+  // If privacy is on, skip animation entirely — just set masked value
+  if(window._privacyOn&&window._privacyOn()){
+    window._privacyApply&&window._privacyApply();
+    return;
+  }
+  const start=performance.now(),range=to-from;
+  function step(now){
+    // Check privacy each frame — if turned on mid-animation, stop
+    if(window._privacyOn&&window._privacyOn()){window._privacyApply&&window._privacyApply();return;}
+    const pct=Math.min((now-start)/duration,1),ease=1-Math.pow(1-pct,3),val=from+range*ease,decimals=String(to).includes('.')?String(to).split('.')[1].length:0;
+    el.textContent=(val>=0&&to>=0?"":val<0?"-":"+")+Math.abs(val).toFixed(decimals)+suffix;
+    if(pct<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 let _toastTimer=null;
 function showToast2(icon,title,sub="",color="var(--blue)",duration=4000){const t=$("toastV2"),ic=$("toastV2Icon"),ti=$("toastV2Title"),su=$("toastV2Sub"),pr=$("toastV2Progress");if(!t)return;ic.textContent=icon;ti.textContent=title;su.textContent=sub;pr.style.background=color;pr.style.width="100%";pr.style.transition="none";t.classList.add("show");clearTimeout(_toastTimer);requestAnimationFrame(()=>requestAnimationFrame(()=>{pr.style.transition=`width ${duration}ms linear`;pr.style.width="0%";}));_toastTimer=setTimeout(()=>t.classList.remove("show"),duration);}
 function haptic(type="light"){if(!navigator.vibrate)return;const patterns={light:[10],medium:[25],heavy:[50],success:[10,50,10],error:[50,30,50]};navigator.vibrate(patterns[type]||[10]);}
@@ -1480,8 +1660,227 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
   });
 })();
 
+
+// OFFLINE DETECTION
+(function(){
+  const banner = document.getElementById('offlineBanner');
+  function update(){
+    if(banner) banner.classList.toggle('show', !navigator.onLine);
+  }
+  update();
+  window.addEventListener('online',  ()=>{ update(); showToast2('✅','Conexión restaurada','','var(--green)',2500); load(); });
+  window.addEventListener('offline', ()=>{ update(); showToast2('⚠️','Sin conexión','Mostrando datos guardados','var(--amber)',4000); });
+})();
+
+
+// ══════════════════════════════════════════════════════════════
+// BUDGET
+// ══════════════════════════════════════════════════════════════
+const BUDGET_KEY = 'app_budgets_v1';
+
+function loadBudgets(){ try{ return JSON.parse(localStorage.getItem(BUDGET_KEY)||'{}'); }catch(_){return {};} }
+function saveBudgets(b){ try{ localStorage.setItem(BUDGET_KEY, JSON.stringify(b)); }catch(_){} }
+
+function renderBudget(){
+  const now = new Date();
+  const ym  = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  const monthName = MO[now.getMonth()]+" "+now.getFullYear();
+  const lbl = document.getElementById('budgetMonthLabel');
+  if(lbl) lbl.textContent = monthName;
+
+  const budgets = loadBudgets();
+  const list    = document.getElementById('budgetList');
+  if(!list) return;
+
+  // Monthly spend per category
+  const monthRows = S.all.filter(r=>(r.created_at||"").startsWith(ym)&&idir(r)==="out");
+  const spent = {};
+  for(const r of monthRows){
+    const c=(r.category||"other").toLowerCase();
+    spent[c]=(spent[c]||0)+Number(r.amount||0);
+  }
+
+  const cats = Object.keys(budgets);
+  if(!cats.length){
+    list.innerHTML=`<div style="text-align:center;padding:48px 24px;color:var(--t3);"><div style="font-size:32px;margin-bottom:12px;">🎯</div><div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px;">Sin presupuestos</div><div style="font-size:13px;">Añade un presupuesto por categoría para controlar tus gastos</div></div>`;
+    document.getElementById('budgetTotal').textContent='0.000';
+    document.getElementById('budgetSpent').textContent='0.000';
+    document.getElementById('budgetLeft').textContent='0.000';
+    document.getElementById('budgetPct').textContent='0%';
+    document.getElementById('budgetTotalBar').style.width='0%';
+    return;
+  }
+
+  // Totals
+  const totalBudget = cats.reduce((s,c)=>s+(budgets[c]||0),0);
+  const totalSpent  = cats.reduce((s,c)=>s+(spent[c]||0),0);
+  const totalLeft   = totalBudget - totalSpent;
+  const totalPct    = totalBudget>0?Math.min(Math.round(totalSpent/totalBudget*100),100):0;
+
+  const tEl = document.getElementById('budgetTotal');
+  const sEl = document.getElementById('budgetSpent');
+  const lEl = document.getElementById('budgetLeft');
+  if(tEl) tEl.textContent = totalBudget.toFixed(3)+' KWD';
+  if(sEl){ sEl.textContent = totalSpent.toFixed(3)+' KWD'; sEl.style.color=totalPct>90?'var(--red)':totalPct>70?'var(--amber)':'var(--t1)'; }
+  if(lEl){ lEl.textContent = (totalLeft>=0?'+':'')+totalLeft.toFixed(3)+' KWD'; lEl.style.color=totalLeft<0?'var(--red)':'var(--green)'; }
+  const pEl = document.getElementById('budgetPct');
+  if(pEl) pEl.textContent = totalPct+'%';
+  const barEl = document.getElementById('budgetTotalBar');
+  if(barEl){ barEl.style.width=totalPct+'%'; barEl.style.background=totalPct>=100?'var(--red)':totalPct>=80?'var(--amber)':'var(--blue)'; }
+
+  // Category cards
+  list.innerHTML = cats.sort().map(cat=>{
+    const budget = budgets[cat]||0;
+    const s      = spent[cat]||0;
+    const pct    = budget>0?Math.min(Math.round(s/budget*100),100):0;
+    const over   = s > budget;
+    const color  = pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
+    const icon   = CAT_ICONS[cat]||'❓';
+    const bgClr  = CAT_COLORS[cat]||'#94a3b8';
+    const left   = budget - s;
+
+    return `<div class="budget-cat-card">
+      <div class="budget-cat-head">
+        <div class="budget-cat-left">
+          <div class="budget-cat-icon" style="background:${bgClr}18;">${icon}</div>
+          <div>
+            <div class="budget-cat-name">${tc(cat)}</div>
+            <div class="budget-cat-amounts">${s.toFixed(2)} / ${budget.toFixed(2)} KWD</div>
+          </div>
+        </div>
+        <div class="budget-cat-right">
+          <span class="budget-pct" style="color:${color}">${pct}%</span>
+          <button class="btn" style="padding:4px 9px;font-size:11px;" data-edit-budget="${cat}">✏️</button>
+          <button class="btn btn-red" style="padding:4px 9px;font-size:11px;" data-del-budget="${cat}">✕</button>
+        </div>
+      </div>
+      <div class="budget-track">
+        <div class="budget-fill" style="width:${pct}%;background:${color};"></div>
+      </div>
+      <div class="budget-status" style="color:${color};">
+        ${over ? '⚠️ Pasado en '+(s-budget).toFixed(2)+' KWD' : '✓ Quedan '+left.toFixed(2)+' KWD'}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Wire edit/delete
+  list.querySelectorAll('[data-edit-budget]').forEach(btn=>{
+    btn.addEventListener('click',()=>openBudgetModal(btn.dataset.editBudget));
+  });
+  list.querySelectorAll('[data-del-budget]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const b=loadBudgets();delete b[btn.dataset.delBudget];saveBudgets(b);renderBudget();
+      showToast2('🗑️','Presupuesto eliminado','','var(--red)',2000);
+    });
+  });
+}
+
+function openBudgetModal(cat=''){
+  const budgets = loadBudgets();
+  const catSel  = document.getElementById('budgetCatSel');
+  const amtInp  = document.getElementById('budgetAmtInp');
+  const title   = document.getElementById('budgetModalTitle');
+  const stat    = document.getElementById('budgetStat');
+  if(!catSel||!amtInp)return;
+
+  // Populate categories
+  const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];
+  const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();
+  catSel.innerHTML=allCats.map(c=>`<option value="${c}"${c===cat?" selected":""}>${CAT_ICONS[c]||""} ${tc(c)}</option>`).join('');
+  amtInp.value = cat ? (budgets[cat]||'') : '';
+  title.textContent = cat ? 'Editar presupuesto' : 'Añadir presupuesto';
+  if(stat) stat.textContent='';
+  document.getElementById('budgetOvl').classList.add('open');
+  setTimeout(()=>amtInp.focus(),200);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════════════
+function renderSettings(){
+  // Theme select
+  const thSel = document.getElementById('themeSelect');
+  if(thSel){
+    thSel.value = document.documentElement.getAttribute('data-theme')||'dark';
+    thSel.onchange = ()=>{
+      const t=thSel.value;
+      document.documentElement.setAttribute('data-theme',t);
+      localStorage.setItem('theme',t);
+      const btn=document.getElementById('themeBtn');
+      if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
+    };
+  }
+
+  // Privacy auto checkbox
+  const privCk = document.getElementById('privacyAutoCheck');
+  if(privCk){
+    privCk.checked = window._privacyOn&&window._privacyOn();
+    privCk.onchange = ()=>{
+      document.getElementById('privacyBtn')?.click();
+    };
+  }
+
+  // Session TTL
+  const ttlSel = document.getElementById('sessionTTLSelect');
+  if(ttlSel){
+    const saved = localStorage.getItem('app_session_ttl');
+    if(saved) ttlSel.value = saved;
+    ttlSel.onchange = ()=>localStorage.setItem('app_session_ttl', ttlSel.value);
+  }
+
+  // Tx count info
+  const infoTx = document.getElementById('infoTxCount');
+  if(infoTx) infoTx.textContent = S.all.length + ' transacciones';
+
+  // Export all
+  document.getElementById('btnExportAll')?.addEventListener('click',()=>{
+    if(!S.all.length){showToast2('⚠️','Sin datos','','var(--amber)',2000);return;}
+    const header=["ID","Fecha","Merchant","Categoría","Importe","Moneda","Dirección"];
+    const lines=S.all.map(r=>[r.id,isoDay(r.created_at||''),'"'+(cm(r.merchant_clean||r.merchant_raw||'')).replace(/"/g,'""')+'"',r.category||'other',r.amount,r.currency||'KWD',idir(r)].join(','));
+    const csv=[header.join(','),...lines].join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='gastos_completo_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
+    haptic('success');showToast2('⬇️','Exportado',S.all.length+' transacciones','var(--blue)',2500);
+  },{once:true});
+
+  // Clear cache
+  document.getElementById('btnClearCache')?.addEventListener('click',()=>{
+    localStorage.removeItem('expense_cache_v1');
+    showToast2('🗑️','Caché limpiado','Recargando datos…','var(--blue)',2000);
+    setTimeout(()=>load(),500);
+  },{once:true});
+
+  // Change PIN
+  document.getElementById('btnChangePIN')?.addEventListener('click',()=>{
+    if(confirm('¿Cambiar el PIN? Tendrás que crear uno nuevo.')){
+      localStorage.removeItem('app_pin_hash');
+      localStorage.removeItem('app_webauthn_cred');
+      localStorage.removeItem('app_unlocked_at');
+      showToast2('🔒','PIN eliminado','Recarga la app para crear uno nuevo','var(--amber)',3000);
+    }
+  },{once:true});
+}
+
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
+
+
+<!-- BUDGET MODAL -->
+<div class="ovl" id="budgetOvl">
+  <div class="mbox rule">
+    <h3 id="budgetModalTitle">Añadir presupuesto</h3>
+    <label class="flbl">Categoría</label>
+    <select class="fin" id="budgetCatSel"></select>
+    <label class="flbl">Presupuesto mensual (KWD)</label>
+    <input type="number" class="fin" id="budgetAmtInp" placeholder="ej: 50" step="0.1" min="0"/>
+    <div class="mac">
+      <button class="btn" id="budgetCancel">Cancelar</button>
+      <button class="btn btn-primary" id="budgetSave">Guardar</button>
+    </div>
+    <div id="budgetStat" style="font-size:12px;color:var(--t3);margin-top:8px;min-height:16px;"></div>
+  </div>
+</div>
 
 </body>
 </html>
