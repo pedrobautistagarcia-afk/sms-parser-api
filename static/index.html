@@ -1340,37 +1340,7 @@ body.fm .chart-panel-grid { grid-template-columns: 1fr !important; }
 body.fm .sidebar { display: none !important; }
 
 
-/* SPLASH SCREEN */
-#splashScreen {
-  position: fixed; inset: 0; z-index: 10000;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  background: #05080f;
-  transition: opacity .4s ease, transform .4s ease;
-}
-[data-theme="light"] #splashScreen { background: #f1f5f9; }
-[data-theme="gold"]  #splashScreen { background: #0a0805; }
-.splash-logo {
-  width: 80px; height: 80px;
-  background: linear-gradient(135deg, #2563eb, #0891b2);
-  border-radius: 24px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
-  box-shadow: 0 16px 48px rgba(37,99,235,.4);
-  animation: splashPulse 1.2s ease infinite alternate;
-  margin-bottom: 24px;
-}
-[data-theme="gold"] .splash-logo { background: linear-gradient(135deg,#f0b429,#c8910d); box-shadow: 0 16px 48px rgba(240,180,41,.4); }
-@keyframes splashPulse { from{box-shadow:0 16px 48px rgba(37,99,235,.3)} to{box-shadow:0 20px 60px rgba(37,99,235,.6)} }
-.splash-name { font-size: 22px; font-weight: 700; color: #f1f5f9; letter-spacing: -.3px; margin-bottom: 4px; }
-[data-theme="light"] .splash-name { color: #0f172a; }
-[data-theme="gold"] .splash-name { color: #f5f0e8; }
-.splash-sub { font-size: 12px; color: #475569; letter-spacing: .5px; text-transform: uppercase; }
-.splash-bar { width: 120px; height: 2px; background: rgba(255,255,255,.1); border-radius: 999px; margin-top: 32px; overflow: hidden; }
-.splash-bar-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #0891b2); border-radius: 999px; animation: splashLoad .7s ease forwards; }
-[data-theme="gold"] .splash-bar-fill { background: linear-gradient(90deg, #f0b429, #e8c547); }
-@keyframes splashLoad { from{width:0%} to{width:100%} }
-#splashScreen.hide { opacity: 0; transform: scale(1.02); pointer-events: none; }
+
 
 
 /* ELEGANT CONFIRM MODAL */
@@ -1751,8 +1721,6 @@ tr.high-amount .amt { font-weight: 800; }
 <body>
 
 
-<div id="splashScreen">
-  <div class="splash-logo">💳</div>
   <div class="splash-name">Expense Tracker</div>
   <div class="splash-sub">Personal Finance</div>
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
@@ -3605,20 +3573,7 @@ function applyProNumbers(){
 // ══════════════════════════════════════════════════════════════
 
 // ── Splash screen ────────────────────────────────────────────────
-(function(){
-  const splash = document.getElementById('splashScreen');
-  if(!splash) return;
-  // If returning user (has cache), hide faster
-  const hasCache = !!localStorage.getItem('expense_cache_v1');
-  const delay = hasCache ? 400 : 600;
-  function hideSplash(){
-    splash.style.opacity='0';
-    splash.style.transform='scale(1.02)';
-    splash.style.transition='opacity .35s ease, transform .35s ease';
-    setTimeout(()=>{ splash.style.display='none'; }, 380);
-  }
-  setTimeout(hideSplash, delay);
-})();
+
 
 // ── Elegant confirm ──────────────────────────────────────────────
 function elegantConfirm({icon='⚠️', title='¿Estás seguro?', msg='', okLabel='Confirmar', okClass='btn-primary'}={}){
@@ -4201,8 +4156,10 @@ function obNextStep(){
 }
 
 function closeOnboarding(){
-  const m=document.getElementById('onboardingModal');
-  if(m){ m.classList.remove('open'); m.style.display='none'; }
+  try{
+    const m=document.getElementById('onboardingModal');
+    if(m){ m.classList.remove('open'); m.style.display='none'; }
+  }catch(_){}
   localStorage.setItem('onboarding_done','1');
 }
 
@@ -4218,12 +4175,9 @@ function showOnboarding(){
   if(_obModal){_obModal.classList.add('open');_obModal.onclick=e=>{if(e.target===_obModal)closeOnboarding();};}
 }
 
-// Show onboarding on first visit (no data + no onboarding_done flag)
-setTimeout(()=>{
-  const done = localStorage.getItem('onboarding_done');
-  const hasData = S.all.length > 0;
-  if(!done && !hasData){ showOnboarding(); }
-}, 1500);
+// Onboarding accessible from Settings → Ver guía
+// Auto-show disabled to avoid blocking the app
+localStorage.setItem('onboarding_done','1');
 
 // ══════════════════════════════════════════════════════════════
 // SCRIPTABLE WIDGET CODE
