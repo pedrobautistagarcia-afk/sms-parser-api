@@ -1629,6 +1629,123 @@ tr.high-amount .amt { font-weight: 800; }
 [data-theme="dark"] .ob-card { background: #0e1826; border-color: rgba(255,255,255,.08); }
 [data-theme="gold"] .ob-card { background: #16120a; border-color: rgba(240,180,41,.1); }
 
+
+/* MÁS SHEET (mobile) */
+.mas-sheet-ovl {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.mas-sheet-ovl.open { display: flex; }
+.mas-sheet {
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  border: 1px solid var(--border); border-bottom: none;
+  width: 100%; max-width: 480px;
+  padding: 0 0 env(safe-area-inset-bottom,0px);
+  animation: slideUpSheet .25s cubic-bezier(.34,1.1,.64,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.3);
+}
+[data-theme="dark"] .mas-sheet { background: #0b1120; border-color: rgba(79,142,247,.1); }
+[data-theme="gold"] .mas-sheet { background: #16120a; border-color: rgba(240,180,41,.12); }
+@keyframes slideUpSheet { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.mas-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border2); margin: 10px auto 4px;
+}
+.mas-sheet-title {
+  font-size: 11px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .8px;
+  padding: 8px 20px 12px;
+}
+.mas-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 8px; padding: 0 16px 16px;
+}
+.mas-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 14px 8px; border-radius: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mas-item:active { transform: scale(.94); background: var(--blue-l); }
+[data-theme="dark"] .mas-item { background: #0e1826; border-color: rgba(255,255,255,.07); }
+[data-theme="gold"] .mas-item { background: #1e1810; border-color: rgba(240,180,41,.1); }
+.mas-item-ic { font-size: 24px; }
+.mas-item-lbl { font-size: 10px; font-weight: 600; color: var(--t2); text-align: center; font-family: var(--font); }
+
+
+/* ═══════════════════════════════════════
+   DESIGN UPGRADES
+═══════════════════════════════════════ */
+
+/* Compact table mode */
+.table-compact #t tbody td { padding: 7px 16px; font-size: 12px; }
+.table-compact #t thead th { padding: 7px 16px; }
+.table-compact .merch-avatar { width: 26px; height: 26px; font-size: 10px; }
+
+/* Table density toggle */
+.density-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--t3); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.density-btn:hover { background: var(--blue-l); color: var(--blue); }
+.density-btn.active { background: var(--blue-l); color: var(--blue); border-color: rgba(37,99,235,.2); }
+
+/* Recurring badge */
+.recur-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 3px; background: var(--purple-l); color: var(--purple);
+  margin-left: 4px; vertical-align: middle; text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+/* Recurring view */
+.recur-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-m); padding: 14px 16px;
+  margin-bottom: 8px; box-shadow: var(--shadow-m);
+  display: flex; align-items: center; gap: 14px;
+  transition: all .15s;
+}
+.recur-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+[data-theme="dark"] .recur-card { background: #0e1826; border-color: rgba(255,255,255,.07); }
+[data-theme="gold"] .recur-card { background: #16120a; border-color: rgba(240,180,41,.1); }
+.recur-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.recur-info { flex: 1; min-width: 0; }
+.recur-name { font-size: 14px; font-weight: 700; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recur-meta { font-size: 11px; color: var(--t3); margin-top: 3px; }
+.recur-right { text-align: right; flex-shrink: 0; }
+.recur-amt { font-size: 15px; font-weight: 700; font-family: var(--mono); color: var(--red); }
+.recur-freq { font-size: 11px; color: var(--t3); margin-top: 3px; }
+.recur-monthly { font-size: 12px; font-weight: 600; color: var(--t2); }
+
+/* Area chart upgrade */
+.sparkline-area {
+  fill: url(#sparkAreaGrad);
+  opacity: .4;
+}
+
+/* Mobile swipe hint */
+.swipe-hint {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.7); color: #fff;
+  font-size: 11px; padding: 6px 14px; border-radius: 999px;
+  font-family: var(--font); opacity: 0;
+  transition: opacity .3s; pointer-events: none; z-index: 300;
+  white-space: nowrap;
+}
+.swipe-hint.show { opacity: 1; }
+
 </style>
 </head>
 <body>
@@ -1800,6 +1917,7 @@ tr.high-amount .amt { font-weight: 800; }
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="rules"><span class="nav-ic">⚡</span><span>Rules</span><span class="nav-badge" id="rulesCount">—</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
+    <div class="nav" data-view="recurring"><span class="nav-ic">🔁</span><span>Recurrentes</span></div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
   </div>
   <div class="sb-footer"><div class="sb-av">P</div><div><div class="sb-uname">Pedro</div><div class="sb-urole">Personal account</div></div></div>
@@ -1907,6 +2025,7 @@ tr.high-amount .amt { font-weight: 800; }
         <div class="qbtns"><button class="qbtn" id="btnToday">Today</button><button class="qbtn" id="btnWeek">Week</button><button class="qbtn" id="btnMonth">Month</button><button class="qbtn" id="btnYear">Year</button><button class="qbtn" id="btnClear">Clear</button></div>
         <div class="sp"></div>
         <button class="btn btn-red" id="btnDelete" disabled>Delete selected</button>
+        <button class="density-btn" id="densityBtn" title="Compact/Normal">☰</button>
         <button class="btn" id="btnExport">⬇️ CSV</button>
       </div>
       <div class="err-box" id="errBox"></div>
@@ -2033,6 +2152,44 @@ tr.high-amount .amt { font-weight: 800; }
         <div class="bal-card usd"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#B22234"/><rect y="1.2" width="20" height="2" fill="#fff"/><rect y="5" width="20" height="2" fill="#fff"/><rect y="8.8" width="20" height="2" fill="#fff"/><rect y="12.6" width="20" height="2" fill="#fff"/><rect width="9" height="8" fill="#3C3B6E"/></svg><span class="bc-cur">USD</span></div><div class="bc-dot" style="background:var(--blue)"></div></div><div class="bc-val" id="bvUSD">—</div><div class="bc-name">US Dollar</div></div>
         <div class="bal-card eur"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#003399"/><g fill="#FFCC00"><circle cx="10" cy="2.2" r=".55"/><circle cx="13" cy="3.2" r=".55"/><circle cx="14.8" cy="5.5" r=".55"/><circle cx="15.3" cy="7" r=".55"/><circle cx="14.8" cy="8.5" r=".55"/><circle cx="13" cy="10.8" r=".55"/><circle cx="10" cy="11.8" r=".55"/><circle cx="7" cy="10.8" r=".55"/><circle cx="5.2" cy="8.5" r=".55"/><circle cx="4.7" cy="7" r=".55"/><circle cx="5.2" cy="5.5" r=".55"/><circle cx="7" cy="3.2" r=".55"/></g></svg><span class="bc-cur">EUR</span></div><div class="bc-dot" style="background:var(--purple)"></div></div><div class="bc-val" id="bvEUR">—</div><div class="bc-name">Euro</div></div>
         <div class="bal-card aed"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#fff"/><rect x="4" width="16" height="4.7" fill="#00732F"/><rect x="4" y="9.3" width="16" height="4.7" fill="#000"/><rect width="4" height="14" fill="#FF0000"/></svg><span class="bc-cur">AED</span></div><div class="bc-dot" style="background:var(--green)"></div></div><div class="bc-val" id="bvAED">—</div><div class="bc-name">UAE Dirham</div></div>
+      </div>
+    </div>
+
+
+    <!-- RECURRING -->
+    <div class="view" id="view-recurring">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div>
+          <h2 style="font-size:17px;font-weight:700;letter-spacing:-.3px;">Gastos recurrentes</h2>
+          <div style="font-size:12px;color:var(--t3);margin-top:3px;">Detectados automáticamente · últimos 3 meses</div>
+        </div>
+        <div style="font-size:12px;color:var(--t3);" id="recurTotal">—</div>
+      </div>
+
+      <!-- Summary strip -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;" id="recurSummary">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px;box-shadow:var(--shadow-m);">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:5px;">Recurrentes</div>
+          <div style="font-size:20px;font-weight:700;font-family:var(--mono);" id="recurCount">—</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">merchants detectados</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px;box-shadow:var(--shadow-m);">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:5px;">Gasto fijo/mes</div>
+          <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--red);" id="recurMonthly">—</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">KWD promedio</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px;box-shadow:var(--shadow-m);">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:5px;">% del gasto</div>
+          <div style="font-size:20px;font-weight:700;font-family:var(--mono);" id="recurPct">—</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">del total mensual</div>
+        </div>
+      </div>
+
+      <div id="recurList">
+        <div style="text-align:center;padding:48px 24px;color:var(--t3);">
+          <div style="font-size:32px;margin-bottom:12px;">🔁</div>
+          <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px;">Calculando…</div>
+        </div>
       </div>
     </div>
 
@@ -2183,6 +2340,19 @@ tr.high-amount .amt { font-weight: 800; }
             <div class="settings-row">
               <div><div class="settings-label">Ver guía de inicio</div><div class="settings-sub">Instrucciones para configurar el Shortcut de iPhone</div></div>
               <button class="btn" id="btnShowOnboarding" style="font-size:12px;padding:6px 12px;">Ver guía →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">📱 Widget de iOS</div>
+          </div>
+          <div style="padding:0;">
+            <div class="settings-row">
+              <div><div class="settings-label">Widget en pantalla de inicio</div><div class="settings-sub">Saldo NBK y gasto del mes siempre visible</div></div>
+              <button class="btn btn-primary" onclick="showWidgetGuide()" style="font-size:12px;padding:6px 12px;">Ver instrucciones</button>
             </div>
           </div>
         </div>
@@ -2339,6 +2509,7 @@ tr.high-amount .amt { font-weight: 800; }
     <div class="bn-item" data-view="analytics"><span class="bn-ic">📊</span><span class="bn-lbl">Analytics</span></div>
     <div class="bn-item" data-view="investments"><span class="bn-ic">📈</span><span class="bn-lbl">Inversiones</span></div>
     <div class="bn-item" data-view="balance"><span class="bn-ic">💰</span><span class="bn-lbl">Balance</span></div>
+    <div class="bn-item" id="bnMas" onclick="openMasSheet()"><span class="bn-ic">⠿</span><span class="bn-lbl">Más</span></div>
   </div>
 </nav>
 
@@ -2379,6 +2550,8 @@ function setQ(mode){document.querySelectorAll(".qbtn").forEach(b=>b.classList.re
 function sortView(){const k=S.sortKey,dir=S.sortDir==="asc"?1:-1;S.view.sort((a,b)=>{let av=a[k],bv=b[k];if(k==="amount"){av=Number(av||0);bv=Number(bv||0);}else{av=String(av||"");bv=String(bv||"");}return av<bv?-dir:av>bv?dir:0;});$("shDate").textContent=S.sortKey==="created_at"?(S.sortDir==="asc"?"↑":"↓"):"";}
 function catH(id,cur){const cats=[...S.categories].sort();return`<select class="cs" data-id="${id}" data-cat="${cur||"other"}">${cats.map(c=>`<option value="${c}"${c===cur?" selected":""}>${tc(c)}</option>`).join("")}<option value="__add__">+ Add…</option></select>`;}
 function render(){const tb=$("tbody");tb.innerHTML="";
+  // Cache recurring merchants for badge display
+  const _recurMerchs = new Set(detectRecurring().map(rec=>cm(rec.rows[0]?.merchant_clean||rec.rows[0]?.merchant_raw||"").toLowerCase()));
   if(!S.view.length){
     tb.innerHTML=`<tr><td colspan="6"><div class="empty-state">
       <svg class="empty-state-svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
@@ -2395,7 +2568,17 @@ function render(){const tb=$("tbody");tb.innerHTML="";
     ss("0 transactions");updateStatCards();return;
   }
   for(const r of S.view){const id=r.id,dir=idir(r),diso=isoDay(r.created_at||r.date_iso||""),cur=(r.currency||"").toUpperCase(),cat=(r.category||"other").toLowerCase(),merch=cm(r.merchant_clean||r.merchant_raw||"");const tr=document.createElement("tr");tr.dataset.day=diso;tr.dataset.id=id;if(S.selected.has(id))tr.classList.add("sel");const avatarClr=merchantColor(merch||'?');const avatarIni=merchantInitials(merch||'?');const isHigh=isHighAmount(r);if(isHigh)tr.classList.add('high-amount');
-    tr.innerHTML=`<td class="selcol"><input class="cbRow" type="checkbox" data-id="${id}"${S.selected.has(id)?" checked":""}></td><td title="${diso}">${fd(diso)}</td><td><div style="display:flex;align-items:center;"><div class="merch-avatar" style="background:${avatarClr}18;color:${avatarClr};">${avatarIni}</div><input class="me" data-id="${id}" value="${merch.replace(/"/g,"&quot;")}" style="flex:1;"/></div>${isHigh?'<span class="high-badge">⚡ alto</span>':''}</td><td>${catH(id,cat)}</td><td class="amt ${dir==="in"?"pos":"neg"}">${fm(r.amount)}</td><td><div class="cur-cell"><span class="flag">${flag(cur)}</span><span class="cur-lbl">${cur}</span></div></td>`;tb.appendChild(tr);}ss(S.view.length+" transactions");updateStatCards();wireInputs();wireSelection();rebuildDayHeaders();if(window._privacyOn&&window._privacyOn())setTimeout(()=>window._privacyApply&&window._privacyApply(),50);}
+    const _isRecur=_recurMerchs.has(cm(r.merchant_clean||r.merchant_raw||'').toLowerCase());
+    tr.innerHTML=`<td class="selcol"><input class="cbRow" type="checkbox" data-id="${id}"${S.selected.has(id)?" checked":""}></td><td title="${diso}">${fd(diso)}</td><td><div style="display:flex;align-items:center;"><div class="merch-avatar" style="background:${avatarClr}18;color:${avatarClr};">${avatarIni}</div><input class="me" data-id="${id}" value="${merch.replace(/"/g,"&quot;")}" style="flex:1;"/></div>${isHigh?'<span class="high-badge">⚡ alto</span>':''} ${_isRecur?'<span class="recur-badge">🔁 recur</span>':''}</td><td>${catH(id,cat)}</td><td class="amt ${dir==="in"?"pos":"neg"}">${fm(r.amount)}</td><td><div class="cur-cell"><span class="flag">${flag(cur)}</span><span class="cur-lbl">${cur}</span></div></td>`;tb.appendChild(tr);}ss(S.view.length+" transactions");updateStatCards();wireInputs();wireSelection();rebuildDayHeaders();
+  // Empty state for transactions
+  if(!S.view.length){
+    const tb=document.getElementById('tbody');
+    if(tb) tb.innerHTML=`<tr><td colspan="6" style="padding:0;border:none;"><div class="empty-state">
+      <svg width="72" height="72" viewBox="0 0 80 80" fill="none" class="empty-state-svg"><circle cx="40" cy="40" r="38" fill="#3b82f618" stroke="#3b82f630" stroke-width="1.5"/><text x="40" y="49" text-anchor="middle" font-size="26">📋</text></svg>
+      <div class="empty-state-title">Sin transacciones</div>
+      <div class="empty-state-sub">No hay transacciones para el período y filtros seleccionados.</div>
+    </div></td></tr>`;
+  }if(window._privacyOn&&window._privacyOn())setTimeout(()=>window._privacyApply&&window._privacyApply(),50);}
 function wireInputs(){document.querySelectorAll(".me").forEach(inp=>{inp.addEventListener("keydown",e=>{if(e.key==="Enter")inp.blur();});inp.addEventListener("blur",async()=>{const id=Number(inp.dataset.id),val=inp.value.trim();try{await POST("/update_field",{userid:UID,id,field:"merchant_clean",value:val});const row=S.all.find(x=>x.id===id);if(row)row.merchant_clean=val;}catch(e){se("Save failed: "+e.message);}});});document.querySelectorAll(".cs").forEach(sel=>{sel.addEventListener("change",async()=>{const id=Number(sel.dataset.id),v=sel.value;if(v==="__add__"){const name=prompt("New category name:");if(!name){const row=S.all.find(x=>x.id===id);sel.value=row?.category||"other";return;}const cat=name.trim().toLowerCase();S.categories.add(cat);buildFilters();await scat(id,cat);return;}sel.dataset.cat=v;await scat(id,v);});});}
 async function scat(id,cat){try{se("");await POST("/update_field",{userid:UID,id,field:"category",value:cat});const row=S.all.find(x=>x.id===id);if(row)row.category=cat;applyFilters();}catch(e){se("Save failed: "+e.message);applyFilters();}}
 function syncCb(){const ca=$("cbAll");if(!ca)return;const ids=S.view.map(r=>r.id),sel=ids.filter(id=>S.selected.has(id)).length;ca.checked=ids.length>0&&sel===ids.length;ca.indeterminate=sel>0&&sel<ids.length;}
@@ -2520,10 +2703,10 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
     // If offline, use cache
     if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
     const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
-const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
-const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
+const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",recurring:"Recurrentes",settings:"Settings"};
+const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",recurring:"Gastos que se repiten cada mes",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
-function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
+function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){TX_WINDOW.months=TX_WINDOW.months||1;setTimeout(()=>{updateRangeLabel();applyFiltersWithWindow();render();},50);}haptic("light");syncBottomNav(name);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{
@@ -2571,7 +2754,7 @@ function bind(){
     renderBudget();
     haptic("success");showToast2("🎯","Presupuesto guardado",tc(cat)+" · "+amt.toFixed(2)+" KWD","var(--green)",2500);
   });
-  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");$("budgetOvl").classList.remove("open");$("confirmModal")?.classList.remove("open");closeMonthDetail();closeCatPopup();}});
+  window.addEventListener("keydown",e=>{if(e.key==="Escape"){closeMasSheet();$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");$("budgetOvl").classList.remove("open");$("confirmModal")?.classList.remove("open");closeMonthDetail();closeCatPopup();}});
 }
 // AUTO MOBILE — no button
 (function(){let on=window.innerWidth<769;function apply(){document.body.classList.toggle("fm",on);}apply();window.addEventListener("resize",()=>{const should=window.innerWidth<769;if(should!==on){on=should;apply();}});})();
@@ -3122,8 +3305,8 @@ function renderSettings(){
   if(infoTx) infoTx.textContent = S.all.length + ' transacciones';
 
   // Export all
-  document.getElementById('btnMonthPDF')?.addEventListener('click', generateMonthlyPDF, {once:true});
-  document.getElementById('btnExportAll')?.addEventListener('click',()=>{
+  const _pdf=document.getElementById('btnMonthPDF');if(_pdf&&!_pdf._wired){_pdf._wired=true;_pdf.addEventListener('click',generateMonthlyPDF);}
+  const _ea=document.getElementById('btnExportAll');if(_ea&&!_ea._wired){_ea._wired=true;_ea.addEventListener('click',()=>{
     if(!S.all.length){showToast2('⚠️','Sin datos','','var(--amber)',2000);return;}
     const header=["ID","Fecha","Merchant","Categoría","Importe","Moneda","Dirección"];
     const lines=S.all.map(r=>[r.id,isoDay(r.created_at||''),'"'+(cm(r.merchant_clean||r.merchant_raw||'')).replace(/"/g,'""')+'"',r.category||'other',r.amount,r.currency||'KWD',idir(r)].join(','));
@@ -3132,30 +3315,30 @@ function renderSettings(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='gastos_completo_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
     haptic('success');showToast2('⬇️','Exportado',S.all.length+' transacciones','var(--blue)',2500);
-  },{once:true});
+  });}
 
   // Clear cache
-  document.getElementById('btnClearCache')?.addEventListener('click',()=>{
+  const _cc=document.getElementById('btnClearCache');if(_cc&&!_cc._wired){_cc._wired=true;_cc.addEventListener('click',()=>{
     localStorage.removeItem('expense_cache_v1');
     showToast2('🗑️','Caché limpiado','Recargando datos…','var(--blue)',2000);
     setTimeout(()=>load(),500);
-  },{once:true});
+  });}
 
   // Change PIN
   // Widget copy button
-  document.getElementById('btnCopyWidget')?.addEventListener('click', copyWidgetScript, {once:true});
+  const _cw=document.getElementById('btnCopyWidget');if(_cw&&!_cw._wired){_cw._wired=true;_cw.addEventListener('click',copyWidgetScript);}
   // Show onboarding button
   document.getElementById('btnShowOnboarding')?.addEventListener('click', showOnboarding);
   // Update widget preview
   updateWidgetPreview();
-  document.getElementById('btnChangePIN')?.addEventListener('click',()=>{
+  const _cp=document.getElementById('btnChangePIN');if(_cp&&!_cp._wired){_cp._wired=true;_cp.addEventListener('click',()=>{
     if(confirm('¿Cambiar el PIN? Tendrás que crear uno nuevo.')){
       localStorage.removeItem('app_pin_hash');
       localStorage.removeItem('app_webauthn_cred');
       localStorage.removeItem('app_unlocked_at');
       showToast2('🔒','PIN eliminado','Recarga la app para crear uno nuevo','var(--amber)',3000);
     }
-  },{once:true});
+  });}
 }
 
 
@@ -3774,6 +3957,123 @@ async function generateMonthlyPDF(){
 [data-theme="dark"] .ob-card { background: #0e1826; border-color: rgba(255,255,255,.08); }
 [data-theme="gold"] .ob-card { background: #16120a; border-color: rgba(240,180,41,.1); }
 
+
+/* MÁS SHEET (mobile) */
+.mas-sheet-ovl {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.mas-sheet-ovl.open { display: flex; }
+.mas-sheet {
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  border: 1px solid var(--border); border-bottom: none;
+  width: 100%; max-width: 480px;
+  padding: 0 0 env(safe-area-inset-bottom,0px);
+  animation: slideUpSheet .25s cubic-bezier(.34,1.1,.64,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.3);
+}
+[data-theme="dark"] .mas-sheet { background: #0b1120; border-color: rgba(79,142,247,.1); }
+[data-theme="gold"] .mas-sheet { background: #16120a; border-color: rgba(240,180,41,.12); }
+@keyframes slideUpSheet { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.mas-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border2); margin: 10px auto 4px;
+}
+.mas-sheet-title {
+  font-size: 11px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .8px;
+  padding: 8px 20px 12px;
+}
+.mas-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 8px; padding: 0 16px 16px;
+}
+.mas-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 14px 8px; border-radius: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mas-item:active { transform: scale(.94); background: var(--blue-l); }
+[data-theme="dark"] .mas-item { background: #0e1826; border-color: rgba(255,255,255,.07); }
+[data-theme="gold"] .mas-item { background: #1e1810; border-color: rgba(240,180,41,.1); }
+.mas-item-ic { font-size: 24px; }
+.mas-item-lbl { font-size: 10px; font-weight: 600; color: var(--t2); text-align: center; font-family: var(--font); }
+
+
+/* ═══════════════════════════════════════
+   DESIGN UPGRADES
+═══════════════════════════════════════ */
+
+/* Compact table mode */
+.table-compact #t tbody td { padding: 7px 16px; font-size: 12px; }
+.table-compact #t thead th { padding: 7px 16px; }
+.table-compact .merch-avatar { width: 26px; height: 26px; font-size: 10px; }
+
+/* Table density toggle */
+.density-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--t3); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.density-btn:hover { background: var(--blue-l); color: var(--blue); }
+.density-btn.active { background: var(--blue-l); color: var(--blue); border-color: rgba(37,99,235,.2); }
+
+/* Recurring badge */
+.recur-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 3px; background: var(--purple-l); color: var(--purple);
+  margin-left: 4px; vertical-align: middle; text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+/* Recurring view */
+.recur-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-m); padding: 14px 16px;
+  margin-bottom: 8px; box-shadow: var(--shadow-m);
+  display: flex; align-items: center; gap: 14px;
+  transition: all .15s;
+}
+.recur-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+[data-theme="dark"] .recur-card { background: #0e1826; border-color: rgba(255,255,255,.07); }
+[data-theme="gold"] .recur-card { background: #16120a; border-color: rgba(240,180,41,.1); }
+.recur-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.recur-info { flex: 1; min-width: 0; }
+.recur-name { font-size: 14px; font-weight: 700; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recur-meta { font-size: 11px; color: var(--t3); margin-top: 3px; }
+.recur-right { text-align: right; flex-shrink: 0; }
+.recur-amt { font-size: 15px; font-weight: 700; font-family: var(--mono); color: var(--red); }
+.recur-freq { font-size: 11px; color: var(--t3); margin-top: 3px; }
+.recur-monthly { font-size: 12px; font-weight: 600; color: var(--t2); }
+
+/* Area chart upgrade */
+.sparkline-area {
+  fill: url(#sparkAreaGrad);
+  opacity: .4;
+}
+
+/* Mobile swipe hint */
+.swipe-hint {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.7); color: #fff;
+  font-size: 11px; padding: 6px 14px; border-radius: 999px;
+  font-family: var(--font); opacity: 0;
+  transition: opacity .3s; pointer-events: none; z-index: 300;
+  white-space: nowrap;
+}
+.swipe-hint.show { opacity: 1; }
+
 </style>
 </head>
 <body>
@@ -3837,6 +4137,32 @@ ${catSorted.map(([cat,val])=>`<div class="cat-row">
   <span>Expense Tracker · Pedro García · ${now.getFullYear()}</span>
   <span>Documento generado automáticamente · No es un documento bancario oficial</span>
 </div>
+
+<!-- MÁS SHEET -->
+<div class="mas-sheet-ovl" id="masSheetOvl" onclick="if(event.target===this)closeMasSheet()">
+  <div class="mas-sheet">
+    <div class="mas-sheet-handle"></div>
+    <div class="mas-sheet-title">Más opciones</div>
+    <div class="mas-grid">
+      <div class="mas-item" onclick="closeMasSheet();switchView('balance')">
+        <span class="mas-item-ic">💰</span><span class="mas-item-lbl">Balance</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('budget')">
+        <span class="mas-item-ic">🎯</span><span class="mas-item-lbl">Budget</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('rules')">
+        <span class="mas-item-ic">⚡</span><span class="mas-item-lbl">Rules</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('recurring')">
+        <span class="mas-item-ic">🔁</span><span class="mas-item-lbl">Recurrentes</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('settings')">
+        <span class="mas-item-ic">⚙️</span><span class="mas-item-lbl">Settings</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>`;
 
@@ -4044,9 +4370,586 @@ function updateWidgetPreview(){
   const wpNet=document.getElementById('wpNet');if(wpNet){wpNet.textContent=(net>=0?'+':'')+fmt(net)+' KWD';wpNet.className='wp-item-val '+(net>=0?'pos':'neg');}
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════════════════════════
+(function(){
+  const OB_KEY = 'app_onboarded_v1';
+  const screen = document.getElementById('onboardingScreen');
+  if(!screen) return;
+
+  // Show if never onboarded
+  if(!localStorage.getItem(OB_KEY)){
+    // Wait for splash to finish
+    setTimeout(()=>{
+      screen.classList.add('show');
+    }, 1100);
+  }
+})();
+
+let _obStep = 0;
+const OB_TOTAL = 4;
+
+function obNext(){
+  _obStep = Math.min(_obStep+1, OB_TOTAL-1);
+  obGoTo(_obStep);
+  haptic('light');
+}
+function obPrev(){
+  _obStep = Math.max(_obStep-1, 0);
+  obGoTo(_obStep);
+  haptic('light');
+}
+function obFinish(){
+  localStorage.setItem('app_onboarded_v1','1');
+  const screen = document.getElementById('onboardingScreen');
+  if(screen){ screen.style.opacity='0'; screen.style.transition='opacity .3s'; setTimeout(()=>screen.classList.remove('show'),300); }
+  haptic('success');
+}
+function obGoTo(step){
+  document.querySelectorAll('.ob-step').forEach((s,i)=>s.classList.toggle('active',i===step));
+  document.querySelectorAll('.ob-dot').forEach((d,i)=>{
+    d.classList.toggle('active', i===step);
+    d.classList.toggle('done', i<step);
+  });
+  _obStep = step;
+}
+
+// ══════════════════════════════════════════════════════════════
+// EMPTY STATES
+// ══════════════════════════════════════════════════════════════
+function emptyStateSVG(icon, color){
+  return `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="empty-state-svg">
+    <circle cx="40" cy="40" r="38" fill="${color}18" stroke="${color}30" stroke-width="1.5"/>
+    <text x="40" y="48" text-anchor="middle" font-size="28">${icon}</text>
+  </svg>`;
+}
+
+function renderEmptyState(container, {icon, color, title, sub, btnLabel, btnAction}={}){
+  container.innerHTML = `<div class="empty-state">
+    ${emptyStateSVG(icon||'📭', color||'#94a3b8')}
+    <div class="empty-state-title">${title||'Sin datos'}</div>
+    <div class="empty-state-sub">${sub||''}</div>
+    ${btnLabel?`<button class="btn btn-primary empty-state-btn" onclick="${btnAction||''}">${btnLabel}</button>`:''}
+  </div>`;
+}
+
+// Hook into render() to show empty state for transactions
+const _origRender = window.render;
+// We'll override after render is defined — patch in init
+
+// ══════════════════════════════════════════════════════════════
+// iOS WIDGET GUIDE
+// ══════════════════════════════════════════════════════════════
+function showWidgetGuide(){
+  const confirmed = elegantConfirm({
+    icon: '📱',
+    title: 'Widget de iOS',
+    msg: 'El widget muestra tu saldo NBK y gasto del mes en la pantalla de inicio. Se configura con la app Scriptable.',
+    okLabel: 'Ver instrucciones',
+    okClass: 'btn-primary'
+  }).then(ok=>{
+    if(!ok) return;
+    const w = window.open('','_blank');
+    w.document.write(widgetHTML());
+    w.document.close();
+  });
+}
+
+function widgetHTML(){
+  const API = 'https://sms-parser-api.onrender.com';
+  const UID = 'pedro';
+  const AK  = 'ElPortichuelo99';
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"/><title>Widget iOS — Expense Tracker</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:32px;background:#f8fafc;color:#0f172a;}
+h1{font-size:22px;font-weight:800;margin-bottom:6px;color:#0f172a;}
+.sub{color:#64748b;font-size:13px;margin-bottom:28px;}
+.step{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:12px;}
+.step-num{font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.step-title{font-size:15px;font-weight:700;margin-bottom:8px;}
+.step-sub{font-size:13px;color:#64748b;line-height:1.6;}
+pre{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:14px;font-size:11px;overflow-x:auto;line-height:1.7;margin-top:10px;color:#1e293b;}
+.tag{background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:6px;}
+
+/* MÁS SHEET (mobile) */
+.mas-sheet-ovl {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.mas-sheet-ovl.open { display: flex; }
+.mas-sheet {
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  border: 1px solid var(--border); border-bottom: none;
+  width: 100%; max-width: 480px;
+  padding: 0 0 env(safe-area-inset-bottom,0px);
+  animation: slideUpSheet .25s cubic-bezier(.34,1.1,.64,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.3);
+}
+[data-theme="dark"] .mas-sheet { background: #0b1120; border-color: rgba(79,142,247,.1); }
+[data-theme="gold"] .mas-sheet { background: #16120a; border-color: rgba(240,180,41,.12); }
+@keyframes slideUpSheet { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.mas-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border2); margin: 10px auto 4px;
+}
+.mas-sheet-title {
+  font-size: 11px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .8px;
+  padding: 8px 20px 12px;
+}
+.mas-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 8px; padding: 0 16px 16px;
+}
+.mas-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 14px 8px; border-radius: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mas-item:active { transform: scale(.94); background: var(--blue-l); }
+[data-theme="dark"] .mas-item { background: #0e1826; border-color: rgba(255,255,255,.07); }
+[data-theme="gold"] .mas-item { background: #1e1810; border-color: rgba(240,180,41,.1); }
+.mas-item-ic { font-size: 24px; }
+.mas-item-lbl { font-size: 10px; font-weight: 600; color: var(--t2); text-align: center; font-family: var(--font); }
+
+
+/* ═══════════════════════════════════════
+   DESIGN UPGRADES
+═══════════════════════════════════════ */
+
+/* Compact table mode */
+.table-compact #t tbody td { padding: 7px 16px; font-size: 12px; }
+.table-compact #t thead th { padding: 7px 16px; }
+.table-compact .merch-avatar { width: 26px; height: 26px; font-size: 10px; }
+
+/* Table density toggle */
+.density-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--t3); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.density-btn:hover { background: var(--blue-l); color: var(--blue); }
+.density-btn.active { background: var(--blue-l); color: var(--blue); border-color: rgba(37,99,235,.2); }
+
+/* Recurring badge */
+.recur-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 3px; background: var(--purple-l); color: var(--purple);
+  margin-left: 4px; vertical-align: middle; text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+/* Recurring view */
+.recur-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-m); padding: 14px 16px;
+  margin-bottom: 8px; box-shadow: var(--shadow-m);
+  display: flex; align-items: center; gap: 14px;
+  transition: all .15s;
+}
+.recur-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+[data-theme="dark"] .recur-card { background: #0e1826; border-color: rgba(255,255,255,.07); }
+[data-theme="gold"] .recur-card { background: #16120a; border-color: rgba(240,180,41,.1); }
+.recur-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.recur-info { flex: 1; min-width: 0; }
+.recur-name { font-size: 14px; font-weight: 700; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recur-meta { font-size: 11px; color: var(--t3); margin-top: 3px; }
+.recur-right { text-align: right; flex-shrink: 0; }
+.recur-amt { font-size: 15px; font-weight: 700; font-family: var(--mono); color: var(--red); }
+.recur-freq { font-size: 11px; color: var(--t3); margin-top: 3px; }
+.recur-monthly { font-size: 12px; font-weight: 600; color: var(--t2); }
+
+/* Area chart upgrade */
+.sparkline-area {
+  fill: url(#sparkAreaGrad);
+  opacity: .4;
+}
+
+/* Mobile swipe hint */
+.swipe-hint {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.7); color: #fff;
+  font-size: 11px; padding: 6px 14px; border-radius: 999px;
+  font-family: var(--font); opacity: 0;
+  transition: opacity .3s; pointer-events: none; z-index: 300;
+  white-space: nowrap;
+}
+.swipe-hint.show { opacity: 1; }
+
+</style></head>
+<body>
+<h1>📱 Widget de iOS</h1>
+<div class="sub">Muestra tu saldo NBK y gasto del mes en la pantalla de inicio del iPhone</div>
+
+<div class="step">
+  <div class="step-num">Requisito</div>
+  <div class="step-title">Instala Scriptable <span class="tag">App Store gratis</span></div>
+  <div class="step-sub">Scriptable permite crear widgets personalizados con JavaScript en iOS. Búscala en el App Store e instálala.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">Paso 1</div>
+  <div class="step-title">Crea un nuevo script</div>
+  <div class="step-sub">Abre Scriptable → pulsa <strong>+</strong> → ponle nombre <strong>ExpenseWidget</strong> → pega este código:</div>
+  <pre>// ExpenseWidget — Expense Tracker
+const API = "${API}";
+const UID = "${UID}";
+const AK  = "${AK}";
+
+async function fetchData() {
+  const url = \`\${API}/expenses?user_id=\${UID}&limit=200\`;
+  const req = new Request(url);
+  const j   = await req.loadJSON();
+  return j.expenses || [];
+}
+
+function getMonthStats(rows) {
+  const now = new Date();
+  const ym  = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+  const monthRows = rows.filter(r => (r.created_at||"").startsWith(ym));
+  
+  let exp = 0, nbk = null;
+  for (const r of rows.sort((a,b) => b.created_at.localeCompare(a.created_at))) {
+    const sms = r.sms || r.sms_raw || "";
+    const m = sms.match(/balance\s*(?:is)?\s*KWD\s*([\d,.]+)/i);
+    if (m && !nbk) nbk = parseFloat(m[1].replace(/,/g,""));
+  }
+  for (const r of monthRows) {
+    const dir = (r.direction||"").toLowerCase();
+    const isOut = ["out","expense","debit","debited"].includes(dir);
+    if (isOut) exp += Number(r.amount||0);
+  }
+  return { nbk, exp, count: monthRows.length };
+}
+
+const rows  = await fetchData();
+const stats = getMonthStats(rows);
+const now   = new Date();
+const mo    = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][now.getMonth()];
+
+// Build widget
+const w = new ListWidget();
+w.backgroundColor = new Color("#090d1a");
+w.setPadding(14, 16, 14, 16);
+
+// Title
+const title = w.addText("💳 Expenses");
+title.font = Font.boldSystemFont(13);
+title.textColor = new Color("#94a3b8");
+
+w.addSpacer(6);
+
+// NBK Balance
+const balLabel = w.addText("SALDO NBK");
+balLabel.font   = Font.systemFont(9);
+balLabel.textColor = new Color("#475569");
+
+const balVal = w.addText(stats.nbk !== null ? stats.nbk.toFixed(3) + " KWD" : "—");
+balVal.font  = Font.boldSystemFont(20);
+balVal.textColor = new Color("#f1f5f9");
+
+w.addSpacer(10);
+
+// Month expense
+const expLabel = w.addText(mo.toUpperCase() + " · GASTOS");
+expLabel.font  = Font.systemFont(9);
+expLabel.textColor = new Color("#475569");
+
+const expVal = w.addText("-" + stats.exp.toFixed(3) + " KWD");
+expVal.font  = Font.boldSystemFont(16);
+expVal.textColor = new Color("#fb7185");
+
+w.addSpacer(4);
+
+const countTxt = w.addText(stats.count + " transacciones");
+countTxt.font = Font.systemFont(10);
+countTxt.textColor = new Color("#475569");
+
+w.addSpacer();
+
+// Updated time
+const updated = w.addText("↻ " + now.toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}));
+updated.font = Font.systemFont(9);
+updated.textColor = new Color("#334155");
+
+Script.setWidget(w);
+Script.complete();</pre>
+</div>
+
+<div class="step">
+  <div class="step-num">Paso 2</div>
+  <div class="step-title">Añade el widget a la pantalla de inicio</div>
+  <div class="step-sub">
+    1. Mantén pulsado en la pantalla de inicio → <strong>+</strong><br>
+    2. Busca <strong>Scriptable</strong><br>
+    3. Elige tamaño <strong>Small</strong> o <strong>Medium</strong><br>
+    4. Pulsa <strong>Añadir widget</strong><br>
+    5. Mantén pulsado el widget → <strong>Editar widget</strong><br>
+    6. Script: <strong>ExpenseWidget</strong><br>
+    7. ¡Listo! Se actualiza automáticamente cada hora.
+  </div>
+</div>
+
+<!-- MÁS SHEET -->
+<div class="mas-sheet-ovl" id="masSheetOvl" onclick="if(event.target===this)closeMasSheet()">
+  <div class="mas-sheet">
+    <div class="mas-sheet-handle"></div>
+    <div class="mas-sheet-title">Más opciones</div>
+    <div class="mas-grid">
+      <div class="mas-item" onclick="closeMasSheet();switchView('balance')">
+        <span class="mas-item-ic">💰</span><span class="mas-item-lbl">Balance</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('budget')">
+        <span class="mas-item-ic">🎯</span><span class="mas-item-lbl">Budget</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('rules')">
+        <span class="mas-item-ic">⚡</span><span class="mas-item-lbl">Rules</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('recurring')">
+        <span class="mas-item-ic">🔁</span><span class="mas-item-lbl">Recurrentes</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('settings')">
+        <span class="mas-item-ic">⚙️</span><span class="mas-item-lbl">Settings</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>`;
+}
+
+
+// MÁS SHEET
+function openMasSheet(){
+  document.getElementById('masSheetOvl')?.classList.add('open');
+  haptic('light');
+}
+function closeMasSheet(){
+  document.getElementById('masSheetOvl')?.classList.remove('open');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// RECURRING TRANSACTIONS DETECTOR
+// ══════════════════════════════════════════════════════════════
+function detectRecurring(){
+  if(!S.all.length) return [];
+
+  // Look at last 3 months of expenses
+  const now = new Date();
+  const months = [];
+  for(let i=0;i<3;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));
+  }
+
+  // Group by normalized merchant name
+  const byMerchant = new Map();
+  for(const r of S.all.filter(r=>idir(r)==="out")){
+    const mo = isoDay(r.created_at||"").slice(0,7);
+    if(!months.includes(mo)) continue;
+    const merch = cm(r.merchant_clean||r.merchant_raw||"").trim().toLowerCase();
+    if(!merch||merch==="—") continue;
+    if(!byMerchant.has(merch)) byMerchant.set(merch,[]);
+    byMerchant.get(merch).push({...r, mo});
+  }
+
+  // A merchant is recurring if it appears in at least 2 of the 3 months
+  const recurring = [];
+  for(const [merch, rows] of byMerchant){
+    const moSet = new Set(rows.map(r=>r.mo));
+    if(moSet.size < 2) continue;
+
+    // Calculate avg amount and frequency
+    const avgAmt = rows.reduce((s,r)=>s+Number(r.amount||0),0) / rows.length;
+    const perMonth = rows.reduce((s,r)=>s+Number(r.amount||0),0) / moSet.size;
+    const category = rows[0]?.category || "other";
+    const currency = rows[0]?.currency || "KWD";
+    const displayName = cm(rows[0]?.merchant_clean||rows[0]?.merchant_raw||merch);
+    const monthsFound = moSet.size;
+    const lastDate = rows.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")))[0]?.created_at;
+
+    recurring.push({
+      merch: displayName,
+      category,
+      currency,
+      avgAmt,
+      perMonth,
+      monthsFound,
+      txCount: rows.length,
+      lastDate: isoDay(lastDate||""),
+      rows
+    });
+  }
+
+  // Sort by monthly cost descending
+  return recurring.sort((a,b)=>b.perMonth-a.perMonth);
+}
+
+function renderRecurring(){
+  const recurring = detectRecurring();
+  const list = document.getElementById('recurList');
+  const countEl = document.getElementById('recurCount');
+  const monthlyEl = document.getElementById('recurMonthly');
+  const pctEl = document.getElementById('recurPct');
+
+  if(!list) return;
+
+  if(!recurring.length){
+    list.innerHTML = `<div class="empty-state">
+      <svg class="empty-state-svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <rect width="64" height="64" rx="16" fill="var(--blue-l)"/>
+        <path d="M32 20v12l8 4" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+        <circle cx="32" cy="32" r="14" stroke="var(--blue)" stroke-width="2.5" fill="none" opacity=".4"/>
+      </svg>
+      <div class="empty-state-title">Sin recurrentes detectados</div>
+      <div class="empty-state-sub">Necesitas al menos 2 meses de datos para detectar gastos recurrentes.</div>
+    </div>`;
+    return;
+  }
+
+  // Totals
+  const totalMonthly = recurring.reduce((s,r)=>s+r.perMonth,0);
+  const now = new Date();
+  const ym  = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  const totalMonth = S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(ym)).reduce((s,r)=>s+Number(r.amount||0),0);
+  const pct = totalMonth>0?Math.round(totalMonthly/totalMonth*100):0;
+
+  if(countEl) countEl.textContent = recurring.length;
+  if(monthlyEl) monthlyEl.textContent = fmPro(totalMonthly,3)+' KWD';
+  if(pctEl) pctEl.textContent = pct+'%';
+
+  list.innerHTML = recurring.map(r=>{
+    const icon = CAT_ICONS[r.category]||"❓";
+    const clr  = CAT_COLORS[r.category]||"#94a3b8";
+    const freq = r.monthsFound >= 3 ? "Todos los meses" : r.monthsFound+" de 3 meses";
+    const lastD = r.lastDate ? `${+r.lastDate.slice(8,10)} ${MO[+r.lastDate.slice(5,7)-1].slice(0,3)}` : "—";
+    return `<div class="recur-card">
+      <div class="recur-icon" style="background:${clr}18;">${icon}</div>
+      <div class="recur-info">
+        <div class="recur-name">${r.merch}</div>
+        <div class="recur-meta">${tc(r.category)} · ${freq} · último: ${lastD}</div>
+        <div style="margin-top:6px;">
+          <div style="height:3px;background:var(--surface2);border-radius:999px;overflow:hidden;width:120px;">
+            <div style="height:100%;width:${Math.min(r.monthsFound/3*100,100)}%;background:${clr};border-radius:999px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="recur-right">
+        <div class="recur-amt">-${fmPro(r.perMonth,3)}</div>
+        <div class="recur-freq">${r.currency}/mes avg</div>
+        <div class="recur-monthly" style="margin-top:4px;">${r.txCount} tx</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABLE DENSITY TOGGLE
+// ══════════════════════════════════════════════════════════════
+(function(){
+  let compact = localStorage.getItem('table_compact')==='1';
+  const twrap = document.querySelector('.twrap');
+  function apply(){
+    twrap?.classList.toggle('table-compact', compact);
+    const btn = document.getElementById('densityBtn');
+    if(btn){ btn.classList.toggle('active',compact); btn.title=compact?'Vista normal':'Vista compacta'; btn.textContent=compact?'≡':'☰'; }
+  }
+  apply();
+  document.getElementById('densityBtn')?.addEventListener('click',()=>{
+    compact=!compact;
+    localStorage.setItem('table_compact',compact?'1':'0');
+    apply();
+    haptic('light');
+  });
+})();
+
+// ══════════════════════════════════════════════════════════════
+// SWIPE HINT (show once on first mobile visit)
+// ══════════════════════════════════════════════════════════════
+(function(){
+  if(localStorage.getItem('swipe_hint_shown')) return;
+  const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
+  if(!isMobile) return;
+  setTimeout(()=>{
+    const hint = document.createElement('div');
+    hint.className = 'swipe-hint';
+    hint.textContent = '← Desliza para cambiar de pestaña →';
+    document.body.appendChild(hint);
+    setTimeout(()=>hint.classList.add('show'),100);
+    setTimeout(()=>{ hint.classList.remove('show'); setTimeout(()=>hint.remove(),300); },3000);
+    localStorage.setItem('swipe_hint_shown','1');
+  }, 2000);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// ENHANCED HAPTIC PATTERNS
+// ══════════════════════════════════════════════════════════════
+function hapticPattern(type){
+  if(!navigator.vibrate) return;
+  const p = {
+    tab:      [8],
+    success:  [10,40,10],
+    error:    [50,30,50,30,50],
+    warning:  [30,20,30],
+    delete:   [20,30,60],
+    save:     [10,20,10],
+    swipe:    [6],
+    longpress:[15,10,15,10,30]
+  };
+  navigator.vibrate(p[type]||[10]);
+}
+// Override haptic to use patterns
+const _origHaptic = window.haptic;
+window.haptic = function(type){
+  const map={light:'tab',medium:'warning',heavy:'delete',success:'success',error:'error'};
+  hapticPattern(map[type]||type);
+};
+
 bind();load();loadRules();initSearchAndWindow();getFX().then(()=>updateLiveBar()).catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
 
+
+
+<!-- MÁS SHEET -->
+<div class="mas-sheet-ovl" id="masSheetOvl" onclick="if(event.target===this)closeMasSheet()">
+  <div class="mas-sheet">
+    <div class="mas-sheet-handle"></div>
+    <div class="mas-sheet-title">Más opciones</div>
+    <div class="mas-grid">
+      <div class="mas-item" onclick="closeMasSheet();switchView('balance')">
+        <span class="mas-item-ic">💰</span><span class="mas-item-lbl">Balance</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('budget')">
+        <span class="mas-item-ic">🎯</span><span class="mas-item-lbl">Budget</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('rules')">
+        <span class="mas-item-ic">⚡</span><span class="mas-item-lbl">Rules</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('recurring')">
+        <span class="mas-item-ic">🔁</span><span class="mas-item-lbl">Recurrentes</span>
+      </div>
+      <div class="mas-item" onclick="closeMasSheet();switchView('settings')">
+        <span class="mas-item-ic">⚙️</span><span class="mas-item-lbl">Settings</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
