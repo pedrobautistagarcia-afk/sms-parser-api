@@ -951,6 +951,243 @@ body.fm .status-pill{display:none!important;}
   color: #05080f;
 }
 
+
+/* ═══════════════════════════════════════
+   EXPANDABLE CHART PANELS
+═══════════════════════════════════════ */
+.expand-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: var(--t3);
+  cursor: pointer; padding: 3px 8px; border-radius: 6px;
+  border: 1px solid transparent; transition: all .15s;
+  user-select: none; white-space: nowrap;
+}
+.expand-btn:hover { background: var(--blue-l); color: var(--blue); border-color: rgba(37,99,235,.15); }
+.expand-btn .expand-arrow { font-size: 10px; transition: transform .25s ease; }
+.expand-btn.open .expand-arrow { transform: rotate(180deg); }
+
+.chart-panel {
+  display: none;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 20px 18px;
+  animation: viewIn .2s ease;
+}
+.chart-panel.open { display: block; }
+
+.chart-panel-title {
+  font-size: 13px; font-weight: 700; color: var(--t1);
+  margin-bottom: 4px; letter-spacing: -.2px;
+}
+.chart-panel-sub {
+  font-size: 11px; color: var(--t3); margin-bottom: 16px;
+}
+.chart-insight {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-s);
+  background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 8px; font-size: 12px; line-height: 1.5;
+}
+.chart-insight-ic { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.chart-insight-text { color: var(--t2); }
+.chart-insight-text strong { color: var(--t1); font-weight: 600; }
+.chart-panel-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-top: 12px;
+}
+@media(max-width:768px){ .chart-panel-grid { grid-template-columns: 1fr; } }
+body.fm .chart-panel-grid { grid-template-columns: 1fr !important; }
+.chart-panel-stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-s); padding: 12px 14px;
+}
+.chart-panel-stat-label { font-size: 10px; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-bottom: 5px; }
+.chart-panel-stat-val { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--t1); }
+.chart-panel-stat-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+[data-theme="dark"] .chart-panel { background: #090d1a; }
+[data-theme="dark"] .chart-insight { background: #0b1120; border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .chart-panel-stat { background: #0b1120; border-color: rgba(255,255,255,.07); }
+
+/* ═══════════════════════════════════════
+   GOLD THEME
+═══════════════════════════════════════ */
+[data-theme="gold"] {
+  --bg:#0a0805;
+  --surface:#110e08;
+  --surface2:#16120a;
+  --border:rgba(240,180,41,.1);
+  --border2:rgba(240,180,41,.2);
+  --t1:#f5f0e8;
+  --t2:#b8a882;
+  --t3:#6b5f3e;
+  --blue:#f0b429;
+  --blue-2:#d4980f;
+  --blue-l:rgba(240,180,41,.12);
+  --blue-g:rgba(240,180,41,.3);
+  --teal:#e8c547;
+  --teal-l:rgba(232,197,71,.12);
+  --green:#00c076;
+  --green-l:rgba(0,192,118,.12);
+  --red:#ff4d4d;
+  --red-l:rgba(255,77,77,.12);
+  --amber:#f0b429;
+  --amber-l:rgba(240,180,41,.12);
+  --purple:#c4a35a;
+  --purple-l:rgba(196,163,90,.12);
+  --pink:#e8a87c;
+  --pink-l:rgba(232,168,124,.12);
+  --radius:16px; --radius-m:12px; --radius-s:8px;
+  --shadow:0 4px 32px rgba(0,0,0,.7);
+  --shadow-m:0 2px 16px rgba(0,0,0,.5);
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --sidebar:240px;
+}
+
+/* Gold sidebar */
+[data-theme="gold"] .sidebar {
+  background: linear-gradient(180deg, #0d0a06 0%, #0a0805 100%);
+  border-right: 1px solid rgba(240,180,41,.12);
+}
+[data-theme="gold"] .sb-mark {
+  background: linear-gradient(135deg, #f0b429, #d4980f);
+  box-shadow: 0 4px 20px rgba(240,180,41,.4);
+}
+[data-theme="gold"] .sb-name, [data-theme="gold"] .sb-uname { color: #f5f0e8; }
+[data-theme="gold"] .sb-tagline, [data-theme="gold"] .sb-urole { color: #6b5f3e; }
+[data-theme="gold"] .sb-hr, [data-theme="gold"] .sb-footer { border-color: rgba(240,180,41,.1); }
+[data-theme="gold"] .sb-av { background: linear-gradient(135deg, #f0b429, #d4980f); }
+[data-theme="gold"] .nav { color: #8a7a55; }
+[data-theme="gold"] .nav:hover { background: rgba(240,180,41,.06); color: #c4a35a; }
+[data-theme="gold"] .nav.active {
+  background: linear-gradient(90deg, rgba(240,180,41,.18), rgba(240,180,41,.06));
+  color: #f0b429;
+  box-shadow: inset 3px 0 0 #f0b429;
+}
+[data-theme="gold"] .nav-badge { background: rgba(240,180,41,.15); color: #f0b429; }
+[data-theme="gold"] .dot { background: #00c076; box-shadow: 0 0 0 2px rgba(0,192,118,.2); }
+
+/* Gold topbar */
+[data-theme="gold"] .topbar {
+  background: linear-gradient(180deg, #0d0a06, #0a0805);
+  border-bottom: 1px solid rgba(240,180,41,.1);
+}
+[data-theme="gold"] .theme-btn {
+  background: #110e08; border-color: rgba(240,180,41,.2);
+}
+[data-theme="gold"] .privacy-btn {
+  background: #110e08; border-color: rgba(240,180,41,.15); color: #8a7a55;
+}
+
+/* Gold cards */
+[data-theme="gold"] .stat-card,
+[data-theme="gold"] .ov-card,
+[data-theme="gold"] .ana-card,
+[data-theme="gold"] .inv-card,
+[data-theme="gold"] .bal-card,
+[data-theme="gold"] .ov-qs,
+[data-theme="gold"] .twrap,
+[data-theme="gold"] .fbar,
+[data-theme="gold"] .search-wrap,
+[data-theme="gold"] .tx-range-bar,
+[data-theme="gold"] .ri,
+[data-theme="gold"] .mbox,
+[data-theme="gold"] .cat-popup {
+  background: linear-gradient(180deg, #16120a 0%, #110e08 100%);
+  border-color: rgba(240,180,41,.1);
+  box-shadow: 0 2px 16px rgba(0,0,0,.5), inset 0 1px 0 rgba(240,180,41,.07);
+}
+[data-theme="gold"] .stat-card.hero,
+[data-theme="gold"] .ov-hero.accent,
+[data-theme="gold"] .inv-hero.accent {
+  background: linear-gradient(135deg, #b8820a 0%, #7a5c08 100%);
+  box-shadow: 0 8px 32px rgba(240,180,41,.3), inset 0 1px 0 rgba(255,255,255,.1);
+}
+[data-theme="gold"] .bal-hero {
+  background: linear-gradient(135deg, #b8820a 0%, #7a5c08 100%);
+  box-shadow: 0 12px 40px rgba(240,180,41,.35);
+}
+
+/* Gold table */
+[data-theme="gold"] thead th { background: #0d0a06; border-bottom-color: rgba(240,180,41,.1); color: #6b5f3e; }
+[data-theme="gold"] tbody td { border-bottom-color: rgba(240,180,41,.06); color: #f5f0e8; }
+[data-theme="gold"] tbody tr:hover td { background: rgba(240,180,41,.04); }
+[data-theme="gold"] tr.rg-sep td { background: #0d0a06; color: #f0b429; border-bottom-color: rgba(240,180,41,.1); }
+[data-theme="gold"] tr.rg-sep:hover td { background: rgba(240,180,41,.06); }
+
+/* Gold inputs */
+[data-theme="gold"] select, [data-theme="gold"] input[type=date], [data-theme="gold"] .fin {
+  background: #0d0a06; border-color: rgba(240,180,41,.15); color: #f5f0e8;
+  color-scheme: dark;
+}
+[data-theme="gold"] select:focus, [data-theme="gold"] input:focus, [data-theme="gold"] .fin:focus {
+  border-color: #f0b429; box-shadow: 0 0 0 3px rgba(240,180,41,.15);
+}
+[data-theme="gold"] .search-wrap:focus-within {
+  border-color: #f0b429; box-shadow: 0 0 0 3px rgba(240,180,41,.15);
+}
+[data-theme="gold"] .me { color: #f5f0e8; }
+[data-theme="gold"] .me:focus { background: #0d0a06; }
+
+/* Gold buttons */
+[data-theme="gold"] .btn { background: #16120a; border-color: rgba(240,180,41,.15); color: #c4a35a; }
+[data-theme="gold"] .btn:hover { background: #1e1810; border-color: rgba(240,180,41,.3); color: #f0b429; }
+[data-theme="gold"] .btn-primary {
+  background: linear-gradient(135deg, #f0b429, #c8910d);
+  border-color: transparent; color: #0a0805;
+  box-shadow: 0 4px 16px rgba(240,180,41,.35);
+}
+[data-theme="gold"] .btn-primary:hover {
+  background: linear-gradient(135deg, #f5c040, #d4980f);
+  box-shadow: 0 6px 24px rgba(240,180,41,.5);
+}
+[data-theme="gold"] .btn-red { background: rgba(255,77,77,.12); border-color: rgba(255,77,77,.2); color: #ff4d4d; }
+[data-theme="gold"] .qbtn.active { background: rgba(240,180,41,.13); border-color: rgba(240,180,41,.3); color: #f0b429; }
+[data-theme="gold"] .load-more-btn { background: rgba(240,180,41,.1); border-color: rgba(240,180,41,.2); color: #f0b429; }
+[data-theme="gold"] .load-more-btn:hover { background: #f0b429; color: #0a0805; }
+[data-theme="gold"] .ytab.active { background: linear-gradient(135deg, #f0b429, #c8910d); color: #0a0805; box-shadow: 0 2px 12px rgba(240,180,41,.4); }
+
+/* Gold bar charts */
+[data-theme="gold"] .bar { background: linear-gradient(180deg, #f0b429, #c8910d); }
+[data-theme="gold"] .ov-bar { background: linear-gradient(180deg, #f0b429, #c8910d); }
+[data-theme="gold"] .h-bar-fill { background: #f0b429 !important; }
+
+/* Gold bottom nav */
+[data-theme="gold"] .bottom-nav {
+  background: rgba(13,10,6,.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top-color: rgba(240,180,41,.12);
+}
+[data-theme="gold"] .bn-item { color: #6b5f3e; }
+[data-theme="gold"] .bn-item.active { color: #f0b429; }
+[data-theme="gold"] .bn-item.active::before {
+  background: linear-gradient(90deg, #f0b429, #e8c547);
+  box-shadow: 0 0 8px rgba(240,180,41,.5);
+}
+
+/* Gold misc */
+[data-theme="gold"] .status-pill { background: #0d0a06; border-color: rgba(240,180,41,.15); color: #8a7a55; }
+[data-theme="gold"] .year-tabs { background: #0d0a06; border-color: rgba(240,180,41,.12); }
+[data-theme="gold"] .month-detail { background: #0d0a06; border-color: rgba(240,180,41,.1); }
+[data-theme="gold"] .md-cur-card { background: #110e08; border-color: rgba(240,180,41,.1); }
+[data-theme="gold"] .inv-table-wrap { background: #110e08; border-color: rgba(240,180,41,.1); }
+[data-theme="gold"] .inv-table thead th { background: #0d0a06; border-bottom-color: rgba(240,180,41,.1); }
+[data-theme="gold"] .toast-v2 { background: #16120a; border-color: rgba(240,180,41,.2); }
+[data-theme="gold"] .ovl { background: rgba(0,0,0,.8); }
+[data-theme="gold"] .chart-panel { background: #0d0a06; }
+[data-theme="gold"] .chart-insight, [data-theme="gold"] .chart-panel-stat { background: #110e08; border-color: rgba(240,180,41,.1); }
+[data-theme="gold"] ::-webkit-scrollbar-thumb { background: rgba(240,180,41,.2); }
+[data-theme="gold"] ::-webkit-scrollbar-thumb:hover { background: rgba(240,180,41,.4); }
+[data-theme="gold"] .skel { background: linear-gradient(90deg, #16120a 25%, #1e1810 50%, #16120a 75%); }
+/* Gold lock screen */
+[data-theme="gold"] #lockScreen { background: linear-gradient(160deg, #0a0805 0%, #110e08 50%, #0a0805 100%) !important; }
+[data-theme="gold"] .lock-logo { background: linear-gradient(135deg, #f0b429, #c8910d) !important; }
+[data-theme="gold"] .lock-key { background: #16120a !important; border-color: rgba(240,180,41,.12) !important; }
+[data-theme="gold"] .lock-dot { border-color: rgba(240,180,41,.2) !important; }
+[data-theme="gold"] .lock-dot.filled { background: #f0b429 !important; border-color: #f0b429 !important; box-shadow: 0 0 12px rgba(240,180,41,.5) !important; }
+
 </style>
 </head>
 <body>
@@ -1063,8 +1300,9 @@ body.fm .status-pill{display:none!important;}
             <div class="ov-card-body"><div class="ov-tx-list" id="ovTxList"><div style="padding:24px;text-align:center;color:var(--t3);">Loading…</div></div></div>
           </div>
           <div class="ov-card">
-            <div class="ov-card-head"><div><div class="ov-card-title">Evolución de gastos</div><div class="ov-card-sub">Últimos 5 meses · EUR equiv.</div></div><span id="ovBarNote" style="font-size:11px;color:var(--t3);font-style:italic;"></span></div>
+            <div class="ov-card-head"><div><div class="ov-card-title" style="cursor:pointer;" onclick="togglePanel('ovBarsPanel',this)">Evolución de gastos <span class="expand-arrow">▾</span></div><div class="ov-card-sub">Últimos 5 meses · EUR equiv.</div></div><span id="ovBarNote" style="font-size:11px;color:var(--t3);font-style:italic;"></span></div>
             <div class="ov-card-body" style="padding:16px 0 8px;"><div class="ov-bars" id="ovBars"><div style="padding:24px;text-align:center;color:var(--t3);width:100%">Loading…</div></div></div>
+            <div class="chart-panel" id="ovBarsPanel"></div>
           </div>
         </div>
         <div class="ov-col">
@@ -1073,17 +1311,19 @@ body.fm .status-pill{display:none!important;}
             <div class="ov-card-body" id="ovBanks"><div style="padding:24px;text-align:center;color:var(--t3);">Loading…</div></div>
           </div>
           <div class="ov-card">
-            <div class="ov-card-head"><div><div class="ov-card-title">Top categorías</div><div class="ov-card-sub" id="ovCatMiniSub">Este mes</div></div></div>
+            <div class="ov-card-head"><div><div class="ov-card-title" style="cursor:pointer;" onclick="togglePanel('ovCatPanel',this)">Top categorías <span class="expand-arrow">▾</span></div><div class="ov-card-sub" id="ovCatMiniSub">Este mes</div></div></div>
             <div class="ov-card-body" style="padding:14px 18px;"><div class="ov-cat-mini" id="ovCatMini"><div style="color:var(--t3);">Loading…</div></div></div>
+            <div class="chart-panel" id="ovCatPanel"></div>
           </div>
           <div class="ov-card">
-            <div class="ov-card-head"><div><div class="ov-card-title">Gastos por categoría</div><div class="ov-card-sub" id="ovCatSub">Este mes</div></div></div>
+            <div class="ov-card-head"><div><div class="ov-card-title" style="cursor:pointer;" onclick="togglePanel('ovDonutPanel',this)">Gastos por categoría <span class="expand-arrow">▾</span></div><div class="ov-card-sub" id="ovCatSub">Este mes</div></div></div>
             <div class="ov-card-body">
               <div class="ov-donut-wrap">
                 <svg class="ov-donut-svg" id="ovDonut" width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="52" fill="none" stroke="var(--border)" stroke-width="24"/></svg>
                 <div id="ovLegend" style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;"><div style="color:var(--t3);">Loading…</div></div>
               </div>
             </div>
+            <div class="chart-panel" id="ovDonutPanel"></div>
           </div>
         </div>
       </div>
@@ -1120,10 +1360,11 @@ body.fm .status-pill{display:none!important;}
       <div class="ana-topbar"><h2>Analytics</h2><div class="year-tabs" id="yearTabs"></div></div>
       <div class="ana-grid">
         <div class="ana-card full">
-          <div class="ana-card-title">Monthly spending</div>
+          <div class="ana-card-title" style="cursor:pointer;" onclick="togglePanel('anaSpendPanel',this)">Monthly spending <span class="expand-arrow">▾</span></div>
           <div class="chart-header"><div><span class="chart-total" id="chartTotal">—</span><span class="chart-total-sub">total in EUR</span></div><span class="chart-eur-note" id="chartEurNote">Loading FX rates…</span></div>
           <div class="bar-chart" id="barChart"></div>
           <div class="bar-labels" id="barLabels"></div>
+          <div class="chart-panel" id="anaSpendPanel"></div>
           <div class="month-detail" id="monthDetail">
             <div class="md-header"><div><div class="md-title" id="mdTitle">—</div><div class="md-subtitle" id="mdSubtitle">—</div></div><button class="md-close" id="mdClose">✕</button></div>
             <div class="md-currencies" id="mdCurrencies"></div>
@@ -1132,8 +1373,8 @@ body.fm .status-pill{display:none!important;}
             <div class="md-tx-list" id="mdTxList"></div>
           </div>
         </div>
-        <div class="ana-card"><div class="ana-card-title">Top categories</div><div id="catBars"></div></div>
-        <div class="ana-card"><div class="ana-card-title">Top merchants</div><div id="mBars"></div></div>
+        <div class="ana-card"><div class="ana-card-title" style="cursor:pointer;" onclick="togglePanel('anaCatPanel',this)">Top categories <span class="expand-arrow">▾</span></div><div id="catBars"></div><div class="chart-panel" id="anaCatPanel"></div></div>
+        <div class="ana-card"><div class="ana-card-title" style="cursor:pointer;" onclick="togglePanel('anaMerchPanel',this)">Top merchants <span class="expand-arrow">▾</span></div><div id="mBars"></div><div class="chart-panel" id="anaMerchPanel"></div></div>
         <div class="ana-card"><div class="ana-card-title">Summary</div><div id="sumStats"></div></div>
         <div class="ana-card"><div class="ana-card-title">By currency</div><div id="curBars"></div></div>
       </div>
@@ -1329,6 +1570,7 @@ body.fm .status-pill{display:none!important;}
               <select id="themeSelect" style="font-size:13px;padding:6px 10px;">
                 <option value="dark">Oscuro</option>
                 <option value="light">Claro</option>
+                <option value="gold">✨ Dorado</option>
               </select>
             </div>
             <div class="settings-row">
@@ -1531,8 +1773,20 @@ function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=
 function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
-  $("themeBtn").addEventListener("click",()=>{const isDark=document.documentElement.getAttribute("data-theme")==="dark";const next=isDark?"light":"dark";document.documentElement.setAttribute("data-theme",next);localStorage.setItem("theme",next);$("themeBtn").textContent=isDark?"☀️":"🌙";});
-  (function(){const t=document.documentElement.getAttribute("data-theme")||"dark";const btn=$("themeBtn");if(btn)btn.textContent=t==="dark"?"🌙":"☀️";})();
+  $("themeBtn").addEventListener("click",()=>{
+    const cur=document.documentElement.getAttribute("data-theme")||"dark";
+    const order=["dark","light","gold"];
+    const next=order[(order.indexOf(cur)+1)%order.length];
+    document.documentElement.setAttribute("data-theme",next);
+    localStorage.setItem("theme",next);
+    const icons={dark:"🌙",light:"☀️",gold:"✨"};
+    $("themeBtn").textContent=icons[next]||"🌙";
+  });
+  (function(){
+    const t=document.documentElement.getAttribute("data-theme")||"dark";
+    const icons={dark:"🌙",light:"☀️",gold:"✨"};
+    const btn=$("themeBtn");if(btn)btn.textContent=icons[t]||"🌙";
+  })();
   $("refreshBtn").addEventListener("click",load);
   $("curFilter").addEventListener("change",applyFiltersWithWindow);$("catFilter").addEventListener("change",applyFiltersWithWindow);$("dateFrom").addEventListener("change",applyFiltersWithWindow);$("dateTo").addEventListener("change",applyFiltersWithWindow);
   $("btnToday").addEventListener("click",()=>setQ("today"));$("btnWeek").addEventListener("click",()=>setQ("week"));$("btnMonth").addEventListener("click",()=>setQ("month"));$("btnYear").addEventListener("click",()=>setQ("year"));
@@ -2080,13 +2334,15 @@ function renderSettings(){
   // Theme select
   const thSel = document.getElementById('themeSelect');
   if(thSel){
-    thSel.value = document.documentElement.getAttribute('data-theme')||'dark';
+    const _ct=document.documentElement.getAttribute('data-theme')||'dark';
+    thSel.value=_ct;
     thSel.onchange = ()=>{
       const t=thSel.value;
       document.documentElement.setAttribute('data-theme',t);
       localStorage.setItem('theme',t);
+      const icons={dark:'🌙',light:'☀️',gold:'✨'};
       const btn=document.getElementById('themeBtn');
-      if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
+      if(btn)btn.textContent=icons[t]||'🌙';
     };
   }
 
@@ -2139,6 +2395,183 @@ function renderSettings(){
       showToast2('🔒','PIN eliminado','Recarga la app para crear uno nuevo','var(--amber)',3000);
     }
   },{once:true});
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// EXPANDABLE CHART PANELS
+// ══════════════════════════════════════════════════════════════
+function togglePanel(panelId, titleEl){
+  const panel = document.getElementById(panelId);
+  if(!panel) return;
+  const isOpen = panel.classList.contains('open');
+
+  // Close all panels first
+  document.querySelectorAll('.chart-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const t = p.previousElementSibling?.querySelector('.expand-arrow') ||
+              p.closest('.ov-card-head, .ana-card-title')?.querySelector('.expand-arrow');
+    if(t) t.style.transform = '';
+  });
+  // Also reset all arrows
+  document.querySelectorAll('.expand-arrow').forEach(a => a.style.transform = '');
+
+  if(!isOpen){
+    panel.classList.add('open');
+    // Rotate arrow
+    const arrow = titleEl?.querySelector('.expand-arrow');
+    if(arrow) arrow.style.transform = 'rotate(180deg)';
+    // Build panel content
+    buildPanel(panelId);
+    haptic('light');
+    // Scroll into view
+    setTimeout(()=>panel.scrollIntoView({behavior:'smooth', block:'nearest'}), 200);
+  }
+}
+
+function buildPanel(id){
+  const panel = document.getElementById(id);
+  if(!panel) return;
+  const now = new Date();
+  const ym  = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  const monthName = MO[now.getMonth()]+" "+now.getFullYear();
+  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25};
+
+  if(id === 'ovBarsPanel'){
+    // Last 5 months analysis
+    const months5 = [];
+    for(let i=4;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months5.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
+    const moTotals = months5.map(m=>{
+      const rows=S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(m));
+      const b={KWD:0,USD:0,EUR:0,AED:0};for(const r of rows){const c=(r.currency||"KWD").toUpperCase();if(b[c]!==undefined)b[c]+=Number(r.amount||0);}
+      return(b.KWD/(rates.KWD||3.28))+(b.USD/(rates.USD||0.93))+b.EUR+(b.AED/(rates.AED||0.25));
+    });
+    const avg = moTotals.reduce((s,v)=>s+v,0)/moTotals.length;
+    const max = Math.max(...moTotals);
+    const min = Math.min(...moTotals.filter(v=>v>0));
+    const last = moTotals[4], prev = moTotals[3];
+    const trend = prev>0?((last-prev)/prev*100):0;
+    const peakMo = months5[moTotals.indexOf(max)];
+    const peakParts = peakMo.split('-');
+    const peakName = MS[+peakParts[1]-1]+"'"+peakParts[0].slice(2);
+    panel.innerHTML = `
+      <div class="chart-panel-title">Análisis de evolución de gastos</div>
+      <div class="chart-panel-sub">Basado en los últimos 5 meses · equivalente en EUR</div>
+      <div class="chart-panel-grid">
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Media mensual</div><div class="chart-panel-stat-val">€${avg.toFixed(0)}</div><div class="chart-panel-stat-sub">últimos 5 meses</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Mes pico</div><div class="chart-panel-stat-val">${peakName}</div><div class="chart-panel-stat-sub">€${max.toFixed(0)} gastado</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Tendencia</div><div class="chart-panel-stat-val" style="color:${trend>0?'var(--red)':'var(--green)'};">${trend>0?'↑':'↓'} ${Math.abs(trend).toFixed(1)}%</div><div class="chart-panel-stat-sub">vs mes anterior</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Este mes</div><div class="chart-panel-stat-val">€${last.toFixed(0)}</div><div class="chart-panel-stat-sub">${last>avg?'Por encima':'Por debajo'} de la media</div></div>
+      </div>
+      ${last>avg*1.2?`<div class="chart-insight"><div class="chart-insight-ic">⚠️</div><div class="chart-insight-text">Este mes estás gastando <strong>€${(last-avg).toFixed(0)} más</strong> de tu media. Considera revisar las categorías principales.</div></div>`:''}
+      ${trend<-10?`<div class="chart-insight"><div class="chart-insight-ic">✅</div><div class="chart-insight-text">¡Buen trabajo! Has reducido el gasto un <strong>${Math.abs(trend).toFixed(1)}%</strong> respecto al mes anterior.</div></div>`:''}
+    `;
+  }
+
+  else if(id === 'ovCatPanel'){
+    const monthRows = S.all.filter(r=>(r.created_at||"").startsWith(ym)&&idir(r)==="out");
+    const catMap = new Map();
+    for(const r of monthRows){const c=(r.category||"other").toLowerCase();catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));}
+    const sorted = [...catMap.entries()].sort((a,b)=>b[1]-a[1]);
+    const total = sorted.reduce((s,[,v])=>s+v,0)||1;
+    const top = sorted[0];
+    const budgets = loadBudgets();
+    const overBudget = sorted.filter(([cat,amt])=>budgets[cat]&&amt>budgets[cat]);
+    panel.innerHTML = `
+      <div class="chart-panel-title">Análisis de categorías — ${monthName}</div>
+      <div class="chart-panel-sub">${sorted.length} categorías activas · ${monthRows.length} transacciones</div>
+      <div class="chart-panel-grid">
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Mayor gasto</div><div class="chart-panel-stat-val">${top?tc(top[0]):"—"}</div><div class="chart-panel-stat-sub">${top?(top[1]/total*100).toFixed(0)+"% del total":""}</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Concentración</div><div class="chart-panel-stat-val">${sorted.slice(0,2).reduce((s,[,v])=>s+v,0)/total>0.6?"Alta":"Diversificada"}</div><div class="chart-panel-stat-sub">top 2 = ${(sorted.slice(0,2).reduce((s,[,v])=>s+v,0)/total*100).toFixed(0)}%</div></div>
+      </div>
+      ${overBudget.length?`<div class="chart-insight"><div class="chart-insight-ic">🚨</div><div class="chart-insight-text"><strong>${overBudget.map(([c])=>tc(c)).join(', ')}</strong> ${overBudget.length>1?'han':'ha'} superado el presupuesto este mes.</div></div>`:''}
+      ${!overBudget.length&&Object.keys(budgets).length?`<div class="chart-insight"><div class="chart-insight-ic">✅</div><div class="chart-insight-text">Todas las categorías están dentro del presupuesto este mes.</div></div>`:''}
+    `;
+  }
+
+  else if(id === 'ovDonutPanel'){
+    const monthRows = S.all.filter(r=>(r.created_at||"").startsWith(ym)&&idir(r)==="out");
+    const total = monthRows.reduce((s,r)=>s+Number(r.amount||0),0);
+    const txCount = monthRows.length;
+    const avgTx = txCount>0?total/txCount:0;
+    // Daily average
+    const days = now.getDate();
+    const dailyAvg = days>0?total/days:0;
+    // Biggest single tx
+    const bigTx = [...monthRows].sort((a,b)=>Number(b.amount)-Number(a.amount))[0];
+    panel.innerHTML = `
+      <div class="chart-panel-title">Resumen de gastos — ${monthName}</div>
+      <div class="chart-panel-sub">Análisis detallado del mes en curso</div>
+      <div class="chart-panel-grid">
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Total gastado</div><div class="chart-panel-stat-val">${total.toFixed(3)} KWD</div><div class="chart-panel-stat-sub">${txCount} transacciones</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Media por transacción</div><div class="chart-panel-stat-val">${avgTx.toFixed(3)} KWD</div><div class="chart-panel-stat-sub">gasto típico</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Media diaria</div><div class="chart-panel-stat-val">${dailyAvg.toFixed(3)} KWD</div><div class="chart-panel-stat-sub">${days} días del mes</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Mayor compra</div><div class="chart-panel-stat-val">${bigTx?bigTx.amount+" "+bigTx.currency:"—"}</div><div class="chart-panel-stat-sub">${bigTx?cm(bigTx.merchant_clean||bigTx.merchant_raw||"—").slice(0,18):""}</div></div>
+      </div>
+    `;
+  }
+
+  else if(id === 'anaSpendPanel'){
+    const year = S.anaYear||String(now.getFullYear());
+    const expRows = S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(year));
+    const moTotals = {};
+    for(let i=1;i<=12;i++){const mo=String(i).padStart(2,"0");const rows=expRows.filter(r=>isoDay(r.created_at||"").slice(5,7)===mo);const b={KWD:0,USD:0,EUR:0,AED:0};for(const r of rows){const c=(r.currency||"KWD").toUpperCase();if(b[c]!==undefined)b[c]+=Number(r.amount||0);}moTotals[mo]=(b.KWD/(rates.KWD||3.28))+(b.USD/(rates.USD||0.93))+b.EUR+(b.AED/(rates.AED||0.25));}
+    const vals = Object.values(moTotals).filter(v=>v>0);
+    const avg = vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:0;
+    const totalYear = vals.reduce((s,v)=>s+v,0);
+    const maxMo = Object.entries(moTotals).sort((a,b)=>b[1]-a[1])[0];
+    const minMo = Object.entries(moTotals).filter(([,v])=>v>0).sort((a,b)=>a[1]-b[1])[0];
+    panel.innerHTML = `
+      <div class="chart-panel-title">Análisis anual ${year}</div>
+      <div class="chart-panel-sub">${vals.length} meses con actividad</div>
+      <div class="chart-panel-grid">
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Total año</div><div class="chart-panel-stat-val">€${totalYear.toFixed(0)}</div><div class="chart-panel-stat-sub">${vals.length} meses activos</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Media mensual</div><div class="chart-panel-stat-val">€${avg.toFixed(0)}</div><div class="chart-panel-stat-sub">por mes con actividad</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Mes más caro</div><div class="chart-panel-stat-val">${maxMo?MS[+maxMo[0]-1]:"—"}</div><div class="chart-panel-stat-sub">${maxMo?"€"+maxMo[1].toFixed(0):""}</div></div>
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Mes más barato</div><div class="chart-panel-stat-val">${minMo?MS[+minMo[0]-1]:"—"}</div><div class="chart-panel-stat-sub">${minMo?"€"+minMo[1].toFixed(0):""}</div></div>
+      </div>
+      <div class="chart-insight"><div class="chart-insight-ic">📊</div><div class="chart-insight-text">Proyección anual basada en la media: <strong>€${(avg*12).toFixed(0)}</strong></div></div>
+    `;
+  }
+
+  else if(id === 'anaCatPanel'){
+    const year = S.anaYear||String(now.getFullYear());
+    const expRows = S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(year));
+    const catMap = new Map();
+    for(const r of expRows){const c=(r.category||"other").toLowerCase();catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));}
+    const sorted = [...catMap.entries()].sort((a,b)=>b[1]-a[1]);
+    const total = sorted.reduce((s,[,v])=>s+v,0)||1;
+    const top3 = sorted.slice(0,3);
+    panel.innerHTML = `
+      <div class="chart-panel-title">Desglose de categorías ${year}</div>
+      <div class="chart-panel-sub">${sorted.length} categorías · ${expRows.length} transacciones</div>
+      <div class="chart-panel-grid">
+        ${top3.map(([cat,val])=>`<div class="chart-panel-stat"><div class="chart-panel-stat-label">${CAT_ICONS[cat]||"❓"} ${tc(cat)}</div><div class="chart-panel-stat-val">${val.toFixed(2)}</div><div class="chart-panel-stat-sub">${(val/total*100).toFixed(1)}% del total</div></div>`).join('')}
+        <div class="chart-panel-stat"><div class="chart-panel-stat-label">Resto</div><div class="chart-panel-stat-val">${(sorted.slice(3).reduce((s,[,v])=>s+v,0)).toFixed(2)}</div><div class="chart-panel-stat-sub">${(sorted.slice(3).reduce((s,[,v])=>s+v,0)/total*100).toFixed(1)}% del total</div></div>
+      </div>
+    `;
+  }
+
+  else if(id === 'anaMerchPanel'){
+    const year = S.anaYear||String(now.getFullYear());
+    const expRows = S.all.filter(r=>idir(r)==="out"&&(r.created_at||"").startsWith(year));
+    const mMap = new Map();
+    for(const r of expRows){const m=cm(r.merchant_clean||r.merchant_raw||"").trim()||"—";mMap.set(m,(mMap.get(m)||0)+Number(r.amount||0));}
+    const sorted = [...mMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const cMap = new Map();
+    for(const r of expRows){const m=cm(r.merchant_clean||r.merchant_raw||"").trim()||"—";if(!cMap.has(m))cMap.set(m,0);cMap.set(m,cMap.get(m)+1);}
+    panel.innerHTML = `
+      <div class="chart-panel-title">Top merchants ${year}</div>
+      <div class="chart-panel-sub">Por volumen de gasto acumulado</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        ${sorted.map(([m,v],i)=>`<div class="chart-insight" style="padding:10px 12px;">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--blue-l);color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+          <div style="flex:1;min-width:0;"><div style="font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m}</div><div style="font-size:11px;color:var(--t3);margin-top:2px;">${cMap.get(m)||0} transacciones</div></div>
+          <div style="font-family:var(--mono);font-weight:700;color:var(--t1);flex-shrink:0;">${v.toFixed(2)}</div>
+        </div>`).join('')}
+      </div>
+    `;
+  }
 }
 
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
