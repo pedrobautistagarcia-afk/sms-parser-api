@@ -2000,6 +2000,8 @@ async function renderOverview(){
   if(catMiniSub)catMiniSub.textContent=monthName;
   if(catMini){const catMap=new Map();for(const r of monthRows.filter(r=>idir(r)==="out")){const c=(r.category||"other").toLowerCase();catMap.set(c,(catMap.get(c)||0)+Number(r.amount||0));}const sorted=[...catMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);const maxCat=sorted[0]?.[1]||1;catMini.innerHTML=sorted.length?sorted.map(([cat,val])=>`<div class="ov-cat-row"><div class="ov-cat-icon">${CAT_ICONS[cat]||"❓"}</div><div class="ov-cat-name">${tc(cat)}</div><div class="ov-cat-track"><div class="ov-cat-fill" style="width:${Math.round(val/maxCat*100)}%;background:${CAT_COLORS[cat]||"var(--blue)"};"></div></div><div class="ov-cat-amt">${val.toFixed(2)}</div></div>`).join(""):'<div style="color:var(--t3);">Sin gastos este mes</div>';}
   if(window._privacyOn&&window._privacyOn())setTimeout(()=>window._privacyApply&&window._privacyApply(),100);
+  // Update live bar after overview renders
+  updateLiveBar();
   const recent=[...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))).slice(0,20);
   const txList=$("ovTxList");
   if(txList){txList.innerHTML=recent.map(r=>{const dir=idir(r),merch=cm(r.merchant_clean||r.merchant_raw||"—"),cat=(r.category||"other").toLowerCase(),icon=CAT_ICONS[cat]||"❓",clr=CAT_COLORS[cat]||"#94a3b8",d=isoDay(r.created_at||""),dateStr=d?`${+d.slice(8,10)} ${MO[+d.slice(5,7)-1].slice(0,3)}`:"",amtStr=(dir==="in"?"+":"-")+fm(r.amount);return`<div class="ov-tx-item" data-id="${r.id}"><div class="ov-tx-icon" style="background:${clr}18;">${icon}</div><div class="ov-tx-info"><div class="ov-tx-merchant">${merch}</div><div class="ov-tx-meta">${tc(cat)} · ${dateStr}</div></div><div class="ov-tx-right"><div class="ov-tx-amt ${dir==="in"?"pos":"neg"}">${amtStr}</div><div class="ov-tx-cur">${(r.currency||"").toUpperCase()}</div></div></div>`;}).join("")||"<div style='padding:24px;text-align:center;color:var(--t3);'>No hay transacciones</div>";txList.querySelectorAll(".ov-tx-item").forEach(el=>el.addEventListener("click",()=>{const item=S.all.find(x=>x.id===Number(el.dataset.id));if(item)openTx(item);}));}
@@ -2035,10 +2037,10 @@ function openTx(item){const merch=cm(item.merchant_clean||item.merchant_raw||"")
 const CACHE_KEY="expense_cache_v1",CACHE_TTL=5*60*1000;
 function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data}));}catch(_){}}
 function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const{ts,data}=JSON.parse(raw);if(Date.now()-ts>CACHE_TTL)return null;return data;}catch(_){return null;}}
-async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
+async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
     // If offline, use cache
-    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
-    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
+    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
+    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
@@ -2883,7 +2885,7 @@ function fmPro(n, decimals=3, currency=''){
 
 // ── Live topbar data ─────────────────────────────────────────────
 function updateLiveBar(){
-  if(!S.all.length)return;
+  if(!S.all.length){ setTimeout(updateLiveBar, 1000); return; }
   const now=new Date(),ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   // NBK balance
   const sorted=[...S.all].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
@@ -3149,7 +3151,7 @@ ${catSorted.map(([cat,val])=>`<div class="cat-row">
   showToast2('📄','Extracto generado','Usa Imprimir → Guardar como PDF','var(--blue)',4000);
 }
 
-bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
+bind();load();loadRules();initSearchAndWindow();getFX().then(()=>updateLiveBar()).catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
 
 
