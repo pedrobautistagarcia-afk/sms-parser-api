@@ -1272,14 +1272,6 @@ body.fm .chart-panel-grid { grid-template-columns: 1fr !important; }
 .nav-badge { opacity: 0; transition: opacity .15s; font-size: 9px; padding: 1px 5px; }
 .sidebar:hover .nav-badge, .sidebar.pinned .nav-badge { opacity: 1; }
 
-/* ── 2. TOPBAR LIVE DATA ─────────────────────────────────────── */
-.topbar-live {
-  display: flex; align-items: center; gap: 20px;
-  padding: 6px 16px; background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono); font-size: 11px;
-  flex-shrink: 0;
-}
 .topbar-live-item { display: flex; align-items: center; gap: 6px; }
 .topbar-live-label { color: var(--t3); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
 .topbar-live-val { color: var(--t1); font-weight: 600; }
@@ -1484,16 +1476,7 @@ tr.high-amount .amt { font-weight: 800; }
 </nav>
 
 <div class="main">
-  <div class="topbar-live" id="topbarLive">
-    <div class="topbar-live-item"><span class="topbar-live-label">NBK</span><span class="topbar-live-val" id="liveBal">—</span></div>
-    <div class="topbar-live-sep"></div>
-    <div class="topbar-live-item"><span class="topbar-live-label">Mes</span><span class="topbar-live-val" id="liveMonth">—</span></div>
-    <div class="topbar-live-sep"></div>
-    <div class="topbar-live-item"><span class="topbar-live-label">Neto</span><span class="topbar-live-val" id="liveNet">—</span></div>
-    <div class="topbar-live-sep"></div>
-    <div class="topbar-live-item"><span class="topbar-live-label" id="liveFxLabel">FX</span><span class="topbar-live-val" id="liveFx">—</span></div>
-  </div>
-  <div class="topbar">
+    <div class="topbar">
     <div><div class="tb-title" id="tbTitle">Overview</div><div class="tb-sub" id="tbSub">Vista general</div></div>
     <div class="tb-right">
       <div class="status-pill"><div class="dot"></div><span id="statusPill">loading…</span></div>
