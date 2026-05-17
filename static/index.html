@@ -1336,8 +1336,12 @@ body.fm .chart-panel-grid { grid-template-columns: 1fr !important; }
 .amt.neg { background: var(--red-l);   padding: 2px 6px; border-radius: 4px; display: inline-block; }
 
 /* Collapse sidebar on mobile — full hide */
-@media(max-width:768px){ .sidebar { display: none !important; } }
-body.fm .sidebar { display: none !important; }
+@media(max-width:768px){
+  .sidebar { display: none !important; width: 0 !important; }
+  .main { width: 100vw !important; }
+}
+body.fm .sidebar { display: none !important; width: 0 !important; }
+body.fm .main { width: 100% !important; }
 
 
 
@@ -1424,7 +1428,8 @@ tr.high-amount .amt { font-weight: 800; }
   display: none; align-items: center; justify-content: center;
   padding: 20px;
 }
-#onboardingModal.open { display: flex; }
+#onboardingModal { display: none; }
+#onboardingModal.open { display: flex !important; }
 .onboarding-box {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 24px; width: min(480px, 100%);
@@ -2363,7 +2368,7 @@ tr.high-amount .amt { font-weight: 800; }
 
 
 <!-- ONBOARDING MODAL -->
-<div id="onboardingModal">
+<div id="onboardingModal" style="display:none;">
   <div class="onboarding-box">
 
     <!-- Step 1: Welcome -->
@@ -2667,7 +2672,44 @@ function openTx(item){const merch=cm(item.merchant_clean||item.merchant_raw||"")
 const CACHE_KEY="expense_cache_v1",CACHE_TTL=5*60*1000;
 function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data}));}catch(_){}}
 function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const{ts,data}=JSON.parse(raw);if(Date.now()-ts>CACHE_TTL)return null;return data;}catch(_){return null;}}
-async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
+async function load(fromCache=false){
+  // Timeout safety net - if load hangs for 10s, show cached data
+  if(!fromCache){
+    const _cacheNow = loadCache();
+    if(_cacheNow && _cacheNow.length){
+      // Show cache immediately, don't wait
+      S.all=_cacheNow; window.__rg_last_rows=_cacheNow;
+      S.categories=new Set(_cacheNow.map(r=>(r.category||"other").toLowerCase()));
+      S.currencies=new Set(_cacheNow.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+      if(!S.categories.size)S.categories.add("other");
+      if(!S.currencies.size)S.currencies.add("KWD");
+      buildFilters(); applyFiltersWithWindow();
+      ss(S.view.length+" transactions");
+      renderBalance(); renderAnalytics(); renderOverview(); updateBadges(); updateLiveBar();
+      // Then try to refresh in background silently
+      try{
+        const j=await Promise.race([
+          fetch(API+"/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM).then(r=>r.json()),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+        ]);
+        const rows=j.expenses||[];
+        if(rows.length){
+          saveCache(rows);
+          S.all=rows; window.__rg_last_rows=rows;
+          S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));
+          S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+          if(!S.categories.size)S.categories.add("other");
+          if(!S.currencies.size)S.currencies.add("KWD");
+          buildFilters(); applyFiltersWithWindow();
+          ss(S.view.length+" transactions");
+          renderBalance(); renderAnalytics(); renderOverview(); updateBadges(); updateLiveBar();
+          showToast2("🔄","Datos actualizados","","var(--blue)",2000);
+        }
+      }catch(_){ /* silent fail - cached data still shown */ }
+      return;
+    }
+  }
+  try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
     // If offline, use cache
     if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
     const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();updateLiveBar();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
@@ -3742,7 +3784,8 @@ async function generateMonthlyPDF(){
   display: none; align-items: center; justify-content: center;
   padding: 20px;
 }
-#onboardingModal.open { display: flex; }
+#onboardingModal { display: none; }
+#onboardingModal.open { display: flex !important; }
 .onboarding-box {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 24px; width: min(480px, 100%);
@@ -4175,9 +4218,8 @@ function showOnboarding(){
   if(_obModal){_obModal.classList.add('open');_obModal.onclick=e=>{if(e.target===_obModal)closeOnboarding();};}
 }
 
-// Onboarding accessible from Settings → Ver guía
-// Auto-show disabled to avoid blocking the app
 localStorage.setItem('onboarding_done','1');
+document.getElementById('onboardingModal')?.style.setProperty('display','none');
 
 // ══════════════════════════════════════════════════════════════
 // SCRIPTABLE WIDGET CODE
