@@ -1179,16 +1179,12 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
   function showLock(){
     screen.style.display='flex';
     document.body.style.overflow='hidden';
-    // Prevent scrolling behind lock
-    document.querySelector('.content')?.style.setProperty('display','none');
   }
 
   // ── Hide lock screen ─────────────────────────────────────────
   function hideLock(){
     screen.style.display='none';
     document.body.style.overflow='';
-    document.querySelector('.content')?.style.removeProperty('display');
-    // Record unlock time
     localStorage.setItem(UNLOCK_KEY, Date.now().toString());
   }
 
@@ -1407,13 +1403,13 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
   // ── Init ─────────────────────────────────────────────────────
   async function init(){
     const hasPin = !!localStorage.getItem(PIN_KEY);
-    const lastUnlock = parseInt(localStorage.getItem(UNLOCK_KEY)||'0');
-    const sessionValid = (Date.now()-lastUnlock) < SESSION_TTL;
+    const lastUnlockStr = localStorage.getItem(UNLOCK_KEY);
+    const lastUnlock = lastUnlockStr ? parseInt(lastUnlockStr) : 0;
+    const sessionValid = lastUnlockStr && (Date.now()-lastUnlock) < SESSION_TTL;
 
     // If session is still valid (app was open recently), skip lock
     if(sessionValid && hasPin){
-      hideLock();
-      return;
+      return; // don't show lock
     }
 
     showLock();
@@ -1429,7 +1425,7 @@ if(isIOS&&!navigator.standalone&&!localStorage.getItem("ios_tip_dismissed")){set
   }
 
   // Small delay to let app render first
-  setTimeout(init, 100);
+  setTimeout(init, 300);
 
   // Re-lock when app comes back from background
   document.addEventListener('visibilitychange', ()=>{
