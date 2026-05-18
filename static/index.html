@@ -1583,7 +1583,6 @@ tr.high-amount .amt { font-weight: 800; }
 /* ═══════════════════════════════════════
    PRIVACY MODE — body.privacy-on
 ═══════════════════════════════════════ */
-body.privacy-on .amt,
 body.privacy-on .sc-val,
 body.privacy-on .ov-hero-val,
 body.privacy-on .ov-qs-val,
@@ -1656,8 +1655,7 @@ body.privacy-on .cmp-badge {
   user-select: none !important;
   -webkit-user-select: none !important;
 }
-[data-theme="dark"] body.privacy-on .amt,
-[data-theme="dark"] body.privacy-on .sc-val,
+[data-theme="dark"] [data-theme="dark"] body.privacy-on .sc-val,
 [data-theme="dark"] body.privacy-on .ov-hero-val {
   text-shadow: 0 0 10px #475569 !important;
 }
@@ -1820,40 +1818,6 @@ body.privacy-on .bar-chart {
         <div class="ov-qs"><div class="ov-qs-label">Promedio/día</div><div class="ov-qs-val" id="ovAvgDay">—</div><div class="ov-qs-sub">este mes</div></div>
         <div class="ov-qs"><div class="ov-qs-label">Mayor gasto</div><div class="ov-qs-val" id="ovMaxTx">—</div><div class="ov-qs-sub" id="ovMaxTxName">—</div></div>
       </div>
-      <!-- SAVINGS GOAL -->
-      <div class="savings-hero" id="savingsHero">
-        <div class="savings-empty" id="savingsEmpty">
-          <div class="savings-empty-ic">🎯</div>
-          <div class="savings-empty-title">Objetivo de ahorro mensual</div>
-          <div class="savings-empty-sub">Define cuánto quieres ahorrar cada mes</div>
-          <button class="btn btn-primary" style="margin-top:14px;font-size:13px;" onclick="openSavingsModal()">+ Establecer objetivo</button>
-        </div>
-        <div id="savingsContent" style="display:none;">
-          <div class="savings-header">
-            <div class="savings-title">🎯 Objetivo de ahorro</div>
-            <span class="savings-edit" onclick="openSavingsModal()">Editar</span>
-          </div>
-          <div class="savings-grid">
-            <div class="savings-stat">
-              <div class="savings-stat-label">Objetivo</div>
-              <div class="savings-stat-val" id="savingsGoalVal">—</div>
-            </div>
-            <div class="savings-stat">
-              <div class="savings-stat-label">Neto actual</div>
-              <div class="savings-stat-val" id="savingsNetVal">—</div>
-            </div>
-            <div class="savings-stat">
-              <div class="savings-stat-label">Restante</div>
-              <div class="savings-stat-val" id="savingsRemVal">—</div>
-            </div>
-          </div>
-          <div class="savings-track">
-            <div class="savings-fill" id="savingsFill" style="width:0%;"></div>
-          </div>
-          <div class="savings-status" id="savingsStatus"></div>
-        </div>
-      </div>
-
       <div class="ov-grid">
         <div class="ov-col">
           <div class="ov-card">
@@ -2084,6 +2048,26 @@ body.privacy-on .bar-chart {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
         <div style="font-size:13px;color:var(--t2);" id="svGoalLine">Sin objetivo establecido</div>
         <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openSavingsModal()">✏️ Editar objetivo</button>
+      </div>
+
+      <!-- Savings goal progress card -->
+      <div class="sv-card" id="svGoalCard" style="margin-bottom:16px;display:none;">
+        <div class="sv-card-head">
+          <div>
+            <div class="sv-card-title">🎯 Objetivo de gasto mensual</div>
+            <div class="sv-card-sub" id="svGoalCardSub">—</div>
+          </div>
+          <div style="font-size:13px;font-family:var(--mono);font-weight:700;" id="svGoalPctBig">—</div>
+        </div>
+        <div style="padding:16px 18px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+            <div><div class="savings-stat-label">Límite</div><div class="savings-stat-val" id="svGoalLimitVal">—</div></div>
+            <div><div class="savings-stat-label">Gastado</div><div class="savings-stat-val" id="svGoalSpentVal" style="color:var(--red);">—</div></div>
+            <div><div class="savings-stat-label">Restante</div><div class="savings-stat-val" id="svGoalRemVal">—</div></div>
+          </div>
+          <div class="savings-track"><div class="savings-fill" id="svGoalFill" style="width:0%;"></div></div>
+          <div class="savings-status" id="svGoalStatus" style="margin-top:8px;"></div>
+        </div>
       </div>
 
       <!-- Monthly bars chart -->
@@ -3580,7 +3564,6 @@ tbody tr.high-row td{background:#fffbeb!important;}
 /* ═══════════════════════════════════════
    PRIVACY MODE — body.privacy-on
 ═══════════════════════════════════════ */
-body.privacy-on .amt,
 body.privacy-on .sc-val,
 body.privacy-on .ov-hero-val,
 body.privacy-on .ov-qs-val,
@@ -3653,8 +3636,7 @@ body.privacy-on .cmp-badge {
   user-select: none !important;
   -webkit-user-select: none !important;
 }
-[data-theme="dark"] body.privacy-on .amt,
-[data-theme="dark"] body.privacy-on .sc-val,
+[data-theme="dark"] [data-theme="dark"] body.privacy-on .sc-val,
 [data-theme="dark"] body.privacy-on .ov-hero-val {
   text-shadow: 0 0 10px #475569 !important;
 }
@@ -3751,9 +3733,8 @@ function renderBalanceLine(){
   const chg = document.getElementById('balLineChange');
   if(!svg) return;
 
-  // Extract NBK balance from each SMS row, sorted by date
+  // Extract NBK balance from ALL rows sorted by date (sms field may be absent)
   const sorted = [...S.all]
-    .filter(r => r.sms || r.sms_raw)
     .sort((a,b) => String(a.created_at||'').localeCompare(String(b.created_at||'')));
 
   const points = [];
@@ -3946,7 +3927,7 @@ function renderSavingsView(){
   if(heroSub) heroSub.textContent = 'Gastado · '+MO[now.getMonth()]+' '+now.getFullYear();
   if(svGoalHero) svGoalHero.textContent = goal ? goal.toFixed(2)+' KWD' : 'Sin objetivo';
   if(svGoalLine) svGoalLine.textContent = goal
-    ? 'Objetivo de gasto: '+goal.toFixed(2)+' KWD/mes'
+    ? 'Límite mensual: '+goal.toFixed(2)+' KWD'
     : 'Sin objetivo establecido — pulsa Editar objetivo para configurar uno';
 
   if(goal && svPctHero){
@@ -3955,6 +3936,37 @@ function renderSavingsView(){
     svPctHero.style.color = pct>100?'#fb7185':pct>80?'#fbbf24':'#fff';
   } else if(svPctHero){
     svPctHero.textContent = '—';
+  }
+
+  // Goal card
+  const goalCard = document.getElementById('svGoalCard');
+  if(goalCard){
+    goalCard.style.display = goal ? 'block' : 'none';
+    if(goal){
+      const pct = Math.min(Math.round(cur.exp/goal*100),100);
+      const over = cur.exp > goal;
+      const rem = goal - cur.exp;
+      const color = over?'var(--red)':pct>80?'var(--amber)':'var(--green)';
+      const sub = document.getElementById('svGoalCardSub');
+      const pctBig = document.getElementById('svGoalPctBig');
+      const limitEl = document.getElementById('svGoalLimitVal');
+      const spentEl = document.getElementById('svGoalSpentVal');
+      const remEl = document.getElementById('svGoalRemVal');
+      const fillEl = document.getElementById('svGoalFill');
+      const statusEl = document.getElementById('svGoalStatus');
+      if(sub) sub.textContent = MO[now.getMonth()]+' '+now.getFullYear();
+      if(pctBig){ pctBig.textContent=pct+'%'; pctBig.style.color=color; }
+      if(limitEl) limitEl.textContent=goal.toFixed(2)+' KWD';
+      if(spentEl) spentEl.textContent=cur.exp.toFixed(2)+' KWD';
+      if(remEl){ remEl.textContent=(rem>=0?rem.toFixed(2):'0.00')+' KWD'; remEl.style.color=over?'var(--red)':'var(--green)'; }
+      if(fillEl){ fillEl.style.width=pct+'%'; fillEl.style.background=color; }
+      if(statusEl){
+        statusEl.style.color=color;
+        statusEl.textContent=over
+          ?'⚠️ Superado en '+(cur.exp-goal).toFixed(2)+' KWD'
+          :'✓ Quedan '+rem.toFixed(2)+' KWD para alcanzar el límite';
+      }
+    }
   }
 
   // Note
