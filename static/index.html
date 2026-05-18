@@ -1577,6 +1577,8 @@ tr.high-amount .amt { font-weight: 800; }
 .inv-perf-label { font-size:10px; color:var(--t3); text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:4px; }
 .inv-perf-val { font-size:16px; font-weight:700; font-family:var(--mono); }
 
+
+
 </style>
 </head>
 <body>
@@ -2184,6 +2186,34 @@ tr.high-amount .amt { font-weight: 800; }
   </div>
 </div>
 
+
+    <div class="pu-title">Introduce tu PIN</div>
+    <div class="pu-sub">Para mostrar los datos financieros<br>introduce tu PIN de acceso</div>
+    <div class="pu-dots">
+      <div class="pu-dot" id="pd0"></div>
+      <div class="pu-dot" id="pd1"></div>
+      <div class="pu-dot" id="pd2"></div>
+      <div class="pu-dot" id="pd3"></div>
+    </div>
+    <div class="pu-numpad">
+      <button class="pu-key" data-pn="1">1</button>
+      <button class="pu-key" data-pn="2">2</button>
+      <button class="pu-key" data-pn="3">3</button>
+      <button class="pu-key" data-pn="4">4</button>
+      <button class="pu-key" data-pn="5">5</button>
+      <button class="pu-key" data-pn="6">6</button>
+      <button class="pu-key" data-pn="7">7</button>
+      <button class="pu-key" data-pn="8">8</button>
+      <button class="pu-key" data-pn="9">9</button>
+      <button class="pu-key empty"></button>
+      <button class="pu-key" data-pn="0">0</button>
+      <button class="pu-key del" id="puDel">⌫</button>
+    </div>
+    <div class="pu-msg" id="puMsg"></div>
+    <span class="pu-cancel" id="puCancel">Cancelar</span>
+  </div>
+</div>
+
 <div class="ptr-indicator" id="ptrIndicator"><div class="ptr-spinner"></div><span id="ptrText">Actualizando…</span></div>
 <div class="toast-v2" id="toastV2"><div class="toast-v2-icon" id="toastV2Icon">✅</div><div class="toast-v2-body"><div class="toast-v2-title" id="toastV2Title">—</div><div class="toast-v2-sub" id="toastV2Sub"></div></div><button class="toast-v2-close" id="toastV2Close">✕</button><div class="toast-v2-progress" id="toastV2Progress"></div></div>
 <nav class="bottom-nav" id="bottomNav">
@@ -2415,20 +2445,99 @@ function buildInvDonut(){const svg=$("invDonut"),tip=$("invDonutTip"),legend=$("
 (function(){function initUpload(){const btn=$("invUploadBtn"),input=$("invFileInput");if(!btn||!input)return;btn.addEventListener("click",()=>input.click());input.addEventListener("change",async()=>{const file=input.files[0];if(!file)return;btn.textContent="⏳ Procesando…";btn.disabled=true;try{const text=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{const arr=new Uint8Array(e.target.result);let t="";for(let i=0;i<arr.length;i++){const c=arr[i];if(c>=32&&c<127)t+=String.fromCharCode(c);else if(c===10||c===13)t+=" ";}res(t);};r.onerror=rej;r.readAsArrayBuffer(file);});const data=parseIBKR(text);if(data){applyData(data);showToast2("✅","Informe actualizado",file.name,"var(--green)",3000);}else{showToast2("❌","No se pudo extraer datos","Verifica que sea un informe IBKR","var(--red)",4000);}}catch(e){showToast2("❌","Error",e.message,"var(--red)",4000);}finally{btn.textContent="📄 Subir informe";btn.disabled=false;input.value="";}});}function parseIBKR(text){const data={};let m=text.match(/Ending NAV\s+([\d,]+\.?\d*)/i);if(m)data.nav=parseFloat(m[1].replace(/,/g,""));m=text.match(/CUMULATIVE RETURN\s+([\d.]+)%/i);if(m)data.cumReturn=parseFloat(m[1]);m=text.match(/1 MONTH RETURN\s+([\d.]+)%/i);if(m)data.monthReturn=parseFloat(m[1]);m=text.match(/(\d{2}\/\d{2}\/\d{4})/);if(m)data.date=m[1];if(!data.nav)return null;return data;}function applyData(data){const navEl=$("invNAV");if(navEl&&data.nav)navEl.textContent="€"+Math.round(data.nav).toLocaleString();const navSub=$("invNAVSub");if(navSub&&data.date)navSub.textContent=data.date+" · IBKR · U16775860";const cr=$("invCumReturn");if(cr&&data.cumReturn!=null){cr.textContent=(data.cumReturn>=0?"+":"")+data.cumReturn.toFixed(2)+"%";cr.className="inv-val "+(data.cumReturn>=0?"pos":"neg");}const mr=$("invMonthReturn");if(mr&&data.monthReturn!=null){mr.textContent=(data.monthReturn>=0?"+":"")+data.monthReturn.toFixed(2)+"%";mr.className="inv-val "+(data.monthReturn>=0?"pos":"neg");}localStorage.setItem("ibkr_data",JSON.stringify(data));localStorage.setItem("ibkr_data_date",new Date().toISOString());}function loadSaved(){const saved=localStorage.getItem("ibkr_data"),savedDate=localStorage.getItem("ibkr_data_date");if(!saved)return;try{const data=JSON.parse(saved);if(savedDate&&(Date.now()-new Date(savedDate).getTime())/(1000*60*60*24)>60)return;applyData(data);}catch(_){}}setTimeout(initUpload,300);setTimeout(loadSaved,400);})();
 // IBKR REMINDER
 function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr_reminder_dismissed_"+now.getFullYear()+"_"+now.getMonth();if(day>7||localStorage.getItem(key)==="1")return;const banner=document.createElement("div");banner.id="ibkr-reminder";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#2563eb,#0891b2);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font);font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(37,99,235,.35);";const months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];banner.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📊</span><div><div style="font-weight:700;">Recordatorio IBKR</div><div style="opacity:.85;font-size:12px;">Descarga el informe de ${months[now.getMonth()===0?11:now.getMonth()-1]} y actualiza Investments</div></div></div><div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="switchView('investments')" style="padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;">Ver Investments →</button><button onclick="localStorage.setItem('${key}','1');this.closest('#ibkr-reminder').remove();" style="padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;cursor:pointer;">Ignorar</button></div>`;document.body.appendChild(banner);}
-// PRIVACY MODE
-(function(){const PRIVATE_IDS=["ovBalKWD","ovLastSMSDate","ovAccBal","ovIncMonth","ovExpMonth","ovNetMonth","bvKWD","bvUSD","bvEUR","bvAED","bvTotal","scTotal","scMonth","chartTotal","invNAV","invCumReturn","invMonthReturn"];const originals={};let on=localStorage.getItem("privacyMode")==="1";function maskValue(val){if(!val||val==="—")return"••••";return val.replace(/[\d,.]+/g,m=>"•".repeat(Math.min(m.length,6)));}function apply(){PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;if(on){if(!originals[id])originals[id]=el.innerHTML;el.innerHTML=maskValue(el.textContent);el.style.letterSpacing="2px";el.style.opacity="0.6";}else{if(originals[id]!==undefined){el.innerHTML=originals[id];el.style.letterSpacing="";el.style.opacity="";}}});const btn=$("privacyBtn");if(btn){btn.innerHTML=on?"🙈&nbsp;Mostrar":"👁&nbsp;Ocultar";btn.classList.toggle("active",on);}}window._privacyApply=apply;window._privacyOn=()=>on;setTimeout(()=>{if(on)apply();const btn=$("privacyBtn");if(btn)btn.addEventListener("click",()=>{if(!on)PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(el)originals[id]=el.innerHTML;});on=!on;localStorage.setItem("privacyMode",on?"1":"0");apply();});},800);})();
+// PRIVACY MODE — full blanket
+(function(){
+  let on = localStorage.getItem('privacyMode')!=='0'; // default ON
+
+  // CSS-based privacy: blur everything financial
+  const styleId = 'privacy-style';
+  function getStyleEl(){
+    let el = document.getElementById(styleId);
+    if(!el){ el=document.createElement('style'); el.id=styleId; document.head.appendChild(el); }
+    return el;
+  }
+
+  function apply(){
+    const btn = document.getElementById('privacyBtn');
+    if(btn){ btn.innerHTML = on ? '🙈&nbsp;Mostrar' : '👁&nbsp;Ocultar'; btn.classList.toggle('active', on); }
+
+    if(on){
+      getStyleEl().textContent = `
+        /* Monetary amounts — blur text */
+        .amt, .sc-val, .ov-hero-val, .ov-qs-val, .ov-tx-amt,
+        .ov-bank-val, .ov-bank-inc, .ov-bank-exp, .ov-legend-val,
+        .bc-val, .bh-val, .md-cur-val, .md-total-val, .md-tx-amt,
+        .inv-val, .inv-cash-val, .inv-table td.r,
+        .chart-total, .sr-v, .h-bar-val, .cat-popup-tx-amt,
+        .budget-pct, .budget-cat-amounts, .budget-status,
+        .wp-bal, .wp-item-val, .savings-stat-val, .sv-hero-val,
+        .sv-month-val, .bal-line-current, .recur-amt,
+        .chart-panel-stat-val, #balLineChange,
+        #ovBalKWD, #ovAccBal, #ovIncMonth, #ovExpMonth, #ovNetMonth,
+        #ovWeekAmt, #ovAvgDay, #ovMaxTx, #scTotal, #scMonth,
+        #bvKWD, #bvUSD, #bvEUR, #bvAED, #bvTotal,
+        #chartTotal, #invNAV, #invCumReturn, #invMonthReturn,
+        #svHeroVal, #svGoalHero, #svPctHero, #balLineCurrent,
+        #budgetTotal, #budgetSpent, #budgetLeft,
+        #recurMonthly, #wpBal, #wpExp, #wpInc, #wpNet,
+        .ov-cat-amt, .inv-alloc-pct, .dtots, .cmp-badge {
+          color: transparent !important;
+          text-shadow: 0 0 8px currentColor !important;
+          user-select: none !important;
+          -webkit-user-select: none !important;
+        }
+        /* Use var(--t2) color for shadow */
+        .amt, .sc-val, .ov-hero-val { text-shadow: 0 0 10px rgba(148,163,184,.8) !important; }
+        [data-theme="dark"] .amt,
+        [data-theme="dark"] .sc-val { text-shadow: 0 0 10px rgba(71,85,105,.9) !important; }
+
+        /* Transaction list overview — blur after 3rd */
+        .ov-tx-item:nth-child(n+4) {
+          filter: blur(5px);
+          pointer-events: none;
+          user-select: none;
+        }
+        /* Transaction table — blur after row 4 */
+        #tbody tr:nth-child(n+6):not(.rg-sep) {
+          filter: blur(5px);
+          pointer-events: none;
+          user-select: none;
+        }
+        /* Charts */
+        #ovSparkline, #balLineSvg, #invLineSvg, #ovDonut, #invDonut,
+        .ov-bars, #svBars, .bar-chart {
+          filter: blur(5px);
+          pointer-events: none;
+        }
+        /* Day totals separators */
+        .dtots { filter: blur(4px); }
+        /* Mini bars fill widths still visible but amounts hidden */
+        .ov-cat-amt { color: transparent !important; text-shadow: 0 0 8px rgba(148,163,184,.8) !important; }
+      `
+    } else {
+      getStyleEl().textContent = '';
+    }
+  }
+
+  window._privacyApply = apply;
+  window._privacyOn = () => on;
+
+  setTimeout(()=>{
+    if(on) apply();
+    const btn = document.getElementById('privacyBtn');
+    if(btn) btn.addEventListener('click', ()=>{
+      on = !on;
+      localStorage.setItem('privacyMode', on?'1':'0');
+      apply();
+      haptic('light');
+    });
+  }, 800);
+})();
 // PREMIUM UX
 function animateNumber(el,from,to,duration=600,suffix=""){
   if(!el)return;
-  // If privacy is on, skip animation entirely — just set masked value
-  if(window._privacyOn&&window._privacyOn()){
-    window._privacyApply&&window._privacyApply();
-    return;
-  }
   const start=performance.now(),range=to-from;
   function step(now){
-    // Check privacy each frame — if turned on mid-animation, stop
-    if(window._privacyOn&&window._privacyOn()){window._privacyApply&&window._privacyApply();return;}
     const pct=Math.min((now-start)/duration,1),ease=1-Math.pow(1-pct,3),val=from+range*ease,decimals=String(to).includes('.')?String(to).split('.')[1].length:0;
     el.textContent=(val>=0&&to>=0?"":val<0?"-":"+")+Math.abs(val).toFixed(decimals)+suffix;
     if(pct<1)requestAnimationFrame(step);
@@ -3444,6 +3553,8 @@ tbody tr.high-row td{background:#fffbeb!important;}
 .inv-perf-item { }
 .inv-perf-label { font-size:10px; color:var(--t3); text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:4px; }
 .inv-perf-val { font-size:16px; font-weight:700; font-family:var(--mono); }
+
+
 
 </style></head><body>
 <div class="header">
