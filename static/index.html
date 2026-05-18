@@ -1703,6 +1703,17 @@ body.privacy-on .bar-chart {
   min-width: 90px;
   text-align: right;
 }
+
+/* Investment table row tints */
+.inv-table tbody tr:has(.pos) td { background: rgba(5,150,105,.04) !important; }
+.inv-table tbody tr:has(.neg) td { background: rgba(220,38,38,.04) !important; }
+[data-theme="dark"] .inv-table tbody tr:has(.pos) td { background: rgba(52,211,153,.05) !important; }
+[data-theme="dark"] .inv-table tbody tr:has(.neg) td { background: rgba(251,113,133,.05) !important; }
+[data-theme="gold"] .inv-table tbody tr:has(.pos) td { background: rgba(0,192,118,.05) !important; }
+[data-theme="gold"] .inv-table tbody tr:has(.neg) td { background: rgba(255,77,77,.05) !important; }
+/* P&L% column bold */
+.inv-table tbody td:last-child { font-weight: 700; }
+
 </style>
 </head>
 <body>
@@ -1992,17 +2003,17 @@ body.privacy-on .bar-chart {
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px;box-shadow:var(--shadow-m);">
           <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">🏆 Top performers</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">IUSE</div><div style="font-size:11px;color:var(--t3);">iShares S&P 500</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;color:var(--green);">€17,205</div><div style="font-size:11px;color:var(--green);">CTR +7.24%</div></div></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">NQSE</div><div style="font-size:11px;color:var(--t3);">NASDAQ 100</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;color:var(--green);">€8,511</div><div style="font-size:11px;color:var(--green);">CTR +4.92%</div></div></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">GOOG</div><div style="font-size:11px;color:var(--t3);">Alphabet</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;color:var(--green);">€2,546</div><div style="font-size:11px;color:var(--green);">CTR +2.76%</div></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">IUSE</div><div style="font-size:11px;color:var(--t3);">iShares S&P 500</div></div><div style="text-align:right;"><div class="inv-perf-val" style="font-family:var(--mono);font-weight:700;color:var(--green);">€17,205</div><div class="inv-perf-val" style="font-size:11px;color:var(--green);">CTR +7.24%</div></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">NQSE</div><div style="font-size:11px;color:var(--t3);">NASDAQ 100</div></div><div style="text-align:right;"><div class="inv-perf-val" style="font-family:var(--mono);font-weight:700;color:var(--green);">€8,511</div><div class="inv-perf-val" style="font-size:11px;color:var(--green);">CTR +4.92%</div></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">GOOG</div><div style="font-size:11px;color:var(--t3);">Alphabet</div></div><div style="text-align:right;"><div class="inv-perf-val" style="font-family:var(--mono);font-weight:700;color:var(--green);">€2,546</div><div class="inv-perf-val" style="font-size:11px;color:var(--green);">CTR +2.76%</div></div></div>
           </div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px;box-shadow:var(--shadow-m);">
           <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">📉 Bottom performers</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">B 08/14/25</div><div style="font-size:11px;color:var(--t3);">Treasury Bill</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;">€0</div><div style="font-size:11px;color:var(--red);">CTR -3.97%</div></div></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">KD</div><div style="font-size:11px;color:var(--t3);">Kyndryl</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;">€263</div><div style="font-size:11px;color:var(--red);">CTR -0.13%</div></div></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">GLUG</div><div style="font-size:11px;color:var(--t3);">Clean Water ETF</div></div><div style="text-align:right;"><div style="font-family:var(--mono);font-weight:700;">€358</div><div style="font-size:11px;color:var(--red);">CTR -0.04%</div></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">B 08/14/25</div><div style="font-size:11px;color:var(--t3);">Treasury Bill</div></div><div style="text-align:right;"><div class="inv-perf-val" style="font-family:var(--mono);font-weight:700;">€0</div><div class="inv-perf-val" style="font-size:11px;color:var(--red);">CTR -3.97%</div></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">KD</div><div style="font-size:11px;color:var(--t3);">Kyndryl</div></div><div style="text-align:right;"><div class="inv-perf-val" style="font-family:var(--mono);font-weight:700;">€263</div><div class="inv-perf-val" style="font-size:11px;color:var(--red);">CTR -0.13%</div></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-family:var(--mono);color:var(--blue);">GLUG</div><div style="font-size:11px;color:var(--t3);">Clean Water ETF</div></div><div style="text-align:right;"><div class="inv-perf-val" style="font-family:var(--mono);font-weight:700;">€358</div><div class="inv-perf-val" style="font-size:11px;color:var(--red);">CTR -0.04%</div></div></div>
           </div>
         </div>
       </div>
@@ -2551,7 +2562,7 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
     'budget-cat-amounts','budget-status','budget-pct',
     'savings-stat-val','sv-hero-val','sv-month-val',
     'bal-line-current','recur-amt','chart-panel-stat-val',
-    'inv-alloc-pct','cmp-badge','wp-bal','wp-item-val','sr-v'
+    'inv-alloc-pct','cmp-badge','wp-bal','wp-item-val','sr-v','inv-perf-val'
   ];
 
   // Store originals keyed by a data attribute to survive re-renders
@@ -3763,6 +3774,17 @@ body.privacy-on .bar-chart {
   filter: blur(5px);
   pointer-events: none;
 }
+
+
+/* Investment table row tints */
+.inv-table tbody tr:has(.pos) td { background: rgba(5,150,105,.04) !important; }
+.inv-table tbody tr:has(.neg) td { background: rgba(220,38,38,.04) !important; }
+[data-theme="dark"] .inv-table tbody tr:has(.pos) td { background: rgba(52,211,153,.05) !important; }
+[data-theme="dark"] .inv-table tbody tr:has(.neg) td { background: rgba(251,113,133,.05) !important; }
+[data-theme="gold"] .inv-table tbody tr:has(.pos) td { background: rgba(0,192,118,.05) !important; }
+[data-theme="gold"] .inv-table tbody tr:has(.neg) td { background: rgba(255,77,77,.05) !important; }
+/* P&L% column bold */
+.inv-table tbody td:last-child { font-weight: 700; }
 
 </style></head><body>
 <div class="header">
