@@ -1773,10 +1773,10 @@ body.privacy-on .bar-chart {
     <div class="nav" data-view="analytics"><span class="nav-ic">📊</span><span>Analytics</span></div>
     <div class="nav" data-view="investments"><span class="nav-ic">📈</span><span>Investments</span></div>
     <div class="nav" data-view="balance"><span class="nav-ic">💰</span><span>Balance</span></div>
-    <div class="sb-sec">Config</div>
+    <div class="nav" data-view="savings"><span class="nav-ic">🏦</span><span>Ahorro</span></div>
     <div class="nav" data-view="rules"><span class="nav-ic">⚡</span><span>Rules</span><span class="nav-badge" id="rulesCount">—</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
-    <div class="nav" data-view="savings"><span class="nav-ic">💰</span><span>Ahorro</span></div>
+    <div class="sb-sec">Config</div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
   </div>
   <div class="sb-footer"><div class="sb-av">P</div><div><div class="sb-uname">Pedro</div><div class="sb-urole">Personal account</div></div></div>
@@ -2536,7 +2536,7 @@ function bind(){
     if(!val||val<=0){showToast2("⚠️","Introduce un importe válido","","var(--amber)",2000);return;}
     localStorage.setItem(SAVINGS_KEY,val.toString());
     $("savingsOvl").classList.remove("open");
-    renderSavingsGoal();
+    renderSavingsView();
     haptic("success");
     showToast2("🎯","Objetivo guardado",val.toFixed(2)+" KWD/mes","var(--green)",2500);
   });
@@ -3969,7 +3969,7 @@ function renderBalanceLine(){
 // ══════════════════════════════════════════════════════════════
 const SAVINGS_KEY = 'app_savings_goal';
 
-function renderSavingsGoal(){
+function renderSavingsView(){
   const goal = parseFloat(localStorage.getItem(SAVINGS_KEY)||'0');
   const empty = document.getElementById('savingsEmpty');
   const content = document.getElementById('savingsContent');
