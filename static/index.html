@@ -1668,11 +1668,7 @@ body.privacy-on .ov-tx-amt {
 /* Privacy text replacement handled by JS */
 
 /* Day totals separator — fully hidden */
-body.privacy-on .dtots {
-  visibility: hidden !important;
-}
-
-/* Overview tx list — blur after 3rd item */
+body.privacy-on /* Overview tx list — blur after 3rd item */
 body.privacy-on .ov-tx-item:nth-child(n+4) {
   filter: blur(5px);
   pointer-events: none;
@@ -1698,12 +1694,11 @@ body.privacy-on .bar-chart {
   pointer-events: none;
 }
 
-/* Fix amount column overflow */
-#t tbody td:nth-child(5) {
+/* Fix amount column */
+#t thead th:nth-child(5), #t tbody td:nth-child(5) {
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
+  min-width: 90px;
+  text-align: right;
 }
 </style>
 </head>
@@ -2458,7 +2453,7 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",savings:"Ahorro",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",savings:"Evolución del ahorro mensual",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
-function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
+function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);setTimeout(()=>window._privacyReapply&&window._privacyReapply(),300);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{
@@ -2582,6 +2577,12 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
   }
 
   function unmask(){
+    // First clear ALL privOrig attributes so re-renders don't re-mask
+    document.querySelectorAll('[data-priv-orig]').forEach(el=>{
+      el.textContent = el.dataset.privOrig;
+      delete el.dataset.privOrig;
+    });
+    // Also clear any remaining from getEls()
     getEls().forEach(el=>{
       if(el.dataset.privOrig !== undefined){
         el.textContent = el.dataset.privOrig;
@@ -2603,12 +2604,13 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
 
   // Called after each data render — only re-mask new elements
   function reapply(){
-    if(!on) return;
+    if(!on){ unmask(); return; }
     getEls().forEach(el=>{
       // If not already masked, save and mask
-      if(!el.dataset.privOrig && el.textContent && !el.textContent.startsWith('•')){
-        el.dataset.privOrig = el.textContent;
-        const len = Math.max(4, Math.min(el.textContent.replace(/[^0-9.,+\-]/g,'').length||4, 7));
+      const txt = el.textContent.trim();
+      if(!el.dataset.privOrig && txt && !txt.startsWith('•') && txt !== '—' && txt.length > 0){
+        el.dataset.privOrig = txt;
+        const len = Math.max(4, Math.min(txt.replace(/[^0-9.,]/g,'').length||4, 7));
         el.textContent = '•'.repeat(len);
       }
     });
@@ -3724,7 +3726,6 @@ body.privacy-on #wpInc,
 body.privacy-on #wpNet,
 body.privacy-on .ov-cat-amt,
 body.privacy-on .inv-alloc-pct,
-body.privacy-on .dtots,
 body.privacy-on .cmp-badge {
   color: transparent !important;
   text-shadow: 0 0 8px #94a3b8 !important;
