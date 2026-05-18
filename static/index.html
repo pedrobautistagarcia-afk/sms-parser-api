@@ -1192,180 +1192,7 @@ body.fm .chart-panel-grid { grid-template-columns: 1fr !important; }
 [data-theme="gold"] .lock-dot.filled { background: #f0b429 !important; border-color: #f0b429 !important; box-shadow: 0 0 12px rgba(240,180,41,.5) !important; }
 
 
-/* ═══════════════════════════════════════
-   PROFESSIONAL FINANCIAL UI
-═══════════════════════════════════════ */
 
-/* ── 1. COLLAPSIBLE SIDEBAR ─────────────────────────────────── */
-:root { --sidebar: 64px; --sidebar-expanded: 240px; }
-
-.sidebar {
-  width: var(--sidebar);
-  transition: width .22s cubic-bezier(.4,0,.2,1);
-  overflow: hidden;
-  position: relative;
-}
-.sidebar:hover, .sidebar.pinned {
-  width: var(--sidebar-expanded);
-}
-/* Hide text when collapsed */
-.sidebar .sb-name,
-.sidebar .sb-tagline,
-.sidebar .sb-sec,
-.sidebar .nav span:not(.nav-ic):not(.nav-badge),
-.sidebar .sb-uname,
-.sidebar .sb-urole,
-.sidebar .sb-top .sb-logo > div:last-child {
-  opacity: 0;
-  width: 0; overflow: hidden;
-  transition: opacity .15s, width .15s;
-  white-space: nowrap;
-}
-.sidebar:hover .sb-name,
-.sidebar:hover .sb-tagline,
-.sidebar:hover .sb-sec,
-.sidebar:hover .nav span:not(.nav-ic):not(.nav-badge),
-.sidebar:hover .sb-uname,
-.sidebar:hover .sb-urole,
-.sidebar:hover .sb-top .sb-logo > div:last-child,
-.sidebar.pinned .sb-name,
-.sidebar.pinned .sb-tagline,
-.sidebar.pinned .sb-sec,
-.sidebar.pinned .nav span:not(.nav-ic):not(.nav-badge),
-.sidebar.pinned .sb-uname,
-.sidebar.pinned .sb-urole,
-.sidebar.pinned .sb-top .sb-logo > div:last-child {
-  opacity: 1;
-  width: auto;
-}
-/* Nav items centered when collapsed */
-.nav {
-  justify-content: flex-start;
-  padding: 10px 0;
-  margin: 0 8px 1px;
-  border-radius: var(--radius-s);
-}
-.nav-ic {
-  width: 44px;
-  min-width: 44px;
-  text-align: center;
-  font-size: 17px;
-}
-/* Pin button */
-.sidebar-pin {
-  position: absolute; top: 16px; right: 10px;
-  width: 24px; height: 24px;
-  background: transparent; border: none;
-  color: var(--t3); cursor: pointer; font-size: 14px;
-  opacity: 0; transition: opacity .15s;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 6px;
-}
-.sidebar:hover .sidebar-pin { opacity: 1; }
-.sidebar-pin:hover { background: var(--border); color: var(--t1); }
-.sidebar-pin.pinned { color: var(--blue); opacity: 1; }
-/* Footer compact */
-.sb-footer { padding: 12px 8px; }
-.sb-av { width: 30px; height: 30px; min-width: 30px; font-size: 12px; margin: 0 7px; }
-/* Top logo compact */
-.sb-top { padding: 16px 8px 10px; }
-.sb-logo { gap: 0; }
-.sb-mark { width: 32px; height: 32px; min-width: 32px; font-size: 15px; margin: 0 6px; }
-/* Badge hidden when collapsed */
-.nav-badge { opacity: 0; transition: opacity .15s; font-size: 9px; padding: 1px 5px; }
-.sidebar:hover .nav-badge, .sidebar.pinned .nav-badge { opacity: 1; }
-
-.topbar-live-item { display: flex; align-items: center; gap: 6px; }
-.topbar-live-label { color: var(--t3); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
-.topbar-live-val { color: var(--t1); font-weight: 600; }
-.topbar-live-val.pos { color: var(--green); }
-.topbar-live-val.neg { color: var(--red); }
-.topbar-live-sep { width: 1px; height: 16px; background: var(--border); }
-[data-theme="dark"] .topbar-live { background: #07090f; border-bottom-color: rgba(79,142,247,.08); }
-[data-theme="gold"] .topbar-live { background: #0d0a06; border-bottom-color: rgba(240,180,41,.08); }
-
-/* ── 3. NUMBERS — thousands separator style ──────────────────── */
-.mono-num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.currency-sym { font-size: .7em; opacity: .7; margin-right: 1px; vertical-align: super; font-weight: 500; }
-
-/* ── 4. TABLE — bank statement style ────────────────────────── */
-#t thead th {
-  font-size: 10px; letter-spacing: .8px;
-  padding: 10px 16px; font-weight: 700;
-  text-transform: uppercase;
-}
-#t tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-#t tbody tr:last-child td { border-bottom: none; }
-/* Alternating rows - very subtle */
-#t tbody tr:nth-child(even):not(.rg-sep):not(.sel) td {
-  background: rgba(0,0,0,.015);
-}
-[data-theme="dark"] #t tbody tr:nth-child(even):not(.rg-sep):not(.sel) td {
-  background: rgba(255,255,255,.012);
-}
-[data-theme="gold"] #t tbody tr:nth-child(even):not(.rg-sep):not(.sel) td {
-  background: rgba(240,180,41,.018);
-}
-/* Amount column right-aligned with sign */
-.amt { font-size: 13px; letter-spacing: .2px; }
-
-/* ── 5. CARDS — left border accent ──────────────────────────── */
-.stat-card:not(.hero) {
-  border-left: 3px solid var(--border2);
-}
-.stat-card:not(.hero):hover { border-left-color: var(--blue); }
-
-/* ── 6. KPI LABELS — uppercase spaced ───────────────────────── */
-.sc-label, .ov-qs-label, .inv-lbl, .bc-cur,
-.ana-card-title, .inv-card-title, .inv-section-title {
-  letter-spacing: .8px;
-}
-
-/* ── 7. SECTION DIVIDERS ─────────────────────────────────────── */
-.ov-card-head, .ana-card-title {
-  padding-bottom: 12px;
-}
-
-/* ── 8. POSITIVE/NEGATIVE with background pill ───────────────── */
-.amt.pos { background: var(--green-l); padding: 2px 6px; border-radius: 4px; display: inline-block; }
-.amt.neg { background: var(--red-l);   padding: 2px 6px; border-radius: 4px; display: inline-block; }
-
-/* Collapse sidebar on mobile — full hide */
-@media(max-width:768px){ .sidebar { display: none !important; } }
-body.fm .sidebar { display: none !important; }
-
-
-/* SPLASH SCREEN */
-#splashScreen {
-  position: fixed; inset: 0; z-index: 10000;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  background: #05080f;
-  transition: opacity .4s ease, transform .4s ease;
-}
-[data-theme="light"] #splashScreen { background: #f1f5f9; }
-[data-theme="gold"]  #splashScreen { background: #0a0805; }
-.splash-logo {
-  width: 80px; height: 80px;
-  background: linear-gradient(135deg, #2563eb, #0891b2);
-  border-radius: 24px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
-  box-shadow: 0 16px 48px rgba(37,99,235,.4);
-  animation: splashPulse 1.2s ease infinite alternate;
-  margin-bottom: 24px;
-}
-[data-theme="gold"] .splash-logo { background: linear-gradient(135deg,#f0b429,#c8910d); box-shadow: 0 16px 48px rgba(240,180,41,.4); }
-@keyframes splashPulse { from{box-shadow:0 16px 48px rgba(37,99,235,.3)} to{box-shadow:0 20px 60px rgba(37,99,235,.6)} }
-.splash-name { font-size: 22px; font-weight: 700; color: #f1f5f9; letter-spacing: -.3px; margin-bottom: 4px; }
-[data-theme="light"] .splash-name { color: #0f172a; }
-[data-theme="gold"] .splash-name { color: #f5f0e8; }
-.splash-sub { font-size: 12px; color: #475569; letter-spacing: .5px; text-transform: uppercase; }
-.splash-bar { width: 120px; height: 2px; background: rgba(255,255,255,.1); border-radius: 999px; margin-top: 32px; overflow: hidden; }
-.splash-bar-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #0891b2); border-radius: 999px; animation: splashLoad .7s ease forwards; }
-[data-theme="gold"] .splash-bar-fill { background: linear-gradient(90deg, #f0b429, #e8c547); }
-@keyframes splashLoad { from{width:0%} to{width:100%} }
-#splashScreen.hide { opacity: 0; transform: scale(1.02); pointer-events: none; }
 
 
 /* ELEGANT CONFIRM MODAL */
@@ -1717,13 +1544,6 @@ body.privacy-on .bar-chart {
 </style>
 </head>
 <body>
-
-
-<div id="splashScreen">
-  <div class="splash-logo">💳</div>
-  <div class="splash-name">Expense Tracker</div>
-  <div class="splash-sub">Personal Finance</div>
-  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
 
 <!-- LOCK SCREEN — first in body so it renders on top immediately -->
@@ -1764,7 +1584,7 @@ body.privacy-on .bar-chart {
   <span>Sin conexión — mostrando datos guardados</span>
 </div>
 <nav class="sidebar">
-  <div class="sb-top"><div class="sb-logo"><div class="sb-mark">💳</div><div><div class="sb-name">Expense</div><div class="sb-tagline">Tracker</div></div></div><button class="sidebar-pin" id="sidebarPin" title="Fijar sidebar">📌</button></div>
+  <div class="sb-top"><div class="sb-logo"><div class="sb-mark">💳</div><div><div class="sb-name">Expense</div><div class="sb-tagline">Tracker</div></div></div></div>
   <div class="sb-hr"></div>
   <div class="sb-nav">
     <div class="sb-sec">Main</div>
@@ -1803,7 +1623,7 @@ body.privacy-on .bar-chart {
           <div class="ov-hero-sub" id="ovBalSub">Último saldo conocido</div>
           <div class="ov-hero-val" id="ovBalKWD">—</div>
           <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);display:flex;gap:16px;">
-            <div><div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Último SMS</div><div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovLastSMSDate">—</div></div>
+            <div><div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Balance acumulado</div><div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovAccBal">—</div></div>
             <div><div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Balance acumulado</div><div style="font-size:12px;font-family:var(--mono);font-weight:600;" id="ovAccBal">—</div></div>
           </div>
           <div class="ov-sparkline-wrap">
@@ -2385,6 +2205,7 @@ async function renderOverview(){
   let nbkBalance=null,lastSMSDate=null;
   for(const r of sortedAll){const sms=r.sms||r.sms_raw||"";const m=sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);if(m){nbkBalance=parseFloat(m[1].replace(/,/g,""));lastSMSDate=isoDay(r.created_at||"");break;}}
   const kwdEl=$("ovBalKWD");if(kwdEl)kwdEl.textContent=nbkBalance!==null?fmPro(nbkBalance,3)+" KWD":"—";
+  const accBal=cbal(S.all);const accEl=$("ovAccBal");if(accEl)accEl.textContent=(accBal.KWD>=0?"+":"")+accBal.KWD.toFixed(3)+" KWD";
   // Save balance point for chart
   if(nbkBalance!==null && lastSMSDate){
     try{
@@ -2399,7 +2220,7 @@ async function renderOverview(){
     }catch(_){}
   }
   const lsEl=$("ovLastSMSDate");if(lsEl)lsEl.textContent=lastSMSDate?fd(lastSMSDate):"—";
-  const accBal=cbal(S.all);const accEl=$("ovAccBal");if(accEl)accEl.textContent=(accBal.KWD>=0?"+":"")+accBal.KWD.toFixed(3)+" KWD";
+  
   $("ovBalSub").textContent="Último saldo NBK registrado · SMS";
   const monthRows=S.all.filter(r=>(r.created_at||"").startsWith(ym));
   const monthExp=monthRows.filter(r=>idir(r)==="out").reduce((s,r)=>s+Number(r.amount||0),0);
@@ -3415,21 +3236,7 @@ function fmPro(n, decimals=3, currency=''){
   return sign+formatted+(currency?' '+currency:'');
 }
 
-// ── Sidebar pin ──────────────────────────────────────────────────
-(function(){
-  const sidebar=document.querySelector('.sidebar');
-  const pin=document.getElementById('sidebarPin');
-  if(!sidebar||!pin)return;
-  let pinned=localStorage.getItem('sidebar_pinned')==='1';
-  function applyPin(){
-    sidebar.classList.toggle('pinned',pinned);
-    pin.classList.toggle('pinned',pinned);
-    pin.textContent=pinned?'📌':'📍';
-    pin.title=pinned?'Desfijar sidebar':'Fijar sidebar';
-  }
-  applyPin();
-  pin.addEventListener('click',e=>{e.stopPropagation();pinned=!pinned;localStorage.setItem('sidebar_pinned',pinned?'1':'0');applyPin();});
-})();
+
 
 // ── Live topbar data ─────────────────────────────────────────────
 function updateLiveBar(){
@@ -3485,15 +3292,6 @@ function applyProNumbers(){
 // ══════════════════════════════════════════════════════════════
 
 // ── Splash screen ────────────────────────────────────────────────
-(function(){
-  const splash = document.getElementById('splashScreen');
-  if(!splash) return;
-  // Hide after 900ms
-  setTimeout(()=>{
-    splash.classList.add('hide');
-    setTimeout(()=>{ splash.style.display='none'; }, 400);
-  }, 900);
-})();
 
 // ── Elegant confirm ──────────────────────────────────────────────
 function elegantConfirm({icon='⚠️', title='¿Estás seguro?', msg='', okLabel='Confirmar', okClass='btn-primary'}={}){
@@ -3969,72 +3767,7 @@ function renderBalanceLine(){
 // ══════════════════════════════════════════════════════════════
 const SAVINGS_KEY = 'app_savings_goal';
 
-function renderSavingsView(){
-  const goal = parseFloat(localStorage.getItem(SAVINGS_KEY)||'0');
-  const empty = document.getElementById('savingsEmpty');
-  const content = document.getElementById('savingsContent');
-  if(!empty || !content) return;
 
-  if(!goal){
-    empty.style.display='block';
-    content.style.display='none';
-    return;
-  }
-
-  empty.style.display='none';
-  content.style.display='block';
-
-  const now = new Date();
-  const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const monthRows = S.all.filter(r=>(r.created_at||'').startsWith(ym));
-  const inc = monthRows.filter(r=>idir(r)==='in').reduce((s,r)=>s+Number(r.amount||0),0);
-  const exp = monthRows.filter(r=>idir(r)==='out').reduce((s,r)=>s+Number(r.amount||0),0);
-  const net = inc - exp;
-  const pct = goal > 0 ? Math.min(Math.round(net/goal*100),100) : 0;
-  const rem = goal - net;
-  const achieved = net >= goal;
-
-  const goalEl = document.getElementById('savingsGoalVal');
-  const netEl  = document.getElementById('savingsNetVal');
-  const remEl  = document.getElementById('savingsRemVal');
-  const fill   = document.getElementById('savingsFill');
-  const status = document.getElementById('savingsStatus');
-
-  if(goalEl) goalEl.textContent = goal.toFixed(2)+' KWD';
-  if(netEl){ netEl.textContent = (net>=0?'+':'')+net.toFixed(2)+' KWD'; netEl.style.color = net>=0?'var(--green)':'var(--red)'; }
-  if(remEl){ remEl.textContent = rem<=0?'✅ Logrado!':(rem.toFixed(2)+' KWD'); remEl.style.color = rem<=0?'var(--green)':'var(--t2)'; }
-
-  if(fill){
-    const color = pct>=100?'var(--green)':pct>=60?'var(--blue)':'var(--amber)';
-    fill.style.width = Math.max(pct,0)+'%';
-    fill.style.background = color;
-  }
-  if(status){
-    if(achieved){
-      status.textContent = '🎉 ¡Objetivo alcanzado este mes! +'+net.toFixed(2)+' KWD';
-      status.style.color = 'var(--green)';
-    } else if(net < 0){
-      status.textContent = '⚠️ Gasto mayor que ingreso este mes ('+net.toFixed(2)+' KWD)';
-      status.style.color = 'var(--red)';
-    } else {
-      status.textContent = 'Vas al '+pct+'% del objetivo · faltan '+rem.toFixed(2)+' KWD';
-      status.style.color = 'var(--t2)';
-    }
-  }
-}
-
-function openSavingsModal(){
-  const goal = localStorage.getItem(SAVINGS_KEY)||'';
-  const inp = document.getElementById('savingsInput');
-  if(inp) inp.value = goal;
-  document.getElementById('savingsOvl')?.classList.add('open');
-  setTimeout(()=>inp?.focus(), 200);
-}
-
-
-// ══════════════════════════════════════════════════════════════
-// SAVINGS VIEW
-// ══════════════════════════════════════════════════════════════
 function renderSavingsView(){
   if(!S.all.length){
     const h=document.getElementById('svHistory');
@@ -4071,6 +3804,26 @@ function renderSavingsView(){
   if(svGoalLine) svGoalLine.textContent = goal
     ? 'Límite mensual: '+goal.toFixed(2)+' KWD'
     : 'Sin objetivo establecido — pulsa Editar objetivo para configurar uno';
+
+  // Goal card
+  const goalCard = document.getElementById('svGoalCard');
+  if(goalCard){
+    goalCard.style.display = goal?'block':'none';
+    if(goal){
+      const pct = Math.min(Math.round(cur.exp/goal*100),100);
+      const over = cur.exp > goal;
+      const rem = goal - cur.exp;
+      const color = over?'var(--red)':pct>80?'var(--amber)':'var(--green)';
+      const el = (id)=>document.getElementById(id);
+      const sub = el('svGoalCardSub'); if(sub) sub.textContent=MO[now.getMonth()]+' '+now.getFullYear();
+      const pctBig=el('svGoalPctBig'); if(pctBig){pctBig.textContent=pct+'%';pctBig.style.color=color;}
+      const limEl=el('svGoalLimitVal'); if(limEl) limEl.textContent=goal.toFixed(2)+' KWD';
+      const spEl=el('svGoalSpentVal'); if(spEl) spEl.textContent=cur.exp.toFixed(2)+' KWD';
+      const remEl=el('svGoalRemVal'); if(remEl){remEl.textContent=(rem>=0?rem.toFixed(2):'0.00')+' KWD';remEl.style.color=over?'var(--red)':'var(--green)';}
+      const fillEl=el('svGoalFill'); if(fillEl){fillEl.style.width=pct+'%';fillEl.style.background=color;}
+      const stEl=el('svGoalStatus'); if(stEl){stEl.style.color=color;stEl.textContent=over?'⚠️ Superado en '+(cur.exp-goal).toFixed(2)+' KWD':'✓ Quedan '+rem.toFixed(2)+' KWD';}
+    }
+  }
 
   if(goal && svPctHero){
     const pct = Math.round(cur.exp/goal*100);
