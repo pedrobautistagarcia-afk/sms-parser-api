@@ -1583,10 +1583,14 @@ tr.high-amount .amt { font-weight: 800; }
 /* ═══════════════════════════════════════
    PRIVACY MODE — body.privacy-on
 ═══════════════════════════════════════ */
+
+/* ── All financial numbers → asterisks via pseudo-element trick ── */
+/* We use a combination: color:transparent + text replaced via JS  */
+
+/* Stat cards, hero values, KPIs */
 body.privacy-on .sc-val,
 body.privacy-on .ov-hero-val,
 body.privacy-on .ov-qs-val,
-body.privacy-on .ov-tx-amt,
 body.privacy-on .ov-bank-val,
 body.privacy-on .ov-bank-inc,
 body.privacy-on .ov-bank-exp,
@@ -1595,14 +1599,10 @@ body.privacy-on .bc-val,
 body.privacy-on .bh-val,
 body.privacy-on .md-cur-val,
 body.privacy-on .md-total-val,
-body.privacy-on .md-tx-amt,
 body.privacy-on .inv-val,
 body.privacy-on .inv-cash-val,
-body.privacy-on .inv-table td.r,
 body.privacy-on .chart-total,
 body.privacy-on .sr-v,
-body.privacy-on .h-bar-val,
-body.privacy-on .cat-popup-tx-amt,
 body.privacy-on .budget-pct,
 body.privacy-on .budget-cat-amounts,
 body.privacy-on .budget-status,
@@ -1646,32 +1646,46 @@ body.privacy-on #wpBal,
 body.privacy-on #wpExp,
 body.privacy-on #wpInc,
 body.privacy-on #wpNet,
+body.privacy-on #svGoalLimitVal,
+body.privacy-on #svGoalSpentVal,
+body.privacy-on #svGoalRemVal,
+body.privacy-on #svGoalPctBig,
 body.privacy-on .ov-cat-amt,
 body.privacy-on .inv-alloc-pct,
-body.privacy-on .dtots,
-body.privacy-on .cmp-badge {
+body.privacy-on .cmp-badge,
+body.privacy-on .h-bar-val,
+body.privacy-on .inv-table td.r,
+body.privacy-on .inv-cash-val,
+body.privacy-on .md-tx-amt,
+body.privacy-on .cat-popup-tx-amt,
+body.privacy-on .ov-tx-amt {
   color: transparent !important;
-  text-shadow: 0 0 8px #94a3b8 !important;
+  text-shadow: 0 0 0 #94a3b8 !important;
   user-select: none !important;
   -webkit-user-select: none !important;
+  position: relative;
 }
-[data-theme="dark"] [data-theme="dark"] body.privacy-on .sc-val,
-[data-theme="dark"] body.privacy-on .ov-hero-val {
-  text-shadow: 0 0 10px #475569 !important;
+/* Privacy text replacement handled by JS */
+
+/* Day totals separator — fully hidden */
+body.privacy-on .dtots {
+  visibility: hidden !important;
 }
+
 /* Overview tx list — blur after 3rd item */
 body.privacy-on .ov-tx-item:nth-child(n+4) {
   filter: blur(5px);
   pointer-events: none;
   user-select: none;
 }
-/* Table rows — blur after 4th data row */
-body.privacy-on #tbody tr:nth-child(n+6):not(.rg-sep) {
-  filter: blur(5px);
-  pointer-events: none;
-  user-select: none;
-}
-/* Charts */
+
+/* Analytics bar chart labels/values */
+body.privacy-on .bar-val-tip,
+body.privacy-on .h-bar-val,
+body.privacy-on #chartTotal,
+body.privacy-on .chart-total-sub { visibility: hidden !important; }
+
+/* All chart SVGs — blur */
 body.privacy-on #ovSparkline,
 body.privacy-on #balLineSvg,
 body.privacy-on #invLineSvg,
@@ -1680,10 +1694,17 @@ body.privacy-on #invDonut,
 body.privacy-on .ov-bars,
 body.privacy-on #svBars,
 body.privacy-on .bar-chart {
-  filter: blur(5px);
+  filter: blur(6px);
   pointer-events: none;
 }
 
+/* Fix amount column overflow */
+#t tbody td:nth-child(5) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
 </style>
 </head>
 <body>
@@ -2327,7 +2348,7 @@ function setQ(mode){document.querySelectorAll(".qbtn").forEach(b=>b.classList.re
 function sortView(){const k=S.sortKey,dir=S.sortDir==="asc"?1:-1;S.view.sort((a,b)=>{let av=a[k],bv=b[k];if(k==="amount"){av=Number(av||0);bv=Number(bv||0);}else{av=String(av||"");bv=String(bv||"");}return av<bv?-dir:av>bv?dir:0;});$("shDate").textContent=S.sortKey==="created_at"?(S.sortDir==="asc"?"↑":"↓"):"";}
 function catH(id,cur){const cats=[...S.categories].sort();return`<select class="cs" data-id="${id}" data-cat="${cur||"other"}">${cats.map(c=>`<option value="${c}"${c===cur?" selected":""}>${tc(c)}</option>`).join("")}<option value="__add__">+ Add…</option></select>`;}
 function render(){const tb=$("tbody");tb.innerHTML="";for(const r of S.view){const id=r.id,dir=idir(r),diso=isoDay(r.created_at||r.date_iso||""),cur=(r.currency||"").toUpperCase(),cat=(r.category||"other").toLowerCase(),merch=cm(r.merchant_clean||r.merchant_raw||"");const tr=document.createElement("tr");tr.dataset.day=diso;tr.dataset.id=id;if(S.selected.has(id))tr.classList.add("sel");const avatarClr=merchantColor(merch||'?');const avatarIni=merchantInitials(merch||'?');const isHigh=isHighAmount(r);if(isHigh)tr.classList.add('high-amount');
-    tr.innerHTML=`<td class="selcol"><input class="cbRow" type="checkbox" data-id="${id}"${S.selected.has(id)?" checked":""}></td><td title="${diso}">${fd(diso)}</td><td><div style="display:flex;align-items:center;"><div class="merch-avatar" style="background:${avatarClr}18;color:${avatarClr};">${avatarIni}</div><input class="me" data-id="${id}" value="${merch.replace(/"/g,"&quot;")}" style="flex:1;"/></div>${isHigh?'<span class="high-badge">⚡ alto</span>':''}</td><td>${catH(id,cat)}</td><td class="amt ${dir==="in"?"pos":"neg"}">${fm(r.amount)}</td><td><div class="cur-cell"><span class="flag">${flag(cur)}</span><span class="cur-lbl">${cur}</span></div></td>`;tb.appendChild(tr);}ss(S.view.length+" transactions");updateStatCards();wireInputs();wireSelection();rebuildDayHeaders();if(window._privacyOn&&window._privacyOn())setTimeout(()=>window._privacyApply&&window._privacyApply(),50);}
+    tr.innerHTML=`<td class="selcol"><input class="cbRow" type="checkbox" data-id="${id}"${S.selected.has(id)?" checked":""}></td><td title="${diso}">${fd(diso)}</td><td><div style="display:flex;align-items:center;"><div class="merch-avatar" style="background:${avatarClr}18;color:${avatarClr};">${avatarIni}</div><input class="me" data-id="${id}" value="${merch.replace(/"/g,"&quot;")}" style="flex:1;"/></div>${isHigh?'<span class="high-badge">⚡ alto</span>':''}</td><td>${catH(id,cat)}</td><td class="amt ${dir==="in"?"pos":"neg"}">${fm(r.amount)}</td><td><div class="cur-cell"><span class="flag">${flag(cur)}</span><span class="cur-lbl">${cur}</span></div></td>`;tb.appendChild(tr);}ss(S.view.length+" transactions");updateStatCards();wireInputs();wireSelection();rebuildDayHeaders();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),100);}
 function wireInputs(){document.querySelectorAll(".me").forEach(inp=>{inp.addEventListener("keydown",e=>{if(e.key==="Enter")inp.blur();});inp.addEventListener("blur",async()=>{const id=Number(inp.dataset.id),val=inp.value.trim();try{await POST("/update_field",{userid:UID,id,field:"merchant_clean",value:val});const row=S.all.find(x=>x.id===id);if(row)row.merchant_clean=val;}catch(e){se("Save failed: "+e.message);}});});document.querySelectorAll(".cs").forEach(sel=>{sel.addEventListener("change",async()=>{const id=Number(sel.dataset.id),v=sel.value;if(v==="__add__"){const name=prompt("New category name:");if(!name){const row=S.all.find(x=>x.id===id);sel.value=row?.category||"other";return;}const cat=name.trim().toLowerCase();S.categories.add(cat);buildFilters();await scat(id,cat);return;}sel.dataset.cat=v;await scat(id,v);});});}
 async function scat(id,cat){try{se("");await POST("/update_field",{userid:UID,id,field:"category",value:cat});const row=S.all.find(x=>x.id===id);if(row)row.category=cat;applyFilters();}catch(e){se("Save failed: "+e.message);applyFilters();}}
 function syncCb(){const ca=$("cbAll");if(!ca)return;const ids=S.view.map(r=>r.id),sel=ids.filter(id=>S.selected.has(id)).length;ca.checked=ids.length>0&&sel===ids.length;ca.indeterminate=sel>0&&sel<ids.length;}
@@ -2430,10 +2451,10 @@ function openTx(item){const merch=cm(item.merchant_clean||item.merchant_raw||"")
 const CACHE_KEY="expense_cache_v1",CACHE_TTL=5*60*1000;
 function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data}));}catch(_){}}
 function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const{ts,data}=JSON.parse(raw);if(Date.now()-ts>CACHE_TTL)return null;return data;}catch(_){return null;}}
-async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
+async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
     // If offline, use cache
-    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
-    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
+    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
+    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",savings:"Ahorro",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",savings:"Evolución del ahorro mensual",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
@@ -2509,21 +2530,98 @@ function buildInvDonut(){const svg=$("invDonut"),tip=$("invDonutTip"),legend=$("
 (function(){function initUpload(){const btn=$("invUploadBtn"),input=$("invFileInput");if(!btn||!input)return;btn.addEventListener("click",()=>input.click());input.addEventListener("change",async()=>{const file=input.files[0];if(!file)return;btn.textContent="⏳ Procesando…";btn.disabled=true;try{const text=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{const arr=new Uint8Array(e.target.result);let t="";for(let i=0;i<arr.length;i++){const c=arr[i];if(c>=32&&c<127)t+=String.fromCharCode(c);else if(c===10||c===13)t+=" ";}res(t);};r.onerror=rej;r.readAsArrayBuffer(file);});const data=parseIBKR(text);if(data){applyData(data);showToast2("✅","Informe actualizado",file.name,"var(--green)",3000);}else{showToast2("❌","No se pudo extraer datos","Verifica que sea un informe IBKR","var(--red)",4000);}}catch(e){showToast2("❌","Error",e.message,"var(--red)",4000);}finally{btn.textContent="📄 Subir informe";btn.disabled=false;input.value="";}});}function parseIBKR(text){const data={};let m=text.match(/Ending NAV\s+([\d,]+\.?\d*)/i);if(m)data.nav=parseFloat(m[1].replace(/,/g,""));m=text.match(/CUMULATIVE RETURN\s+([\d.]+)%/i);if(m)data.cumReturn=parseFloat(m[1]);m=text.match(/1 MONTH RETURN\s+([\d.]+)%/i);if(m)data.monthReturn=parseFloat(m[1]);m=text.match(/(\d{2}\/\d{2}\/\d{4})/);if(m)data.date=m[1];if(!data.nav)return null;return data;}function applyData(data){const navEl=$("invNAV");if(navEl&&data.nav)navEl.textContent="€"+Math.round(data.nav).toLocaleString();const navSub=$("invNAVSub");if(navSub&&data.date)navSub.textContent=data.date+" · IBKR · U16775860";const cr=$("invCumReturn");if(cr&&data.cumReturn!=null){cr.textContent=(data.cumReturn>=0?"+":"")+data.cumReturn.toFixed(2)+"%";cr.className="inv-val "+(data.cumReturn>=0?"pos":"neg");}const mr=$("invMonthReturn");if(mr&&data.monthReturn!=null){mr.textContent=(data.monthReturn>=0?"+":"")+data.monthReturn.toFixed(2)+"%";mr.className="inv-val "+(data.monthReturn>=0?"pos":"neg");}localStorage.setItem("ibkr_data",JSON.stringify(data));localStorage.setItem("ibkr_data_date",new Date().toISOString());}function loadSaved(){const saved=localStorage.getItem("ibkr_data"),savedDate=localStorage.getItem("ibkr_data_date");if(!saved)return;try{const data=JSON.parse(saved);if(savedDate&&(Date.now()-new Date(savedDate).getTime())/(1000*60*60*24)>60)return;applyData(data);}catch(_){}}setTimeout(initUpload,300);setTimeout(loadSaved,400);})();
 // IBKR REMINDER
 function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr_reminder_dismissed_"+now.getFullYear()+"_"+now.getMonth();if(day>7||localStorage.getItem(key)==="1")return;const banner=document.createElement("div");banner.id="ibkr-reminder";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#2563eb,#0891b2);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font);font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(37,99,235,.35);";const months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];banner.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📊</span><div><div style="font-weight:700;">Recordatorio IBKR</div><div style="opacity:.85;font-size:12px;">Descarga el informe de ${months[now.getMonth()===0?11:now.getMonth()-1]} y actualiza Investments</div></div></div><div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="switchView('investments')" style="padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;">Ver Investments →</button><button onclick="localStorage.setItem('${key}','1');this.closest('#ibkr-reminder').remove();" style="padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;cursor:pointer;">Ignorar</button></div>`;document.body.appendChild(banner);}
-// PRIVACY MODE
+// PRIVACY MODE — JS replaces text with ••••
 (function(){
   let on = localStorage.getItem('privacyMode') !== '0'; // default ON
 
+  // All element IDs and classes whose text should become ••••
+  const MASK_IDS = [
+    'ovBalKWD','ovAccBal','ovIncMonth','ovExpMonth','ovNetMonth',
+    'ovWeekAmt','ovAvgDay','ovMaxTx','scTotal','scMonth','scCount',
+    'bvKWD','bvUSD','bvEUR','bvAED','bvTotal',
+    'chartTotal','invNAV','invCumReturn','invMonthReturn',
+    'svHeroVal','svGoalHero','svPctHero','balLineCurrent','balLineChange',
+    'budgetTotal','budgetSpent','budgetLeft','budgetPct',
+    'recurMonthly','recurCount','recurPct',
+    'wpBal','wpExp','wpInc','wpNet',
+    'svGoalLimitVal','svGoalSpentVal','svGoalRemVal','svGoalPctBig',
+    'ovNetMonth','ovMonthLabel'
+  ];
+  const MASK_CLASSES = [
+    'sc-val','ov-hero-val','ov-qs-val','ov-tx-amt','ov-bank-val',
+    'ov-bank-inc','ov-bank-exp','ov-legend-val','ov-cat-amt',
+    'bc-val','bh-val','md-cur-val','md-total-val','md-tx-amt',
+    'inv-val','inv-cash-val','h-bar-val','cat-popup-tx-amt',
+    'budget-cat-amounts','budget-status','budget-pct',
+    'savings-stat-val','sv-hero-val','sv-month-val',
+    'bal-line-current','recur-amt','chart-panel-stat-val',
+    'inv-alloc-pct','cmp-badge','wp-bal','wp-item-val',
+    'ov-qs-val','sr-v'
+  ];
+
+  const originals = new Map();
+
+  function maskEl(el){
+    if(!el) return;
+    const key = el.id || (el.className+'_'+el.textContent.slice(0,10));
+    if(!originals.has(el)) originals.set(el, el.textContent);
+    const len = Math.max(4, Math.min(el.textContent.replace(/[^0-9.,\s]/g,'').length, 8));
+    el.textContent = '•'.repeat(len);
+  }
+
+  function restoreEl(el){
+    if(!el) return;
+    if(originals.has(el)) el.textContent = originals.get(el);
+  }
+
+  function applyToAll(fn){
+    // By ID
+    for(const id of MASK_IDS){
+      const el = document.getElementById(id);
+      if(el) fn(el);
+    }
+    // By class
+    for(const cls of MASK_CLASSES){
+      document.querySelectorAll('.'+cls).forEach(el => fn(el));
+    }
+    // Table amounts
+    document.querySelectorAll('#tbody .amt, #tbody td').forEach(el => fn(el));
+    // Table day totals
+    document.querySelectorAll('.dtots').forEach(el => {
+      if(on) el.style.visibility='hidden';
+      else el.style.visibility='';
+    });
+    // Inv table amounts
+    document.querySelectorAll('.inv-table td.r, .inv-cash-val').forEach(el => fn(el));
+    // H-bar values
+    document.querySelectorAll('.h-bar-val').forEach(el => fn(el));
+    // Bar chart tooltip text
+    document.querySelectorAll('.bar-val-tip').forEach(el => fn(el));
+    // Stat rows in analytics
+    document.querySelectorAll('.sr-v').forEach(el => fn(el));
+  }
+
   function apply(){
-    document.body.classList.toggle('privacy-on', on);
     const btn = document.getElementById('privacyBtn');
     if(btn){
       btn.innerHTML = on ? '🙈&nbsp;Mostrar' : '👁&nbsp;Ocultar';
       btn.classList.toggle('active', on);
     }
+    document.body.classList.toggle('privacy-on', on);
+    if(on){
+      applyToAll(maskEl);
+    } else {
+      applyToAll(restoreEl);
+      originals.clear();
+    }
   }
 
   window._privacyApply = apply;
   window._privacyOn = () => on;
+
+  // Re-apply after any render (data changes)
+  const _origApply = apply;
+  window._privacyReapply = () => { if(on) applyToAll(maskEl); };
 
   setTimeout(()=>{
     apply();
@@ -2531,11 +2629,18 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
     if(btn) btn.addEventListener('click', ()=>{
       on = !on;
       localStorage.setItem('privacyMode', on ? '1' : '0');
+      // Clear cache to force fresh text on restore
+      originals.clear();
       apply();
       haptic('light');
     });
-  }, 600);
+  }, 800);
+
+  // Re-apply after data loads
+  const _origLoad = window.load;
+  window.addEventListener('rg-data-loaded', ()=>{ if(on) setTimeout(()=>applyToAll(maskEl), 200); });
 })();
+
 
 
 function animateNumber(el,from,to,duration=600,suffix=""){
