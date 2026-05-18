@@ -1522,6 +1522,61 @@ tr.high-amount .amt { font-weight: 800; }
 .savings-empty-title { font-size: 14px; font-weight: 600; color: var(--t2); margin-bottom: 4px; }
 .savings-empty-sub { font-size: 12px; }
 
+
+/* ═══════════════════════════════════════
+   SAVINGS VIEW
+═══════════════════════════════════════ */
+.sv-hero {
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  border-radius: var(--radius); padding: 24px 28px;
+  margin-bottom: 18px; color: #fff; position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(5,150,105,.3);
+}
+[data-theme="gold"] .sv-hero { background: linear-gradient(135deg,#b8820a,#7a5c08); box-shadow: 0 8px 32px rgba(240,180,41,.3); }
+.sv-hero::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,.08); }
+.sv-hero-label { font-size:12px; font-weight:600; opacity:.8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.sv-hero-val { font-size:38px; font-weight:800; font-family:var(--mono); letter-spacing:-1.5px; margin-bottom:4px; }
+.sv-hero-sub { font-size:12px; opacity:.7; }
+.sv-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,.2); }
+.sv-hero-item-label { font-size:10px; opacity:.7; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+.sv-hero-item-val { font-size:16px; font-weight:700; font-family:var(--mono); }
+
+.sv-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-m); margin-bottom:16px; overflow:hidden; }
+.sv-card-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid var(--border); }
+.sv-card-title { font-size:14px; font-weight:700; letter-spacing:-.2px; }
+.sv-card-sub { font-size:11px; color:var(--t3); margin-top:2px; }
+.sv-card-body { padding:16px 18px; }
+
+/* Monthly bars chart */
+.sv-bars { display:flex; align-items:flex-end; gap:6px; height:160px; border-bottom:1px solid var(--border); margin-bottom:10px; position:relative; }
+.sv-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; cursor:pointer; position:relative; height:100%; }
+.sv-bar-wrap { width:100%; display:flex; align-items:flex-end; justify-content:center; flex:1; gap:2px; }
+.sv-bar-exp { border-radius:4px 4px 0 0; min-height:3px; transition:opacity .15s; }
+.sv-bar-lbl { font-size:10px; color:var(--t3); padding-top:5px; font-weight:500; text-align:center; }
+.sv-bar-col:hover .sv-bar-exp { opacity:.85 !important; }
+.sv-goal-line { position:absolute; left:0; right:0; border-top:2px dashed var(--amber); pointer-events:none; }
+.sv-goal-tag { position:absolute; right:4px; font-size:9px; font-weight:700; color:var(--amber); background:var(--surface); padding:1px 4px; border-radius:3px; }
+
+/* Month history list */
+.sv-month-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+.sv-month-row:last-child { border-bottom:none; }
+.sv-month-ic { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.sv-month-info { flex:1; min-width:0; }
+.sv-month-name { font-size:13px; font-weight:600; color:var(--t1); }
+.sv-month-sub { font-size:11px; color:var(--t3); margin-top:2px; }
+.sv-month-right { text-align:right; flex-shrink:0; }
+.sv-month-val { font-size:14px; font-weight:700; font-family:var(--mono); }
+.sv-month-pct { font-size:11px; color:var(--t3); margin-top:2px; }
+
+/* Investment chart */
+.inv-line-wrap { padding:16px 18px 8px; }
+.inv-line-svg { display:block; width:100%; }
+.inv-line-labels { display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--t3); }
+.inv-perf-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:14px 18px; }
+.inv-perf-item { }
+.inv-perf-label { font-size:10px; color:var(--t3); text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:4px; }
+.inv-perf-val { font-size:16px; font-weight:700; font-family:var(--mono); }
+
 </style>
 </head>
 <body>
@@ -1584,6 +1639,7 @@ tr.high-amount .amt { font-weight: 800; }
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="rules"><span class="nav-ic">⚡</span><span>Rules</span><span class="nav-badge" id="rulesCount">—</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
+    <div class="nav" data-view="savings"><span class="nav-ic">💰</span><span>Ahorro</span></div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
   </div>
   <div class="sb-footer"><div class="sb-av">P</div><div><div class="sb-uname">Pedro</div><div class="sb-urole">Personal account</div></div></div>
@@ -1778,6 +1834,28 @@ tr.high-amount .amt { font-weight: 800; }
 
     <!-- INVESTMENTS -->
     <div class="view" id="view-investments">
+
+      <!-- NAV EVOLUTION CHART -->
+      <div class="sv-card" style="margin-bottom:20px;">
+        <div class="sv-card-head">
+          <div>
+            <div class="sv-card-title">Evolución del NAV</div>
+            <div class="sv-card-sub">Feb 2025 – May 2026 · IBKR · U16775860</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--green);">+16.60%</div>
+        </div>
+        <div class="inv-perf-grid">
+          <div class="inv-perf-item"><div class="inv-perf-label">NAV actual</div><div class="inv-perf-val">€60,629</div></div>
+          <div class="inv-perf-item"><div class="inv-perf-label">Invertido</div><div class="inv-perf-val">€51,900</div></div>
+          <div class="inv-perf-item"><div class="inv-perf-label">Ganancia</div><div class="inv-perf-val" style="color:var(--green);">+€8,729</div></div>
+          <div class="inv-perf-item"><div class="inv-perf-label">Sharpe</div><div class="inv-perf-val">0.76</div></div>
+        </div>
+        <div class="inv-line-wrap">
+          <svg class="inv-line-svg" id="invLineSvg" height="120" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
+          <div class="inv-line-labels" id="invLineLabels"></div>
+        </div>
+      </div>
+
       <div class="inv-hero-strip" style="grid-template-columns:repeat(5,1fr);">
         <div class="inv-hero accent" style="grid-column:span 2;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
@@ -1870,6 +1948,63 @@ tr.high-amount .amt { font-weight: 800; }
         <div class="bal-card usd"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#B22234"/><rect y="1.2" width="20" height="2" fill="#fff"/><rect y="5" width="20" height="2" fill="#fff"/><rect y="8.8" width="20" height="2" fill="#fff"/><rect y="12.6" width="20" height="2" fill="#fff"/><rect width="9" height="8" fill="#3C3B6E"/></svg><span class="bc-cur">USD</span></div><div class="bc-dot" style="background:var(--blue)"></div></div><div class="bc-val" id="bvUSD">—</div><div class="bc-name">US Dollar</div></div>
         <div class="bal-card eur"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#003399"/><g fill="#FFCC00"><circle cx="10" cy="2.2" r=".55"/><circle cx="13" cy="3.2" r=".55"/><circle cx="14.8" cy="5.5" r=".55"/><circle cx="15.3" cy="7" r=".55"/><circle cx="14.8" cy="8.5" r=".55"/><circle cx="13" cy="10.8" r=".55"/><circle cx="10" cy="11.8" r=".55"/><circle cx="7" cy="10.8" r=".55"/><circle cx="5.2" cy="8.5" r=".55"/><circle cx="4.7" cy="7" r=".55"/><circle cx="5.2" cy="5.5" r=".55"/><circle cx="7" cy="3.2" r=".55"/></g></svg><span class="bc-cur">EUR</span></div><div class="bc-dot" style="background:var(--purple)"></div></div><div class="bc-val" id="bvEUR">—</div><div class="bc-name">Euro</div></div>
         <div class="bal-card aed"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#fff"/><rect x="4" width="16" height="4.7" fill="#00732F"/><rect x="4" y="9.3" width="16" height="4.7" fill="#000"/><rect width="4" height="14" fill="#FF0000"/></svg><span class="bc-cur">AED</span></div><div class="bc-dot" style="background:var(--green)"></div></div><div class="bc-val" id="bvAED">—</div><div class="bc-name">UAE Dirham</div></div>
+      </div>
+    </div>
+
+
+    <!-- SAVINGS VIEW -->
+    <div class="view" id="view-savings">
+      <!-- Hero -->
+      <div class="sv-hero" id="svHero">
+        <div class="sv-hero-label">💰 Ahorro este mes</div>
+        <div class="sv-hero-val" id="svHeroVal">—</div>
+        <div class="sv-hero-sub" id="svHeroSub">—</div>
+        <div class="sv-hero-grid">
+          <div>
+            <div class="sv-hero-item-label">Objetivo</div>
+            <div class="sv-hero-item-val" id="svGoalHero">—</div>
+          </div>
+          <div>
+            <div class="sv-hero-item-label">Progreso</div>
+            <div class="sv-hero-item-val" id="svPctHero">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal setting -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="font-size:13px;color:var(--t2);" id="svGoalLine">Sin objetivo establecido</div>
+        <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openSavingsModal()">✏️ Editar objetivo</button>
+      </div>
+
+      <!-- Monthly bars chart -->
+      <div class="sv-card">
+        <div class="sv-card-head">
+          <div>
+            <div class="sv-card-title">Gasto mensual</div>
+            <div class="sv-card-sub">Últimos 12 meses · KWD</div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);" id="svChartNote"></div>
+        </div>
+        <div class="sv-card-body" style="padding-bottom:8px;">
+          <div class="sv-bars" id="svBars" style="position:relative;">
+            <div style="padding:24px;text-align:center;color:var(--t3);width:100%;">Cargando…</div>
+          </div>
+          <div style="display:flex;gap:6px;" id="svBarLabels"></div>
+        </div>
+      </div>
+
+      <!-- Monthly history -->
+      <div class="sv-card">
+        <div class="sv-card-head">
+          <div>
+            <div class="sv-card-title">Historial mensual</div>
+            <div class="sv-card-sub">Gasto total por mes</div>
+          </div>
+        </div>
+        <div class="sv-card-body" style="padding:0 18px;" id="svHistory">
+          <div style="padding:24px;text-align:center;color:var(--t3);">Cargando…</div>
+        </div>
       </div>
     </div>
 
@@ -2205,8 +2340,8 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
     // If offline, use cache
     if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
     const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
-const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
-const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
+const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",savings:"Ahorro",settings:"Settings"};
+const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",savings:"Evolución del ahorro mensual",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
 function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
@@ -3255,6 +3390,61 @@ tbody tr.high-row td{background:#fffbeb!important;}
 .td-amt.pos{color:#15803d;}
 .footer{margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between;}
 @media print{body{padding:20px;} @page{margin:15mm;}}
+
+/* ═══════════════════════════════════════
+   SAVINGS VIEW
+═══════════════════════════════════════ */
+.sv-hero {
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  border-radius: var(--radius); padding: 24px 28px;
+  margin-bottom: 18px; color: #fff; position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(5,150,105,.3);
+}
+[data-theme="gold"] .sv-hero { background: linear-gradient(135deg,#b8820a,#7a5c08); box-shadow: 0 8px 32px rgba(240,180,41,.3); }
+.sv-hero::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,.08); }
+.sv-hero-label { font-size:12px; font-weight:600; opacity:.8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.sv-hero-val { font-size:38px; font-weight:800; font-family:var(--mono); letter-spacing:-1.5px; margin-bottom:4px; }
+.sv-hero-sub { font-size:12px; opacity:.7; }
+.sv-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,.2); }
+.sv-hero-item-label { font-size:10px; opacity:.7; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+.sv-hero-item-val { font-size:16px; font-weight:700; font-family:var(--mono); }
+
+.sv-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-m); margin-bottom:16px; overflow:hidden; }
+.sv-card-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid var(--border); }
+.sv-card-title { font-size:14px; font-weight:700; letter-spacing:-.2px; }
+.sv-card-sub { font-size:11px; color:var(--t3); margin-top:2px; }
+.sv-card-body { padding:16px 18px; }
+
+/* Monthly bars chart */
+.sv-bars { display:flex; align-items:flex-end; gap:6px; height:160px; border-bottom:1px solid var(--border); margin-bottom:10px; position:relative; }
+.sv-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; cursor:pointer; position:relative; height:100%; }
+.sv-bar-wrap { width:100%; display:flex; align-items:flex-end; justify-content:center; flex:1; gap:2px; }
+.sv-bar-exp { border-radius:4px 4px 0 0; min-height:3px; transition:opacity .15s; }
+.sv-bar-lbl { font-size:10px; color:var(--t3); padding-top:5px; font-weight:500; text-align:center; }
+.sv-bar-col:hover .sv-bar-exp { opacity:.85 !important; }
+.sv-goal-line { position:absolute; left:0; right:0; border-top:2px dashed var(--amber); pointer-events:none; }
+.sv-goal-tag { position:absolute; right:4px; font-size:9px; font-weight:700; color:var(--amber); background:var(--surface); padding:1px 4px; border-radius:3px; }
+
+/* Month history list */
+.sv-month-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+.sv-month-row:last-child { border-bottom:none; }
+.sv-month-ic { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.sv-month-info { flex:1; min-width:0; }
+.sv-month-name { font-size:13px; font-weight:600; color:var(--t1); }
+.sv-month-sub { font-size:11px; color:var(--t3); margin-top:2px; }
+.sv-month-right { text-align:right; flex-shrink:0; }
+.sv-month-val { font-size:14px; font-weight:700; font-family:var(--mono); }
+.sv-month-pct { font-size:11px; color:var(--t3); margin-top:2px; }
+
+/* Investment chart */
+.inv-line-wrap { padding:16px 18px 8px; }
+.inv-line-svg { display:block; width:100%; }
+.inv-line-labels { display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--t3); }
+.inv-perf-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:14px 18px; }
+.inv-perf-item { }
+.inv-perf-label { font-size:10px; color:var(--t3); text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:4px; }
+.inv-perf-val { font-size:16px; font-weight:700; font-family:var(--mono); }
+
 </style></head><body>
 <div class="header">
   <div class="header-brand">
@@ -3483,6 +3673,184 @@ function openSavingsModal(){
   if(inp) inp.value = goal;
   document.getElementById('savingsOvl')?.classList.add('open');
   setTimeout(()=>inp?.focus(), 200);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// SAVINGS VIEW
+// ══════════════════════════════════════════════════════════════
+function renderSavingsView(){
+  const now = new Date();
+  const goal = parseFloat(localStorage.getItem(SAVINGS_KEY)||'0');
+  const MS12 = [];
+  for(let i=11;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    MS12.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+
+  // Per month: total expense
+  const moData = MS12.map(ym=>{
+    const rows = S.all.filter(r=>(r.created_at||'').startsWith(ym));
+    const exp = rows.filter(r=>idir(r)==='out').reduce((s,r)=>s+Number(r.amount||0),0);
+    const inc = rows.filter(r=>idir(r)==='in').reduce((s,r)=>s+Number(r.amount||0),0);
+    return {ym, exp, inc, net: inc-exp};
+  });
+
+  // Current month hero
+  const cur = moData[moData.length-1];
+  const heroVal = document.getElementById('svHeroVal');
+  const heroSub = document.getElementById('svHeroSub');
+  const svGoalHero = document.getElementById('svGoalHero');
+  const svPctHero = document.getElementById('svPctHero');
+  const svGoalLine = document.getElementById('svGoalLine');
+
+  if(heroVal) heroVal.textContent = cur.exp.toFixed(2)+' KWD';
+  if(heroSub) heroSub.textContent = 'Gastado · '+MO[now.getMonth()]+' '+now.getFullYear();
+  if(svGoalHero) svGoalHero.textContent = goal ? goal.toFixed(2)+' KWD' : 'Sin objetivo';
+  if(svGoalLine) svGoalLine.textContent = goal
+    ? 'Objetivo de gasto: '+goal.toFixed(2)+' KWD/mes'
+    : 'Sin objetivo establecido — pulsa Editar objetivo para configurar uno';
+
+  if(goal && svPctHero){
+    const pct = Math.round(cur.exp/goal*100);
+    svPctHero.textContent = pct+'%';
+    svPctHero.style.color = pct>100?'#fb7185':pct>80?'#fbbf24':'#fff';
+  } else if(svPctHero){
+    svPctHero.textContent = '—';
+  }
+
+  // Note
+  const note = document.getElementById('svChartNote');
+  if(note) note.textContent = goal ? 'Línea = objetivo '+goal.toFixed(0)+' KWD' : '';
+
+  // ── BAR CHART ────────────────────────────────────────────────
+  const barsEl = document.getElementById('svBars');
+  const lblsEl = document.getElementById('svBarLabels');
+  if(!barsEl) return;
+
+  const maxExp = Math.max(...moData.map(m=>m.exp), goal||0, 1);
+  const H = 160;
+  const goalPx = goal ? Math.round((goal/maxExp)*(H-16)) : null;
+
+  barsEl.style.position = 'relative';
+  barsEl.innerHTML = moData.map((m,i)=>{
+    const pct = maxExp>0?Math.max(Math.round(m.exp/maxExp*100),m.exp>0?2:0):0;
+    const over = goal && m.exp > goal;
+    const color = over ? 'var(--red)' : m.exp===0 ? 'var(--border)' : 'var(--blue)';
+    const mo = m.ym.split('-');
+    return `<div class="sv-bar-col" title="${MS[+mo[1]-1]} ${mo[0]}: ${m.exp.toFixed(2)} KWD">
+      <div style="font-size:9px;font-family:var(--mono);color:var(--t3);text-align:center;margin-bottom:2px;">${m.exp>0?m.exp.toFixed(0):''}</div>
+      <div class="sv-bar-wrap">
+        <div class="sv-bar-exp" style="height:${pct}%;width:100%;background:${color};opacity:${i===11?1:.7};"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Goal line
+  if(goalPx !== null){
+    const line = document.createElement('div');
+    line.className = 'sv-goal-line';
+    line.style.bottom = goalPx+'px';
+    line.innerHTML = `<span class="sv-goal-tag">Objetivo ${goal.toFixed(0)}</span>`;
+    barsEl.appendChild(line);
+  }
+
+  if(lblsEl){
+    lblsEl.innerHTML = moData.map(m=>{
+      const mo = m.ym.split('-');
+      return `<div style="flex:1;text-align:center;font-size:10px;color:var(--t3);font-weight:500;">${MS[+mo[1]-1]}</div>`;
+    }).join('');
+  }
+
+  // ── HISTORY LIST ─────────────────────────────────────────────
+  const histEl = document.getElementById('svHistory');
+  if(!histEl) return;
+  const filled = moData.filter(m=>m.exp>0).reverse();
+  if(!filled.length){
+    histEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);">Sin datos todavía</div>';
+    return;
+  }
+  histEl.innerHTML = filled.map(m=>{
+    const mo = m.ym.split('-');
+    const moName = MO[+mo[1]-1]+' '+mo[0];
+    const over = goal && m.exp > goal;
+    const ok = goal && m.exp <= goal;
+    const ic = over ? '🔴' : ok ? '🟢' : '⚪';
+    const pct = goal ? Math.round(m.exp/goal*100) : null;
+    const color = over?'var(--red)':ok?'var(--green)':'var(--t1)';
+    return `<div class="sv-month-row">
+      <div class="sv-month-ic" style="background:${over?'var(--red-l)':ok?'var(--green-l)':'var(--surface2)'};">${ic}</div>
+      <div class="sv-month-info">
+        <div class="sv-month-name">${moName}</div>
+        <div class="sv-month-sub">${m.exp>0?m.exp.toFixed(2)+' KWD gastado':'Sin actividad'}${pct!==null?' · '+pct+'% del objetivo':''}</div>
+      </div>
+      <div class="sv-month-right">
+        <div class="sv-month-val" style="color:${color};">-${m.exp.toFixed(2)}</div>
+        <div class="sv-month-pct">${over?'⚠️ Pasado':'KWD'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// INVESTMENT NAV LINE CHART
+// ══════════════════════════════════════════════════════════════
+function renderInvLineChart(){
+  const svg = document.getElementById('invLineSvg');
+  const lbls = document.getElementById('invLineLabels');
+  if(!svg) return;
+
+  // Hardcoded NAV history Feb 2025 – May 2026
+  const navData = [
+    {mo:'Feb 2025', val:52196},
+    {mo:'Mar 2025', val:49704},
+    {mo:'Abr 2025', val:51958},
+    {mo:'May 2025', val:53842},
+    {mo:'Jun 2025', val:54801},
+    {mo:'Jul 2025', val:56234},
+    {mo:'Ago 2025', val:55912},
+    {mo:'Sep 2025', val:57103},
+    {mo:'Oct 2025', val:58441},
+    {mo:'Nov 2025', val:57892},
+    {mo:'Dic 2025', val:59210},
+    {mo:'Ene 2026', val:58634},
+    {mo:'Feb 2026', val:59801},
+    {mo:'Mar 2026', val:60104},
+    {mo:'Abr 2026', val:62801},
+    {mo:'May 2026', val:60629},
+  ];
+
+  const vals = navData.map(d=>d.val);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const range = maxV - minV || 1;
+  const W=600, H=120, padY=12;
+
+  const toX = i => (i/(navData.length-1))*W;
+  const toY = v => H - padY - ((v-minV)/range)*(H-padY*2);
+
+  const pathD = navData.map((d,i)=>`${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(d.val).toFixed(1)}`).join(' ');
+  const areaD = pathD+` L${W},${H} L0,${H} Z`;
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="invGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#34d399" stop-opacity=".35"/>
+        <stop offset="100%" stop-color="#34d399" stop-opacity=".02"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaD}" fill="url(#invGrad)"/>
+    <path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${navData.map((d,i)=>`<circle cx="${toX(i).toFixed(1)}" cy="${toY(d.val).toFixed(1)}" r="3.5" fill="var(--green)" opacity=".7">
+      <title>${d.mo}: €${d.val.toLocaleString()}</title>
+    </circle>`).join('')}
+  `;
+
+  if(lbls){
+    const show = [0, 4, 8, 12, 15];
+    lbls.innerHTML = navData.map((d,i)=>
+      show.includes(i)?`<span>${d.mo}</span>`:'<span></span>'
+    ).join('');
+  }
 }
 
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
