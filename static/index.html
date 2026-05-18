@@ -2534,18 +2534,16 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
 (function(){
   let on = localStorage.getItem('privacyMode') !== '0'; // default ON
 
-  // All element IDs and classes whose text should become ••••
   const MASK_IDS = [
     'ovBalKWD','ovAccBal','ovIncMonth','ovExpMonth','ovNetMonth',
     'ovWeekAmt','ovAvgDay','ovMaxTx','scTotal','scMonth','scCount',
     'bvKWD','bvUSD','bvEUR','bvAED','bvTotal',
     'chartTotal','invNAV','invCumReturn','invMonthReturn',
     'svHeroVal','svGoalHero','svPctHero','balLineCurrent','balLineChange',
-    'budgetTotal','budgetSpent','budgetLeft','budgetPct',
+    'budgetTotal','budgetSpent','budgetLeft',
     'recurMonthly','recurCount','recurPct',
     'wpBal','wpExp','wpInc','wpNet',
-    'svGoalLimitVal','svGoalSpentVal','svGoalRemVal','svGoalPctBig',
-    'ovNetMonth','ovMonthLabel'
+    'svGoalLimitVal','svGoalSpentVal','svGoalRemVal','svGoalPctBig'
   ];
   const MASK_CLASSES = [
     'sc-val','ov-hero-val','ov-qs-val','ov-tx-amt','ov-bank-val',
@@ -2555,50 +2553,43 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
     'budget-cat-amounts','budget-status','budget-pct',
     'savings-stat-val','sv-hero-val','sv-month-val',
     'bal-line-current','recur-amt','chart-panel-stat-val',
-    'inv-alloc-pct','cmp-badge','wp-bal','wp-item-val',
-    'ov-qs-val','sr-v'
+    'inv-alloc-pct','cmp-badge','wp-bal','wp-item-val','sr-v'
   ];
 
-  const originals = new Map();
-
-  function maskEl(el){
-    if(!el) return;
-    const key = el.id || (el.className+'_'+el.textContent.slice(0,10));
-    if(!originals.has(el)) originals.set(el, el.textContent);
-    const len = Math.max(4, Math.min(el.textContent.replace(/[^0-9.,\s]/g,'').length, 8));
-    el.textContent = '•'.repeat(len);
+  // Store originals keyed by a data attribute to survive re-renders
+  function getEls(){
+    const els = [];
+    for(const id of MASK_IDS){ const el=document.getElementById(id); if(el) els.push(el); }
+    for(const cls of MASK_CLASSES) document.querySelectorAll('.'+cls).forEach(el=>els.push(el));
+    document.querySelectorAll('#tbody .amt').forEach(el=>els.push(el));
+    document.querySelectorAll('.inv-table td.r, .inv-cash-val, .h-bar-val, .sr-v, .dtots').forEach(el=>els.push(el));
+    return els;
   }
 
-  function restoreEl(el){
-    if(!el) return;
-    if(originals.has(el)) el.textContent = originals.get(el);
-  }
-
-  function applyToAll(fn){
-    // By ID
-    for(const id of MASK_IDS){
-      const el = document.getElementById(id);
-      if(el) fn(el);
-    }
-    // By class
-    for(const cls of MASK_CLASSES){
-      document.querySelectorAll('.'+cls).forEach(el => fn(el));
-    }
-    // Table amounts
-    document.querySelectorAll('#tbody .amt, #tbody td').forEach(el => fn(el));
-    // Table day totals
-    document.querySelectorAll('.dtots').forEach(el => {
-      if(on) el.style.visibility='hidden';
-      else el.style.visibility='';
+  function mask(){
+    getEls().forEach(el=>{
+      // Only save original if not already masked
+      if(!el.dataset.privOrig){
+        el.dataset.privOrig = el.textContent;
+      }
+      const len = Math.max(4, Math.min((el.dataset.privOrig||'').replace(/[^0-9.,+\-]/g,'').length||4, 7));
+      el.textContent = '•'.repeat(len);
     });
-    // Inv table amounts
-    document.querySelectorAll('.inv-table td.r, .inv-cash-val').forEach(el => fn(el));
-    // H-bar values
-    document.querySelectorAll('.h-bar-val').forEach(el => fn(el));
-    // Bar chart tooltip text
-    document.querySelectorAll('.bar-val-tip').forEach(el => fn(el));
-    // Stat rows in analytics
-    document.querySelectorAll('.sr-v').forEach(el => fn(el));
+    // Hide day totals completely
+    document.querySelectorAll('.dtots').forEach(el=>el.style.visibility='hidden');
+    // Blur charts
+    document.body.classList.add('privacy-on');
+  }
+
+  function unmask(){
+    getEls().forEach(el=>{
+      if(el.dataset.privOrig !== undefined){
+        el.textContent = el.dataset.privOrig;
+        delete el.dataset.privOrig;
+      }
+    });
+    document.querySelectorAll('.dtots').forEach(el=>el.style.visibility='');
+    document.body.classList.remove('privacy-on');
   }
 
   function apply(){
@@ -2607,21 +2598,26 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
       btn.innerHTML = on ? '🙈&nbsp;Mostrar' : '👁&nbsp;Ocultar';
       btn.classList.toggle('active', on);
     }
-    document.body.classList.toggle('privacy-on', on);
-    if(on){
-      applyToAll(maskEl);
-    } else {
-      applyToAll(restoreEl);
-      originals.clear();
-    }
+    if(on) mask(); else unmask();
+  }
+
+  // Called after each data render — only re-mask new elements
+  function reapply(){
+    if(!on) return;
+    getEls().forEach(el=>{
+      // If not already masked, save and mask
+      if(!el.dataset.privOrig && el.textContent && !el.textContent.startsWith('•')){
+        el.dataset.privOrig = el.textContent;
+        const len = Math.max(4, Math.min(el.textContent.replace(/[^0-9.,+\-]/g,'').length||4, 7));
+        el.textContent = '•'.repeat(len);
+      }
+    });
+    document.querySelectorAll('.dtots').forEach(el=>el.style.visibility='hidden');
   }
 
   window._privacyApply = apply;
   window._privacyOn = () => on;
-
-  // Re-apply after any render (data changes)
-  const _origApply = apply;
-  window._privacyReapply = () => { if(on) applyToAll(maskEl); };
+  window._privacyReapply = reapply;
 
   setTimeout(()=>{
     apply();
@@ -2629,16 +2625,10 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
     if(btn) btn.addEventListener('click', ()=>{
       on = !on;
       localStorage.setItem('privacyMode', on ? '1' : '0');
-      // Clear cache to force fresh text on restore
-      originals.clear();
       apply();
       haptic('light');
     });
   }, 800);
-
-  // Re-apply after data loads
-  const _origLoad = window.load;
-  window.addEventListener('rg-data-loaded', ()=>{ if(on) setTimeout(()=>applyToAll(maskEl), 200); });
 })();
 
 
