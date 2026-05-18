@@ -2385,6 +2385,19 @@ async function renderOverview(){
   let nbkBalance=null,lastSMSDate=null;
   for(const r of sortedAll){const sms=r.sms||r.sms_raw||"";const m=sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);if(m){nbkBalance=parseFloat(m[1].replace(/,/g,""));lastSMSDate=isoDay(r.created_at||"");break;}}
   const kwdEl=$("ovBalKWD");if(kwdEl)kwdEl.textContent=nbkBalance!==null?fmPro(nbkBalance,3)+" KWD":"—";
+  // Save balance point for chart
+  if(nbkBalance!==null && lastSMSDate){
+    try{
+      const bHist = JSON.parse(localStorage.getItem('nbk_balance_history')||'[]');
+      const existing = bHist.find(p=>p.day===lastSMSDate);
+      if(existing){ existing.val=nbkBalance; }
+      else { bHist.push({day:lastSMSDate,val:nbkBalance}); }
+      // Keep last 180 days
+      bHist.sort((a,b)=>a.day.localeCompare(b.day));
+      if(bHist.length>180) bHist.splice(0,bHist.length-180);
+      localStorage.setItem('nbk_balance_history',JSON.stringify(bHist));
+    }catch(_){}
+  }
   const lsEl=$("ovLastSMSDate");if(lsEl)lsEl.textContent=lastSMSDate?fd(lastSMSDate):"—";
   const accBal=cbal(S.all);const accEl=$("ovAccBal");if(accEl)accEl.textContent=(accBal.KWD>=0?"+":"")+accBal.KWD.toFixed(3)+" KWD";
   $("ovBalSub").textContent="Último saldo NBK registrado · SMS";
@@ -2463,7 +2476,7 @@ function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)retur
 async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
     // If offline, use cache
     if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
-    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){se(String(e?.message||e));ss("error");}finally{if(!fromCache)showSkel(false);}}
+    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){const msg=String(e?.message||e); se(msg.includes("Timeout")?"⏳ El servidor está arrancando, inténtalo en 30 segundos":msg); ss("error ⟳");}finally{if(!fromCache)showSkel(false);}}
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",savings:"Ahorro",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",savings:"Evolución del ahorro mensual",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
@@ -2484,7 +2497,7 @@ function bind(){
     const icons={dark:"🌙",light:"☀️",gold:"✨"};
     const btn=$("themeBtn");if(btn)btn.textContent=icons[t]||"🌙";
   })();
-  $("refreshBtn").addEventListener("click",load);
+  $("refreshBtn").addEventListener("click",()=>{ $("refreshBtn").textContent="⏳"; load().finally(()=>{ $("refreshBtn").textContent="🔄"; }); });
   $("btnPDFTopbar")?.addEventListener("click", generateMonthlyPDF);
   $("curFilter").addEventListener("change",applyFiltersWithWindow);$("catFilter").addEventListener("change",applyFiltersWithWindow);$("dateFrom").addEventListener("change",applyFiltersWithWindow);$("dateTo").addEventListener("change",applyFiltersWithWindow);
   $("btnToday").addEventListener("click",()=>setQ("today"));$("btnWeek").addEventListener("click",()=>setQ("week"));$("btnMonth").addEventListener("click",()=>setQ("month"));$("btnYear").addEventListener("click",()=>setQ("year"));
@@ -3854,22 +3867,25 @@ function renderBalanceLine(){
   const chg = document.getElementById('balLineChange');
   if(!svg) return;
 
-  // Extract NBK balance from ALL rows sorted by date (sms field may be absent)
-  const sorted = [...S.all]
-    .sort((a,b) => String(a.created_at||'').localeCompare(String(b.created_at||'')));
+  // Load balance history from localStorage (saved when SMS data arrives)
+  let points = [];
+  try{
+    points = JSON.parse(localStorage.getItem('nbk_balance_history')||'[]');
+  }catch(_){ points=[]; }
 
-  const points = [];
-  for(const r of sorted){
-    const sms = r.sms || r.sms_raw || '';
-    const m = sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);
-    if(!m) continue;
-    const val = parseFloat(m[1].replace(/,/g,''));
-    const day = isoDay(r.created_at||'');
-    if(!day) continue;
-    // Only keep last of each day
-    const last = points[points.length-1];
-    if(last && last.day === day){ last.val = val; }
-    else points.push({day, val});
+  // Also try to extract from current rows as fallback
+  if(points.length === 0){
+    const sorted = [...S.all].sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||'')));
+    for(const r of sorted){
+      const sms = r.sms||r.sms_raw||r.sms_text||'';
+      const m = sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);
+      if(!m) continue;
+      const val = parseFloat(m[1].replace(/,/g,''));
+      const day = isoDay(r.created_at||'');
+      if(!day) continue;
+      const last = points[points.length-1];
+      if(last && last.day===day){ last.val=val; } else points.push({day,val});
+    }
   }
 
   // Keep last 90 days
@@ -4020,6 +4036,11 @@ function openSavingsModal(){
 // SAVINGS VIEW
 // ══════════════════════════════════════════════════════════════
 function renderSavingsView(){
+  if(!S.all.length){
+    const h=document.getElementById('svHistory');
+    if(h) h.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);">Sin datos — carga primero las transacciones</div>';
+    return;
+  }
   const now = new Date();
   const goal = parseFloat(localStorage.getItem(SAVINGS_KEY)||'0');
   const MS12 = [];
@@ -4223,6 +4244,65 @@ function renderInvLineChart(){
     ).join('');
   }
 }
+
+
+// ══════════════════════════════════════════════════════════════
+// EASY WINS
+// ══════════════════════════════════════════════════════════════
+
+// ── Keyboard shortcut: P = toggle privacy ───────────────────────
+document.addEventListener('keydown', e => {
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if(e.key==='p'||e.key==='P') document.getElementById('privacyBtn')?.click();
+  if(e.key==='r'||e.key==='R') document.getElementById('refreshBtn')?.click();
+});
+
+// ── Show last updated time in status pill ────────────────────────
+function showLastUpdated(){
+  const cache = localStorage.getItem('expense_cache_v1');
+  if(!cache) return;
+  try{
+    const {ts} = JSON.parse(cache);
+    if(!ts) return;
+    const mins = Math.round((Date.now()-ts)/60000);
+    const txt = mins<1?'ahora mismo':mins<60?`hace ${mins}m`:`hace ${Math.round(mins/60)}h`;
+    const pill = document.getElementById('statusPill');
+    if(pill && pill.textContent.includes('transactions'))
+      pill.title = `Última actualización: ${txt}`;
+  }catch(_){}
+}
+setTimeout(showLastUpdated, 2000);
+
+// ── Highlight search terms in merchant column ────────────────────
+const _origApplyFilters = applyFiltersWithWindow;
+window.applyFiltersWithWindow = function(){
+  _origApplyFilters();
+  if(_searchQ && _searchQ.length > 1){
+    setTimeout(()=>{
+      document.querySelectorAll('#tbody .me').forEach(inp=>{
+        const v = inp.value;
+        if(v.toLowerCase().includes(_searchQ.toLowerCase())){
+          inp.style.fontWeight='800';
+          inp.style.color='var(--blue)';
+        } else {
+          inp.style.fontWeight='';
+          inp.style.color='';
+        }
+      });
+    },50);
+  } else {
+    document.querySelectorAll('#tbody .me').forEach(inp=>{
+      inp.style.fontWeight='';inp.style.color='';
+    });
+  }
+};
+
+// ── Auto-refresh every 5 minutes if page is visible ─────────────
+setInterval(()=>{
+  if(document.visibilityState==='visible' && S.all.length){
+    load(false);
+  }
+},5*60*1000);
 
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
