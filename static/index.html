@@ -2294,10 +2294,85 @@ function openTx(item){const merch=cm(item.merchant_clean||item.merchant_raw||"")
 const CACHE_KEY="expense_cache_v1",CACHE_TTL=5*60*1000;
 function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data}));}catch(_){}}
 function loadCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const{ts,data}=JSON.parse(raw);if(Date.now()-ts>CACHE_TTL)return null;return data;}catch(_){return null;}}
-async function load(fromCache=false){try{se("");if(!fromCache){const cached=loadCache();if(cached&&cached.length){S.all=cached;window.__rg_last_rows=cached;S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (caché)");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);load(true);return;}}ss("loading…");if(!fromCache)showSkel(true);
-    // If offline, use cache
-    if(!navigator.onLine){const c=loadCache();if(c&&c.length){S.all=c;window.__rg_last_rows=c;S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions (offline)");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(!fromCache)showSkel(false);return;}throw new Error("Sin conexión y sin caché");}
-    const j=await GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM);const rows=j.expenses||[];saveCache(rows);S.all=rows;window.__rg_last_rows=rows;S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));if(!S.categories.size)S.categories.add("other");if(!S.currencies.size)S.currencies.add("KWD");buildFilters();applyFiltersWithWindow();ss(S.view.length+" transactions");renderBalance();renderAnalytics();renderOverview();updateBadges();setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);}catch(e){const msg=String(e?.message||e); se(msg.includes("Timeout")?"⏳ El servidor está arrancando, inténtalo en 30 segundos":msg); ss("error ⟳");}finally{if(!fromCache)showSkel(false);}}
+async function load(fromCache=false){
+  try{
+    se("");
+    // ── Show cache immediately, always ──────────────────────────
+    if(!fromCache){
+      const cached = loadCache();
+      if(cached && cached.length){
+        S.all=cached; window.__rg_last_rows=cached;
+        S.categories=new Set(cached.map(r=>(r.category||"other").toLowerCase()));
+        S.currencies=new Set(cached.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+        if(!S.categories.size)S.categories.add("other");
+        if(!S.currencies.size)S.currencies.add("KWD");
+        buildFilters(); applyFiltersWithWindow();
+        ss(S.view.length+" transactions");
+        renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
+        setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);
+        // Refresh in background silently
+        try{
+          const j = await Promise.race([
+            GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),15000))
+          ]);
+          const rows=j.expenses||[];
+          if(rows.length){
+            saveCache(rows); S.all=rows; window.__rg_last_rows=rows;
+            S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));
+            S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+            if(!S.categories.size)S.categories.add("other");
+            if(!S.currencies.size)S.currencies.add("KWD");
+            buildFilters(); applyFiltersWithWindow();
+            ss(S.view.length+" transactions");
+            renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
+            setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);
+          }
+        }catch(_){ /* silent - already showing cached data */ }
+        return;
+      }
+    }
+    // ── No cache: show loading and fetch ────────────────────────
+    ss("cargando…"); showSkel(true);
+    // Hint after 6s
+    setTimeout(()=>{ if(S.all.length===0) ss("Servidor arrancando… espera o pulsa 🔄"); },6000);
+    if(!navigator.onLine){
+      const c=loadCache();
+      if(c&&c.length){
+        S.all=c; window.__rg_last_rows=c;
+        S.categories=new Set(c.map(r=>(r.category||"other").toLowerCase()));
+        S.currencies=new Set(c.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+        if(!S.categories.size)S.categories.add("other");
+        if(!S.currencies.size)S.currencies.add("KWD");
+        buildFilters(); applyFiltersWithWindow();
+        ss(S.view.length+" transactions (offline)");
+        renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
+        setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);
+        showSkel(false); return;
+      }
+      throw new Error("Sin conexión y sin caché");
+    }
+    const j = await Promise.race([
+      GET("/expenses?user_id="+encodeURIComponent(UID)+"&limit="+LIM),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error("Servidor tardando. Pulsa 🔄 en 30s.")),25000))
+    ]);
+    const rows=j.expenses||[];
+    saveCache(rows); S.all=rows; window.__rg_last_rows=rows;
+    S.categories=new Set(rows.map(r=>(r.category||"other").toLowerCase()));
+    S.currencies=new Set(rows.map(r=>(r.currency||"").toUpperCase()).filter(Boolean));
+    if(!S.categories.size)S.categories.add("other");
+    if(!S.currencies.size)S.currencies.add("KWD");
+    buildFilters(); applyFiltersWithWindow();
+    ss(S.view.length+" transactions");
+    renderBalance(); renderAnalytics(); renderOverview(); updateBadges();
+    setTimeout(()=>window._privacyReapply&&window._privacyReapply(),400);
+    if(fromCache)showToast2("🔄","Datos actualizados","","var(--blue)",2500);
+  }catch(e){
+    se(String(e?.message||e)); ss("error — pulsa 🔄");
+  }finally{
+    showSkel(false);
+  }
+}}
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",savings:"Ahorro",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",savings:"Evolución del ahorro mensual",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
