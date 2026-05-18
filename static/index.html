@@ -165,7 +165,10 @@ tr.rg-sep td{padding:7px 14px;font-size:11px;font-weight:700;color:var(--t3);bac
 tr.rg-sep:hover td{background:var(--border);}
 .cbDay{width:13px;height:13px;cursor:pointer;accent-color:var(--blue);opacity:0;transition:opacity .12s;vertical-align:middle;margin-right:6px;position:relative;top:-1px;}
 tr.rg-sep:hover .cbDay,tr.rg-sep.day-sel .cbDay{opacity:1;}
-.dtots{float:right;display:inline-flex;gap:12px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;}
+.dtots{float:right;display:inline-flex;gap:12px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:none;
+tr.rg-sep td .di{color:var(--green)!important;}
+tr.rg-sep td .de{color:var(--red)!important;}
+tr.rg-sep td .dn{color:var(--t2)!important;}letter-spacing:0;}
 .di{color:var(--green);}
 .de{color:var(--red);}
 .dn{color:var(--t2);}
@@ -2557,7 +2560,7 @@ function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr
     for(const id of MASK_IDS){ const el=document.getElementById(id); if(el) els.push(el); }
     for(const cls of MASK_CLASSES) document.querySelectorAll('.'+cls).forEach(el=>els.push(el));
     document.querySelectorAll('#tbody .amt').forEach(el=>els.push(el));
-    document.querySelectorAll('.inv-table td.r, .inv-cash-val, .h-bar-val, .sr-v, .dtots').forEach(el=>els.push(el));
+    document.querySelectorAll('.inv-table td.r, .inv-cash-val, .h-bar-val, .sr-v').forEach(el=>els.push(el));
     return els;
   }
 
