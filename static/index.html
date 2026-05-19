@@ -191,10 +191,10 @@ tr.sk td{padding:13px 14px!important;}
 .bar-chart::before,.bar-chart::after{content:'';position:absolute;left:0;right:0;border-top:1px dashed var(--border);pointer-events:none;}
 .bar-chart::before{top:0;}
 .bar-chart::after{top:50%;}
-.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;position:relative;height:100%;justify-content:flex-end;}
-.bar-val-tip{position:absolute;bottom:100%;margin-bottom:2px;background:transparent;color:var(--t2);font-size:10px;font-family:var(--mono);font-weight:600;white-space:nowrap;pointer-events:none;}
-.bar-val-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--t1);}
-.bar-col:hover .bar-val-tip{opacity:1;transform:translateY(0);}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;height:100%;justify-content:flex-end;}
+.bar-val-tip{display:block;text-align:center;font-size:10px;font-family:var(--mono);font-weight:600;color:var(--t2);margin-bottom:3px;pointer-events:none;min-height:14px;}
+
+
 .bar{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--blue),var(--teal));opacity:.65;transition:opacity .15s,box-shadow .15s;min-height:3px;}
 .bar-col:hover .bar{opacity:1;box-shadow:0 -4px 16px var(--blue-g);}
 .bar-col.peak .bar{opacity:1;box-shadow:0 -4px 20px var(--blue-g);}
@@ -1441,7 +1441,9 @@ body.privacy-on .inv-val,
 body.privacy-on .inv-cash-val,
 body.privacy-on .inv-alloc-pct,
 body.privacy-on .inv-perf-val,
-body.privacy-on .inv-table tbody td:nth-child(6),
+body.privacy-on .inv-stat-val,
+body.privacy-on .inv-cash-val,
+body.privacy-on .inv-table tbody td.r,
 body.privacy-on .budget-pct,
 body.privacy-on .budget-cat-amounts,
 body.privacy-on .chart-total,
@@ -1758,7 +1760,7 @@ body.privacy-on #svBars {
         </div>
         <div class="inv-card">
           <div class="inv-card-title">Efectivo disponible</div>
-          <div class="inv-cash-row"><span class="inv-cash-lbl">EUR</span><span class="inv-cash-val">€7,878</span></div>
+          <div class="inv-cash-row"><span class="inv-cash-lbl">EUR</span><span class="inv-cash-val inv-stat-val">€7,878</span></div>
           <div class="inv-cash-row"><span class="inv-cash-lbl">USD</span><span class="inv-cash-val">$10,094 <span style="font-size:11px;color:var(--t3)">(≈€8,604)</span></span></div>
           <div class="inv-cash-row" style="margin-top:8px;padding-top:12px;border-top:2px solid var(--border);border-bottom:none;"><span class="inv-cash-lbl" style="font-weight:700;color:var(--t1);">Total efectivo</span><span class="inv-cash-val" style="font-size:16px;">€16,562</span></div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
@@ -1766,15 +1768,15 @@ body.privacy-on #svBars {
             <div class="inv-cash-row"><span class="inv-cash-lbl">MTM acumulado</span><span class="inv-cash-val pos">+€10,433</span></div>
             <div class="inv-cash-row"><span class="inv-cash-lbl">Dividendos</span><span class="inv-cash-val pos">+€95.71</span></div>
             <div class="inv-cash-row"><span class="inv-cash-lbl">Comisiones</span><span class="inv-cash-val neg">-€83.94</span></div>
-            <div class="inv-cash-row"><span class="inv-cash-lbl">Depósitos</span><span class="inv-cash-val">+€51,900</span></div>
+            <div class="inv-cash-row"><span class="inv-cash-lbl">Depósitos</span><span class="inv-cash-val inv-stat-val">+€51,900</span></div>
           </div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;" id="invStatsStrip">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">ETFs</div><div style="font-size:18px;font-weight:700;font-family:var(--mono);">€35,426</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">58.4% del portfolio</div></div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Acciones</div><div style="font-size:18px;font-weight:700;font-family:var(--mono);">€8,641</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">14.3% del portfolio</div></div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">3 meses</div><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green);">+4.70%</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">Mar – May 2026</div></div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Sharpe / Dev</div><div style="font-size:18px;font-weight:700;font-family:var(--mono);">0.76 / 3.14%</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">Max drawdown: 6.36%</div></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">ETFs</div><div class="inv-stat-val" style="font-size:18px;font-weight:700;font-family:var(--mono);">€35,426</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">58.4% del portfolio</div></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Acciones</div><div class="inv-stat-val" style="font-size:18px;font-weight:700;font-family:var(--mono);">€8,641</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">14.3% del portfolio</div></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">3 meses</div><div class="inv-stat-val" style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green);">+4.70%</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">Mar – May 2026</div></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px 16px;box-shadow:var(--shadow-m);"><div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Sharpe / Dev</div><div class="inv-stat-val" style="font-size:18px;font-weight:700;font-family:var(--mono);">0.76 / 3.14%</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">Max drawdown: 6.36%</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px;box-shadow:var(--shadow-m);">
@@ -3212,7 +3214,9 @@ body.privacy-on .inv-val,
 body.privacy-on .inv-cash-val,
 body.privacy-on .inv-alloc-pct,
 body.privacy-on .inv-perf-val,
-body.privacy-on .inv-table tbody td:nth-child(6),
+body.privacy-on .inv-stat-val,
+body.privacy-on .inv-cash-val,
+body.privacy-on .inv-table tbody td.r,
 body.privacy-on .budget-pct,
 body.privacy-on .budget-cat-amounts,
 body.privacy-on .chart-total,
