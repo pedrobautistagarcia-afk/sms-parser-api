@@ -1487,12 +1487,16 @@ body.privacy-on #svGoalRemVal {
   user-select: none !important;
 }
 
-/* Force hide ALL inv-table cells in privacy mode */
+/* Blur ALL inv-table rows in privacy mode */
+body.privacy-on .inv-table tbody tr {
+  filter: blur(6px) !important;
+  pointer-events: none;
+  user-select: none;
+}
 body.privacy-on .inv-table tbody tr td,
 body.privacy-on .inv-table tbody tr td span {
-  color: transparent !important;
-  text-shadow: none !important;
-  visibility: hidden !important;
+  color: inherit !important;
+  visibility: visible !important;
 }
 /* Transaction table — blur rows after 3rd */
 body.privacy-on #tbody tr:nth-child(n+5):not(.rg-sep) {
