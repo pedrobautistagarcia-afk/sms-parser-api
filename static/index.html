@@ -1486,6 +1486,14 @@ body.privacy-on #svGoalRemVal {
   text-shadow: 0 0 8px rgba(148,163,184,0.8) !important;
   user-select: none !important;
 }
+
+/* Force hide ALL inv-table cells in privacy mode */
+body.privacy-on .inv-table tbody tr td,
+body.privacy-on .inv-table tbody tr td span {
+  color: transparent !important;
+  text-shadow: none !important;
+  visibility: hidden !important;
+}
 /* Transaction table — blur rows after 3rd */
 body.privacy-on #tbody tr:nth-child(n+5):not(.rg-sep) {
   filter: blur(4px);
