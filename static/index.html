@@ -192,7 +192,7 @@ tr.sk td{padding:13px 14px!important;}
 .bar-chart::before{top:0;}
 .bar-chart::after{top:50%;}
 .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;position:relative;height:100%;justify-content:flex-end;}
-.bar-val-tip{position:absolute;bottom:100%;margin-bottom:4px;background:var(--t1);color:var(--surface);font-size:10px;font-family:var(--mono);font-weight:600;padding:3px 7px;border-radius:5px;white-space:nowrap;opacity:1;transform:translateY(0);transition:opacity .15s,transform .15s;pointer-events:none;}
+.bar-val-tip{position:absolute;bottom:100%;margin-bottom:2px;background:transparent;color:var(--t2);font-size:10px;font-family:var(--mono);font-weight:600;white-space:nowrap;pointer-events:none;}
 .bar-val-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--t1);}
 .bar-col:hover .bar-val-tip{opacity:1;transform:translateY(0);}
 .bar{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--blue),var(--teal));opacity:.65;transition:opacity .15s,box-shadow .15s;min-height:3px;}
@@ -1441,7 +1441,7 @@ body.privacy-on .inv-val,
 body.privacy-on .inv-cash-val,
 body.privacy-on .inv-alloc-pct,
 body.privacy-on .inv-perf-val,
-body.privacy-on .inv-table td.r,
+body.privacy-on .inv-table tbody td:nth-child(6),
 body.privacy-on .budget-pct,
 body.privacy-on .budget-cat-amounts,
 body.privacy-on .chart-total,
@@ -1516,6 +1516,14 @@ body.privacy-on #svBars {
 [data-theme="gold"] .inv-table tbody tr:has(.pos) td { background: rgba(0,192,118,.06) !important; }
 [data-theme="gold"] .inv-table tbody tr:has(.neg) td { background: rgba(255,77,77,.06) !important; }
 .inv-table tbody td:last-child { font-weight: 700; }
+
+
+.inv-sort { cursor: pointer; user-select: none; transition: color .15s; }
+.inv-sort:hover { color: var(--blue); }
+.inv-sort.asc .inv-sort-ic::after { content: '↑'; }
+.inv-sort.desc .inv-sort-ic::after { content: '↓'; }
+.inv-sort-ic { font-size: 9px; opacity: .5; margin-left: 3px; }
+.inv-sort.asc .inv-sort-ic, .inv-sort.desc .inv-sort-ic { opacity: 1; color: var(--blue); }
 
 </style>
 </head>
@@ -1787,7 +1795,7 @@ body.privacy-on #svBars {
         </div>
       </div>
       <div class="inv-section-title">📊 Posiciones en EUR</div>
-      <div class="inv-table-wrap"><table class="inv-table"><thead><tr><th>Activo</th><th>Mercado</th><th class="r">Cantidad</th><th class="r">Precio</th><th class="r">Valor (€)</th><th class="r">P&L</th><th class="r">P&L %</th></tr></thead><tbody>
+      <div class="inv-table-wrap"><table class="inv-table"><thead><tr><th class="inv-sort" data-col="0">Activo <span class="inv-sort-ic">↕</span></th><th>Mercado</th><th class="r inv-sort" data-col="2">Cantidad <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="3">Precio <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="4">Valor (€) <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="5">P&L <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="6">P&L % <span class="inv-sort-ic">↕</span></th></tr></thead><tbody>
         <tr><td><div class="inv-ticker">DFEN</div><div class="inv-name">VanEck Defense ETF</div></td><td><span class="inv-badge eur">EUR</span></td><td class="r">72.67</td><td class="r">55.92</td><td class="r">4,063</td><td class="r"><span class="pos">+527</span></td><td class="r"><span class="pos">+14.9%</span></td></tr>
         <tr><td><div class="inv-ticker">GLUG</div><div class="inv-name">L&G Clean Water ETF</div></td><td><span class="inv-badge eur">EUR</span></td><td class="r">20.35</td><td class="r">18.03</td><td class="r">367</td><td class="r"><span class="pos">+14</span></td><td class="r"><span class="pos">+4.0%</span></td></tr>
         <tr><td><div class="inv-ticker">IUSE</div><div class="inv-name">iShares S&P 500 EUR-H</div></td><td><span class="inv-badge eur">EUR</span></td><td class="r">112.50</td><td class="r">147.54</td><td class="r">16,597</td><td class="r"><span class="pos">+2,971</span></td><td class="r"><span class="pos">+21.8%</span></td></tr>
@@ -1795,7 +1803,7 @@ body.privacy-on #svBars {
         <tr><td><div class="inv-ticker">RED</div><div class="inv-name">Redeia Corp SA</div></td><td><span class="inv-badge eur">EUR</span></td><td class="r">30.00</td><td class="r">14.90</td><td class="r">447</td><td class="r"><span class="neg">-4</span></td><td class="r"><span class="neg">-0.9%</span></td></tr>
       </tbody></table></div>
       <div class="inv-section-title">💵 Posiciones en USD</div>
-      <div class="inv-table-wrap"><table class="inv-table"><thead><tr><th>Activo</th><th>Tipo</th><th class="r">Cantidad</th><th class="r">Precio</th><th class="r">Valor USD</th><th class="r">P&L</th><th class="r">P&L %</th></tr></thead><tbody>
+      <div class="inv-table-wrap"><table class="inv-table"><thead><tr><th class="inv-sort" data-col="0">Activo <span class="inv-sort-ic">↕</span></th><th>Tipo</th><th class="r inv-sort" data-col="2">Cantidad <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="3">Precio <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="4">Valor USD <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="5">P&L <span class="inv-sort-ic">↕</span></th><th class="r inv-sort" data-col="6">P&L % <span class="inv-sort-ic">↕</span></th></tr></thead><tbody>
         <tr><td><div class="inv-ticker">AAPL</div><div class="inv-name">Apple Inc</div></td><td><span class="inv-badge usd">Acción</span></td><td class="r">1.70</td><td class="r">271.35</td><td class="r">462</td><td class="r"><span class="pos">+89</span></td><td class="r"><span class="pos">+23.8%</span></td></tr>
         <tr><td><div class="inv-ticker">ASTS</div><div class="inv-name">AST SpaceMobile</div></td><td><span class="inv-badge usd">Acción</span></td><td class="r">13.30</td><td class="r">73.90</td><td class="r">982</td><td class="r"><span class="neg">-218</span></td><td class="r"><span class="neg">-18.2%</span></td></tr>
         <tr><td><div class="inv-ticker">BTCWUSD</div><div class="inv-name">WisdomTree Bitcoin</div></td><td><span class="inv-badge usd">ETC</span></td><td class="r">26.00</td><td class="r">18.23</td><td class="r">474</td><td class="r"><span class="neg">-6</span></td><td class="r"><span class="neg">-1.2%</span></td></tr>
@@ -3204,7 +3212,7 @@ body.privacy-on .inv-val,
 body.privacy-on .inv-cash-val,
 body.privacy-on .inv-alloc-pct,
 body.privacy-on .inv-perf-val,
-body.privacy-on .inv-table td.r,
+body.privacy-on .inv-table tbody td:nth-child(6),
 body.privacy-on .budget-pct,
 body.privacy-on .budget-cat-amounts,
 body.privacy-on .chart-total,
@@ -3280,6 +3288,14 @@ body.privacy-on #svBars {
 [data-theme="gold"] .inv-table tbody tr:has(.neg) td { background: rgba(255,77,77,.06) !important; }
 .inv-table tbody td:last-child { font-weight: 700; }
 
+
+.inv-sort { cursor: pointer; user-select: none; transition: color .15s; }
+.inv-sort:hover { color: var(--blue); }
+.inv-sort.asc .inv-sort-ic::after { content: '↑'; }
+.inv-sort.desc .inv-sort-ic::after { content: '↓'; }
+.inv-sort-ic { font-size: 9px; opacity: .5; margin-left: 3px; }
+.inv-sort.asc .inv-sort-ic, .inv-sort.desc .inv-sort-ic { opacity: 1; color: var(--blue); }
+
 </style>
 </head>
 <body>
@@ -3354,6 +3370,46 @@ ${catSorted.map(([cat,val])=>`<div class="cat-row">
   haptic('success');
   showToast2('📄','Extracto generado','Usa Imprimir → Guardar como PDF','var(--blue)',4000);
 }
+
+
+// ── Investment table sort ────────────────────────────────────────
+(function(){
+  function parseNum(td){
+    if(!td) return 0;
+    const t = td.textContent.replace(/[€$+,]/g,'').trim();
+    return parseFloat(t) || 0;
+  }
+  function sortTable(table, col, dir){
+    const tbody = table.querySelector('tbody');
+    const rows = [...tbody.querySelectorAll('tr')];
+    rows.sort((a, b) => {
+      const ac = a.querySelectorAll('td')[col];
+      const bc = b.querySelectorAll('td')[col];
+      const av = parseNum(ac), bv = parseNum(bc);
+      // Try numeric first, fallback to text
+      if(!isNaN(av) && !isNaN(bv)) return dir === 'asc' ? av - bv : bv - av;
+      const at = ac?.textContent.trim() || '', bt = bc?.textContent.trim() || '';
+      return dir === 'asc' ? at.localeCompare(bt) : bt.localeCompare(at);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  }
+  document.querySelectorAll('.inv-sort').forEach(th => {
+    th.addEventListener('click', () => {
+      const table = th.closest('table');
+      const col = parseInt(th.dataset.col);
+      const wasDir = th.dataset.dir || 'none';
+      const dir = wasDir === 'asc' ? 'desc' : 'asc';
+      // Reset all headers in this table
+      table.querySelectorAll('.inv-sort').forEach(h => {
+        h.classList.remove('asc','desc');
+        delete h.dataset.dir;
+      });
+      th.classList.add(dir);
+      th.dataset.dir = dir;
+      sortTable(table, col, dir);
+    });
+  });
+})();
 
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
