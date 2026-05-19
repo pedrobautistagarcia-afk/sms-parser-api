@@ -1600,7 +1600,6 @@ body.privacy-on #svBars {
     <div class="nav" data-view="balance"><span class="nav-ic">💰</span><span>Balance</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
     <div class="sb-sec">Config</div>
-    <div class="nav" data-view="rules"><span class="nav-ic">⚡</span><span>Rules</span><span class="nav-badge" id="rulesCount">—</span></div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
   </div>
   <div class="sb-footer"><div class="sb-av">P</div><div><div class="sb-uname">Pedro</div><div class="sb-urole">Personal account</div></div></div>
@@ -1954,6 +1953,17 @@ body.privacy-on #svBars {
           </div>
         </div>
 
+        <!-- Rules -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;">⚡ Reglas de categorización</div>
+            <button class="btn btn-primary" id="btnNewRuleSettings" style="font-size:11px;padding:5px 10px;">+ Nueva regla</button>
+          </div>
+          <div style="padding:14px 18px;">
+            <div id="ruleListSettings"></div>
+          </div>
+        </div>
+
         <!-- Info -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-m);margin-bottom:16px;">
           <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);">
@@ -2165,7 +2175,7 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
-function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="settings")renderSettings();if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
+function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{
@@ -2781,6 +2791,37 @@ function renderSettings(){
     showToast2('🗑️','Caché limpiado','Recargando datos…','var(--blue)',2000);
     setTimeout(()=>load(),500);
   },{once:true});
+
+  // Rules inside settings
+  const btnNewRuleSettings = document.getElementById('btnNewRuleSettings');
+  if(btnNewRuleSettings){
+    btnNewRuleSettings.onclick = ()=>{
+      const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];
+      const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();
+      const rc=$("ruleCat");
+      if(rc)rc.innerHTML=allCats.map(c=>`<option value="${c}">${tc(c)}</option>`).join("");
+      $("ruleOvl").classList.add("open");
+      $("ruleMerchant").value="";
+      $("rStat").textContent="";
+      $("ruleMerchant").focus();
+    };
+  }
+  // Render rules list inline
+  const rls = document.getElementById('ruleListSettings');
+  if(rls){
+    if(!S.rules.length){
+      rls.innerHTML='<div style="color:var(--t3);font-size:13px;text-align:center;padding:16px 0;">Sin reglas. Crea una para categorizar automáticamente.</div>';
+    } else {
+      const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];
+      const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();
+      rls.innerHTML = S.rules.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);flex:1;">${r.pattern||"—"}</span>
+        <span style="color:var(--t3);font-size:12px;">→</span>
+        <span style="font-size:12px;padding:3px 9px;border-radius:999px;font-weight:600;background:${catClr(r.set_category)}18;color:${catClr(r.set_category)};">${CAT_ICONS[r.set_category]||""} ${tc(r.set_category||"—")}</span>
+        <button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="deleteRuleFromSettings(${r.id})">✕</button>
+      </div>`).join('');
+    }
+  }
 
   // Change PIN
   document.getElementById('btnChangePIN')?.addEventListener('click',()=>{
@@ -3421,6 +3462,13 @@ ${catSorted.map(([cat,val])=>`<div class="cat-row">
     });
   });
 })();
+
+async function deleteRuleFromSettings(id){
+  try{
+    const r=await fetch(API+"/rules/"+id+"?user_id="+UID+"&api_key="+AK,{method:"DELETE"});
+    if(r.ok||r.status===404){ await loadRules(); renderSettings(); }
+  }catch(e){ showToast2("❌","Error",e.message,"var(--red)",2500); }
+}
 
 bind();load();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
