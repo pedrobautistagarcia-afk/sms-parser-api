@@ -1416,6 +1416,96 @@ tr.high-amount .amt { font-weight: 800; }
   letter-spacing: .3px;
 }
 
+
+/* ═══════════════════════════════
+   PRIVACY MODE — body.privacy-on
+═══════════════════════════════ */
+body.privacy-on .amt,
+body.privacy-on .ov-tx-amt,
+body.privacy-on .ov-bank-val,
+body.privacy-on .ov-bank-inc,
+body.privacy-on .ov-bank-exp,
+body.privacy-on .ov-legend-val,
+body.privacy-on .ov-cat-amt,
+body.privacy-on .ov-qs-val,
+body.privacy-on .bc-val,
+body.privacy-on .bh-val,
+body.privacy-on .sc-val,
+body.privacy-on .sr-v,
+body.privacy-on .h-bar-val,
+body.privacy-on .md-cur-val,
+body.privacy-on .md-total-val,
+body.privacy-on .md-tx-amt,
+body.privacy-on .cat-popup-tx-amt,
+body.privacy-on .inv-val,
+body.privacy-on .inv-cash-val,
+body.privacy-on .inv-alloc-pct,
+body.privacy-on .inv-table td.r,
+body.privacy-on .budget-pct,
+body.privacy-on .budget-cat-amounts,
+body.privacy-on .chart-total,
+body.privacy-on .chart-panel-stat-val,
+body.privacy-on .cmp-badge,
+body.privacy-on .dtots,
+body.privacy-on .sv-hero-val,
+body.privacy-on .sv-month-val,
+body.privacy-on .bal-line-current,
+body.privacy-on .savings-stat-val,
+body.privacy-on #ovBalKWD,
+body.privacy-on #ovAccBal,
+body.privacy-on #ovIncMonth,
+body.privacy-on #ovExpMonth,
+body.privacy-on #ovNetMonth,
+body.privacy-on #ovWeekAmt,
+body.privacy-on #ovAvgDay,
+body.privacy-on #ovMaxTx,
+body.privacy-on #scTotal,
+body.privacy-on #scMonth,
+body.privacy-on #bvKWD,
+body.privacy-on #bvUSD,
+body.privacy-on #bvEUR,
+body.privacy-on #bvAED,
+body.privacy-on #bvTotal,
+body.privacy-on #chartTotal,
+body.privacy-on #invNAV,
+body.privacy-on #invCumReturn,
+body.privacy-on #invMonthReturn,
+body.privacy-on #balLineCurrent,
+body.privacy-on #balLineChange,
+body.privacy-on #budgetTotal,
+body.privacy-on #budgetSpent,
+body.privacy-on #budgetLeft,
+body.privacy-on #svHeroVal,
+body.privacy-on #svGoalLimitVal,
+body.privacy-on #svGoalSpentVal,
+body.privacy-on #svGoalRemVal {
+  color: transparent !important;
+  text-shadow: 0 0 8px rgba(148,163,184,0.8) !important;
+  user-select: none !important;
+}
+/* Transaction table — blur rows after 3rd */
+body.privacy-on #tbody tr:nth-child(n+5):not(.rg-sep) {
+  filter: blur(4px);
+  pointer-events: none;
+}
+/* Overview tx list — blur after 3rd */
+body.privacy-on .ov-tx-item:nth-child(n+4) {
+  filter: blur(4px);
+  pointer-events: none;
+}
+/* Charts */
+body.privacy-on .bar-chart,
+body.privacy-on .ov-bars,
+body.privacy-on #ovDonut,
+body.privacy-on #ovSparkline,
+body.privacy-on #balLineSvg,
+body.privacy-on #invLineSvg,
+body.privacy-on #invDonut,
+body.privacy-on #svBars {
+  filter: blur(6px);
+  pointer-events: none;
+}
+
 </style>
 </head>
 <body>
@@ -2103,7 +2193,11 @@ function buildInvDonut(){const svg=$("invDonut"),tip=$("invDonutTip"),legend=$("
 // IBKR REMINDER
 function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr_reminder_dismissed_"+now.getFullYear()+"_"+now.getMonth();if(day>7||localStorage.getItem(key)==="1")return;const banner=document.createElement("div");banner.id="ibkr-reminder";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#2563eb,#0891b2);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font);font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(37,99,235,.35);";const months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];banner.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📊</span><div><div style="font-weight:700;">Recordatorio IBKR</div><div style="opacity:.85;font-size:12px;">Descarga el informe de ${months[now.getMonth()===0?11:now.getMonth()-1]} y actualiza Investments</div></div></div><div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="switchView('investments')" style="padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;">Ver Investments →</button><button onclick="localStorage.setItem('${key}','1');this.closest('#ibkr-reminder').remove();" style="padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;cursor:pointer;">Ignorar</button></div>`;document.body.appendChild(banner);}
 // PRIVACY MODE
-(function(){const PRIVATE_IDS=["ovBalKWD","ovLastSMSDate","ovAccBal","ovIncMonth","ovExpMonth","ovNetMonth","bvKWD","bvUSD","bvEUR","bvAED","bvTotal","scTotal","scMonth","chartTotal","invNAV","invCumReturn","invMonthReturn"];const originals={};let on=localStorage.getItem("privacyMode")==="1";function maskValue(val){if(!val||val==="—")return"••••";return val.replace(/[\d,.]+/g,m=>"•".repeat(Math.min(m.length,6)));}function apply(){PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;if(on){const t=el.textContent.trim();if(!t||t==="—"||t.includes("loading")||t.includes("Loading")||t.startsWith("•"))return;if(!originals[id])originals[id]=el.innerHTML;el.innerHTML=maskValue(el.textContent);el.style.letterSpacing="2px";el.style.opacity="0.6";}else{if(originals[id]!==undefined){el.innerHTML=originals[id];el.style.letterSpacing="";el.style.opacity="";}}});const btn=$("privacyBtn");if(btn){btn.innerHTML=on?"🙈&nbsp;Mostrar":"👁&nbsp;Ocultar";btn.classList.toggle("active",on);}}window._privacyApply=apply;window._privacyOn=()=>on;setTimeout(()=>{if(on)apply();const btn=$("privacyBtn");if(btn)btn.addEventListener("click",()=>{if(!on)PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(el)originals[id]=el.innerHTML;});on=!on;localStorage.setItem("privacyMode",on?"1":"0");apply();});},800);})();
+(function(){const PRIVATE_IDS=["ovBalKWD","ovLastSMSDate","ovAccBal","ovIncMonth","ovExpMonth","ovNetMonth","bvKWD","bvUSD","bvEUR","bvAED","bvTotal","scTotal","scMonth","chartTotal","invNAV","invCumReturn","invMonthReturn"];const originals={};let on=localStorage.getItem("privacyMode")==="1";function maskValue(val){if(!val||val==="—")return"••••";return val.replace(/[\d,.]+/g,m=>"•".repeat(Math.min(m.length,6)));}function apply(){
+  document.body.classList.toggle("privacy-on", on);
+  PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;if(on){const t=el.textContent.trim();if(!t||t==="—"||t.includes("loading")||t.includes("Loading")||t.startsWith("•"))return;if(!originals[id])originals[id]=el.innerHTML;el.innerHTML=maskValue(el.textContent);el.style.letterSpacing="2px";el.style.opacity="0.6";}else{if(originals[id]!==undefined){el.innerHTML=originals[id];el.style.letterSpacing="";el.style.opacity="";}}});
+  const btn=$("privacyBtn");if(btn){btn.innerHTML=on?"🙈&nbsp;Mostrar":"👁&nbsp;Ocultar";btn.classList.toggle("active",on);}
+}window._privacyApply=apply;window._privacyOn=()=>on;setTimeout(()=>{if(on)apply();const btn=$("privacyBtn");if(btn)btn.addEventListener("click",()=>{if(!on)PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(el)originals[id]=el.innerHTML;});on=!on;localStorage.setItem("privacyMode",on?"1":"0");apply();});},800);})();
 // PREMIUM UX
 function animateNumber(el,from,to,duration=600,suffix=""){
   if(!el)return;
@@ -3074,6 +3168,96 @@ async function generateMonthlyPDF(){
   .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; }
   .high-row td { background: #fffbeb !important; }
   @media print { body { padding: 20px; } }
+
+/* ═══════════════════════════════
+   PRIVACY MODE — body.privacy-on
+═══════════════════════════════ */
+body.privacy-on .amt,
+body.privacy-on .ov-tx-amt,
+body.privacy-on .ov-bank-val,
+body.privacy-on .ov-bank-inc,
+body.privacy-on .ov-bank-exp,
+body.privacy-on .ov-legend-val,
+body.privacy-on .ov-cat-amt,
+body.privacy-on .ov-qs-val,
+body.privacy-on .bc-val,
+body.privacy-on .bh-val,
+body.privacy-on .sc-val,
+body.privacy-on .sr-v,
+body.privacy-on .h-bar-val,
+body.privacy-on .md-cur-val,
+body.privacy-on .md-total-val,
+body.privacy-on .md-tx-amt,
+body.privacy-on .cat-popup-tx-amt,
+body.privacy-on .inv-val,
+body.privacy-on .inv-cash-val,
+body.privacy-on .inv-alloc-pct,
+body.privacy-on .inv-table td.r,
+body.privacy-on .budget-pct,
+body.privacy-on .budget-cat-amounts,
+body.privacy-on .chart-total,
+body.privacy-on .chart-panel-stat-val,
+body.privacy-on .cmp-badge,
+body.privacy-on .dtots,
+body.privacy-on .sv-hero-val,
+body.privacy-on .sv-month-val,
+body.privacy-on .bal-line-current,
+body.privacy-on .savings-stat-val,
+body.privacy-on #ovBalKWD,
+body.privacy-on #ovAccBal,
+body.privacy-on #ovIncMonth,
+body.privacy-on #ovExpMonth,
+body.privacy-on #ovNetMonth,
+body.privacy-on #ovWeekAmt,
+body.privacy-on #ovAvgDay,
+body.privacy-on #ovMaxTx,
+body.privacy-on #scTotal,
+body.privacy-on #scMonth,
+body.privacy-on #bvKWD,
+body.privacy-on #bvUSD,
+body.privacy-on #bvEUR,
+body.privacy-on #bvAED,
+body.privacy-on #bvTotal,
+body.privacy-on #chartTotal,
+body.privacy-on #invNAV,
+body.privacy-on #invCumReturn,
+body.privacy-on #invMonthReturn,
+body.privacy-on #balLineCurrent,
+body.privacy-on #balLineChange,
+body.privacy-on #budgetTotal,
+body.privacy-on #budgetSpent,
+body.privacy-on #budgetLeft,
+body.privacy-on #svHeroVal,
+body.privacy-on #svGoalLimitVal,
+body.privacy-on #svGoalSpentVal,
+body.privacy-on #svGoalRemVal {
+  color: transparent !important;
+  text-shadow: 0 0 8px rgba(148,163,184,0.8) !important;
+  user-select: none !important;
+}
+/* Transaction table — blur rows after 3rd */
+body.privacy-on #tbody tr:nth-child(n+5):not(.rg-sep) {
+  filter: blur(4px);
+  pointer-events: none;
+}
+/* Overview tx list — blur after 3rd */
+body.privacy-on .ov-tx-item:nth-child(n+4) {
+  filter: blur(4px);
+  pointer-events: none;
+}
+/* Charts */
+body.privacy-on .bar-chart,
+body.privacy-on .ov-bars,
+body.privacy-on #ovDonut,
+body.privacy-on #ovSparkline,
+body.privacy-on #balLineSvg,
+body.privacy-on #invLineSvg,
+body.privacy-on #invDonut,
+body.privacy-on #svBars {
+  filter: blur(6px);
+  pointer-events: none;
+}
+
 </style>
 </head>
 <body>
