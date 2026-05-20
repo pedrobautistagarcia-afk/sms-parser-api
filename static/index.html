@@ -1601,7 +1601,7 @@ body.privacy-on #svBars {
     <div class="nav" data-view="transactions"><span class="nav-ic">📋</span><span>Transactions</span><span class="nav-badge" id="txCount">—</span></div>
     <div class="nav" data-view="analytics"><span class="nav-ic">📊</span><span>Analytics</span></div>
     <div class="nav" data-view="investments"><span class="nav-ic">📈</span><span>Investments</span></div>
-    <div class="nav" data-view="balance"><span class="nav-ic">💰</span><span>Balance</span></div>
+    <div class="nav" data-view="patrimonio"><span class="nav-ic">💎</span><span>Patrimonio</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
@@ -1861,19 +1861,85 @@ body.privacy-on #svBars {
       </div>
     </div>
 
-    <!-- BALANCE -->
-    <div class="view" id="view-balance">
-      <div class="bal-hero"><div class="bh-label">Total Balance (EUR)</div><div class="bh-val" id="bvTotal">—</div><div class="bh-sub">Live FX conversion · All currencies</div></div>
-      <div class="bal-grid">
-        <div class="bal-card kwd"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#fff"/><rect width="20" height="4.7" fill="#0B7A3B"/><rect y="9.3" width="20" height="4.7" fill="#C8102E"/><path d="M0 0h6L9 7 6 14H0z" fill="#000"/></svg><span class="bc-cur">KWD</span></div><div class="bc-dot" style="background:var(--teal)"></div></div><div class="bc-val" id="bvKWD">—</div><div class="bc-name">Kuwaiti Dinar</div></div>
-        <div class="bal-card usd"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#B22234"/><rect y="1.2" width="20" height="2" fill="#fff"/><rect y="5" width="20" height="2" fill="#fff"/><rect y="8.8" width="20" height="2" fill="#fff"/><rect y="12.6" width="20" height="2" fill="#fff"/><rect width="9" height="8" fill="#3C3B6E"/></svg><span class="bc-cur">USD</span></div><div class="bc-dot" style="background:var(--blue)"></div></div><div class="bc-val" id="bvUSD">—</div><div class="bc-name">US Dollar</div></div>
-        <div class="bal-card eur"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#003399"/><g fill="#FFCC00"><circle cx="10" cy="2.2" r=".55"/><circle cx="13" cy="3.2" r=".55"/><circle cx="14.8" cy="5.5" r=".55"/><circle cx="15.3" cy="7" r=".55"/><circle cx="14.8" cy="8.5" r=".55"/><circle cx="13" cy="10.8" r=".55"/><circle cx="10" cy="11.8" r=".55"/><circle cx="7" cy="10.8" r=".55"/><circle cx="5.2" cy="8.5" r=".55"/><circle cx="4.7" cy="7" r=".55"/><circle cx="5.2" cy="5.5" r=".55"/><circle cx="7" cy="3.2" r=".55"/></g></svg><span class="bc-cur">EUR</span></div><div class="bc-dot" style="background:var(--purple)"></div></div><div class="bc-val" id="bvEUR">—</div><div class="bc-name">Euro</div></div>
-        <div class="bal-card aed"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#fff"/><rect x="4" width="16" height="4.7" fill="#00732F"/><rect x="4" y="9.3" width="16" height="4.7" fill="#000"/><rect width="4" height="14" fill="#FF0000"/></svg><span class="bc-cur">AED</span></div><div class="bc-dot" style="background:var(--green)"></div></div><div class="bc-val" id="bvAED">—</div><div class="bc-name">UAE Dirham</div></div>
-        <div class="bal-card" style="position:relative;"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ec0000,#ff6b6b);border-radius:var(--radius) var(--radius) 0 0;"></div><div class="bc-top"><div class="bc-flag" style="display:flex;align-items:center;gap:7px;"><span style="font-size:18px;">🔴</span><span class="bc-cur">SAN</span></div><div class="bc-dot" style="background:#ec0000"></div></div><div class="bc-val" id="bvSAN" style="font-size:20px;">—</div><div class="bc-name">Santander · EUR</div><div id="bvSANdate" style="font-size:10px;color:var(--t3);margin-top:4px;">Sin datos</div></div>
-        <div class="bal-card" style="--card-color:var(--amber)"><div class="bc-top"><div class="bc-flag"><svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#0038A8"/><polygon points="10,2 12,7 10,12 8,7" fill="#FCD116" transform="translate(0,0)"/><rect width="20" height="4.7" fill="#0038A8"/><rect y="4.7" width="20" height="4.6" fill="#CE1126"/><rect y="9.3" width="20" height="4.7" fill="#0038A8"/><polygon points="10,3 11.5,7 10,11 8.5,7" fill="#FCD116"/></svg><span class="bc-cur">PHP</span></div><div class="bc-dot" style="background:var(--amber)"></div></div><div class="bc-val" id="bvPHP">—</div><div class="bc-name">Philippine Peso</div></div>
+    <!-- PATRIMONIO -->
+    <div class="view" id="view-patrimonio">
+      <div class="bal-hero" style="margin-bottom:20px;">
+        <div class="bh-label">Patrimonio total estimado</div>
+        <div class="bh-val" id="ptTotal">—</div>
+        <div class="bh-sub">Cuentas + Inversiones IBKR + Acciones SAN · en EUR</div>
+      </div>
+
+      <div class="inv-section-title">🏦 Cuentas bancarias</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div style="width:40px;height:40px;border-radius:12px;background:var(--blue-l);display:flex;align-items:center;justify-content:center;font-size:20px;">🏦</div>
+            <div><div style="font-weight:700;font-size:14px;">National Bank of Kuwait</div><div style="font-size:11px;color:var(--t3);">Cuenta corriente · KWD</div></div>
+          </div>
+          <div style="font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;" id="ptNBK">—</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px;" id="ptNBKeur">≈ — EUR</div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:16px;">
+            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Ingresos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--green);" id="ptNBKinc">—</div></div>
+            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Gastos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--red);" id="ptNBKexp">—</div></div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);position:relative;">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ec0000,#ff6b6b);border-radius:var(--radius) var(--radius) 0 0;"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(236,0,0,.1);display:flex;align-items:center;justify-content:center;font-size:20px;">🔴</div>
+            <div><div style="font-weight:700;font-size:14px;">Banco Santander</div><div style="font-size:11px;color:var(--t3);" id="ptSANdate">Cuenta corriente · EUR</div></div>
+          </div>
+          <div style="font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;color:var(--green);" id="ptSAN">—</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px;">Saldo disponible</div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:16px;">
+            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Ingresos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--green);" id="ptSANinc">—</div></div>
+            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Gastos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--red);" id="ptSANexp">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-section-title">📈 Inversiones</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+        <div style="background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);color:#fff;">
+          <div style="font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">IBKR · Portfolio</div>
+          <div style="font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;" id="ptIBKR">€60,629</div>
+          <div style="font-size:11px;opacity:.65;margin-top:4px;">NAV · May 2026</div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);display:flex;justify-content:space-between;">
+            <div><div style="font-size:10px;opacity:.65;">Rentab. acum.</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);">+16.60%</div></div>
+            <div><div style="font-size:10px;opacity:.65;">Este mes</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);">+2.64%</div></div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">IBKR · Efectivo</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="ptIBKRcash">€16,562</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px;">EUR + USD disponible</div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--t3);">EUR <span style="font-family:var(--mono);color:var(--t1);">€7,878</span></div>
+            <div style="font-size:11px;color:var(--t3);margin-top:3px;">USD <span style="font-family:var(--mono);color:var(--t1);">$10,094</span></div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;">SAN · Acciones</div>
+            <span style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-l);padding:2px 7px;border-radius:999px;">+46.76%</span>
+          </div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--mono);">10,204 €</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px;">Precio por acción · BME</div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--t3);">Máx 52s <span style="font-family:var(--mono);color:var(--t1);">11,26 €</span></div>
+            <div style="font-size:11px;color:var(--t3);margin-top:3px;">Mín 52s <span style="font-family:var(--mono);color:var(--t1);">6,754 €</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-section-title">📊 Desglose total</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);margin-bottom:16px;">
+        <div id="ptBreakdown"></div>
+      </div>
+      <div style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-m);font-size:12px;color:var(--t3);text-align:center;" id="ptUpdated">
+        Actualizado · 20 Mayo 2026
       </div>
     </div>
-
     <!-- RULES -->
     <div class="view" id="view-rules">
       <div class="rules-hd"><h2>Categorization rules</h2><button class="btn btn-primary" id="btnNewRule">+ New rule</button></div>
@@ -2062,7 +2128,7 @@ body.privacy-on #svBars {
     <div class="bn-item" data-view="transactions"><span class="bn-ic">📋</span><span class="bn-lbl">Gastos</span><span class="bn-badge" id="bnTxBadge"></span></div>
     <div class="bn-item" data-view="analytics"><span class="bn-ic">📊</span><span class="bn-lbl">Analytics</span></div>
     <div class="bn-item" data-view="investments"><span class="bn-ic">📈</span><span class="bn-lbl">Inversiones</span></div>
-    <div class="bn-item" data-view="balance"><span class="bn-ic">💰</span><span class="bn-lbl">Balance</span></div>
+    <div class="bn-item" data-view="patrimonio"><span class="bn-ic">💎</span><span class="bn-lbl">Patrimonio</span></div>
   </div>
 </nav>
 
@@ -2220,7 +2286,7 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
-function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="balance")renderBalance();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
+function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="patrimonio")renderPatrimonio();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{
@@ -2281,7 +2347,7 @@ function buildInvDonut(){const svg=$("invDonut"),tip=$("invDonutTip"),legend=$("
 // IBKR REMINDER
 function checkMonthlyReminder(){const now=new Date(),day=now.getDate(),key="ibkr_reminder_dismissed_"+now.getFullYear()+"_"+now.getMonth();if(day>7||localStorage.getItem(key)==="1")return;const banner=document.createElement("div");banner.id="ibkr-reminder";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#2563eb,#0891b2);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font);font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(37,99,235,.35);";const months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];banner.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📊</span><div><div style="font-weight:700;">Recordatorio IBKR</div><div style="opacity:.85;font-size:12px;">Descarga el informe de ${months[now.getMonth()===0?11:now.getMonth()-1]} y actualiza Investments</div></div></div><div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="switchView('investments')" style="padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;">Ver Investments →</button><button onclick="localStorage.setItem('${key}','1');this.closest('#ibkr-reminder').remove();" style="padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;cursor:pointer;">Ignorar</button></div>`;document.body.appendChild(banner);}
 // PRIVACY MODE
-(function(){const PRIVATE_IDS=["ovBalKWD","ovLastSMSDate","ovAccBal","ovIncMonth","ovExpMonth","ovNetMonth","bvKWD","bvUSD","bvEUR","bvAED","bvPHP","bvTotal","scTotal","scMonth","chartTotal","invNAV","invCumReturn","invMonthReturn"];const originals={};let on=localStorage.getItem("privacyMode")==="1";function maskValue(val){if(!val||val==="—")return"••••";return val.replace(/[\d,.]+/g,m=>"•".repeat(Math.min(m.length,6)));}function apply(){
+(function(){const PRIVATE_IDS=["ovBalKWD","ovLastSMSDate","ovAccBal","ovIncMonth","ovExpMonth","ovNetMonth","ptNBK","ptSAN","ptIBKR","ptIBKRcash","ptTotal","scTotal","scMonth","chartTotal","invNAV","invCumReturn","invMonthReturn"];const originals={};let on=localStorage.getItem("privacyMode")==="1";function maskValue(val){if(!val||val==="—")return"••••";return val.replace(/[\d,.]+/g,m=>"•".repeat(Math.min(m.length,6)));}function apply(){
   document.body.classList.toggle("privacy-on", on);
   PRIVATE_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;if(on){const t=el.textContent.trim();if(!t||t==="—"||t.includes("loading")||t.includes("Loading")||t.startsWith("•"))return;if(!originals[id])originals[id]=el.innerHTML;el.innerHTML=maskValue(el.textContent);el.style.letterSpacing="2px";el.style.opacity="0.6";}else{if(originals[id]!==undefined){el.innerHTML=originals[id];el.style.letterSpacing="";el.style.opacity="";}}});
   const btn=$("privacyBtn");if(btn){btn.innerHTML=on?"🙈&nbsp;Mostrar":"👁&nbsp;Ocultar";btn.classList.toggle("active",on);}
@@ -2325,7 +2391,7 @@ function initSearchAndWindow(){const input=$("searchInput"),clear=$("searchClear
 
   // Content swipe left/right to change views
   const content=document.querySelector(".content");
-  if(content){const VIEWS=["overview","transactions","analytics","investments","balance"];let sx=0,sy=0,st=0;content.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();},{passive:true});content.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-sx,dy=Math.abs(e.changedTouches[0].clientY-sy),dt=Date.now()-st;if(Math.abs(dx)<60||dy>80||dt>400)return;if(e.target.closest(".inv-table-wrap,.bar-chart,.ov-bars,select"))return;const cur=document.querySelector(".view.active")?.id?.replace("view-",""),idx=VIEWS.indexOf(cur);if(idx<0)return;const next=dx<0?VIEWS[idx+1]:VIEWS[idx-1];if(!next)return;switchView(next);haptic("light");},{passive:true});}
+  if(content){const VIEWS=["overview","transactions","analytics","investments","patrimonio"];let sx=0,sy=0,st=0;content.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();},{passive:true});content.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-sx,dy=Math.abs(e.changedTouches[0].clientY-sy),dt=Date.now()-st;if(Math.abs(dx)<60||dy>80||dt>400)return;if(e.target.closest(".inv-table-wrap,.bar-chart,.ov-bars,select"))return;const cur=document.querySelector(".view.active")?.id?.replace("view-",""),idx=VIEWS.indexOf(cur);if(idx<0)return;const next=dx<0?VIEWS[idx+1]:VIEWS[idx-1];if(!next)return;switchView(next);haptic("light");},{passive:true});}
 })();
 // PWA
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));}
@@ -3609,6 +3675,104 @@ function parseSantanderPDF(text){
   const date = dateMatch ? dateMatch[1] : new Date().toLocaleDateString('es-ES');
   return {balance, date, transactions:txs};
 }
+
+// ══════════════════════════════════════════════════════════════
+// PATRIMONIO
+// ══════════════════════════════════════════════════════════════
+async function renderPatrimonio(){
+  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25, PHP:58};
+  if(!FX.rates){ try{ await getFX(); }catch(_){} }
+
+  // NBK balance from SMS
+  const sorted = [...S.all].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  let nbkBal = null;
+  for(const r of sorted){
+    const sms = r.sms||r.sms_raw||'';
+    const m = sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);
+    if(m){ nbkBal = parseFloat(m[1].replace(/,/g,'')); break; }
+  }
+  const nbkEUR = nbkBal !== null ? nbkBal / (rates.KWD||3.28) : 0;
+
+  // Month stats NBK
+  const now = new Date(), ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const monthRows = S.all.filter(r=>(r.created_at||'').startsWith(ym));
+  const nbkMonthInc = monthRows.filter(r=>idir(r)==='in'&&r.currency==='KWD').reduce((s,r)=>s+Number(r.amount||0),0);
+  const nbkMonthExp = monthRows.filter(r=>idir(r)==='out'&&r.currency==='KWD').reduce((s,r)=>s+Number(r.amount||0),0);
+
+  // Santander
+  const sanData = loadSantanderData();
+  const sanBal = sanData ? sanData.balance : null;
+  const sanEUR = sanBal || 0;
+
+  // IBKR from static data
+  const ibkrNAV = parseFloat(($('invNAV')||{textContent:'60629'}).textContent.replace(/[€,]/g,'')) || 60629;
+  const ibkrCash = 16562;
+
+  // Totals
+  const totalBanks = nbkEUR + sanEUR;
+  const totalInv = ibkrNAV; // NAV already includes cash
+  const grandTotal = totalBanks + totalInv;
+
+  // Render hero
+  const ptTotal = $('ptTotal');
+  if(ptTotal) ptTotal.textContent = '€'+grandTotal.toLocaleString('es-ES',{minimumFractionDigits:0,maximumFractionDigits:0});
+
+  // NBK card
+  const ptNBK = $('ptNBK');
+  if(ptNBK) ptNBK.textContent = nbkBal !== null ? nbkBal.toFixed(3)+' KWD' : '—';
+  const ptNBKeur = $('ptNBKeur');
+  if(ptNBKeur) ptNBKeur.textContent = '≈ €'+nbkEUR.toFixed(0)+' EUR';
+  const ptNBKinc = $('ptNBKinc');
+  if(ptNBKinc) ptNBKinc.textContent = '+'+nbkMonthInc.toFixed(3)+' KWD';
+  const ptNBKexp = $('ptNBKexp');
+  if(ptNBKexp) ptNBKexp.textContent = '-'+nbkMonthExp.toFixed(3)+' KWD';
+
+  // Santander card
+  const ptSAN = $('ptSAN');
+  if(ptSAN) ptSAN.textContent = sanBal !== null ? sanBal.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €' : '—';
+  const ptSANdate = $('ptSANdate');
+  if(ptSANdate) ptSANdate.textContent = sanData ? 'Actualizado '+sanData.date : 'Sin datos · Sube PDF en Settings';
+  const ptSANinc = $('ptSANinc');
+  if(ptSANinc) ptSANinc.textContent = sanData ? '+'+sanData.monthInc.toFixed(2)+' €' : '—';
+  const ptSANexp = $('ptSANexp');
+  if(ptSANexp) ptSANexp.textContent = sanData ? '-'+sanData.monthExp.toFixed(2)+' €' : '—';
+
+  // IBKR card
+  const ptIBKR = $('ptIBKR');
+  if(ptIBKR) ptIBKR.textContent = '€'+ibkrNAV.toLocaleString('en');
+
+  // Breakdown bars
+  const breakdown = $('ptBreakdown');
+  if(breakdown){
+    const items = [
+      {label:'NBK Kuwait', val:nbkEUR, color:'var(--blue)', icon:'🏦'},
+      {label:'Santander', val:sanEUR, color:'#ec0000', icon:'🔴'},
+      {label:'IBKR Portfolio', val:ibkrNAV, color:'var(--teal)', icon:'📈'},
+    ];
+    const maxVal = Math.max(...items.map(i=>i.val), 1);
+    breakdown.innerHTML = items.map(item=>{
+      const pct = Math.round(item.val/grandTotal*100);
+      const barW = Math.round(item.val/maxVal*100);
+      return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="font-size:20px;width:28px;text-align:center;">${item.icon}</div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+            <span style="font-size:13px;font-weight:600;">${item.label}</span>
+            <span style="font-size:13px;font-family:var(--mono);font-weight:700;">€${Math.round(item.val).toLocaleString('es-ES')} <span style="color:var(--t3);font-weight:400;">(${pct}%)</span></span>
+          </div>
+          <div style="height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border);">
+            <div style="height:100%;width:${barW}%;background:${item.color};border-radius:999px;transition:width .6s ease;"></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Updated
+  const ptUpd = $('ptUpdated');
+  if(ptUpd) ptUpd.textContent = 'Actualizado · '+now.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+}
+
 
 bind();load();initSantanderData();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
