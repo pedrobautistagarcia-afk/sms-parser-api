@@ -34,7 +34,6 @@ async def global_exception_handler(request, exc):
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ── PWA static file routes ──────────────────────────────────────
 @app.get("/manifest.json")
 async def serve_manifest():
     return FileResponse("static/manifest.json", media_type="application/json")
@@ -53,15 +52,13 @@ async def serve_icon512():
 
 
 # ======================================================
-# CATEGORIES — rules applied in order, first match wins
+# CATEGORIES
 # ======================================================
 CATEGORY_RULES = [
-    # --- COFFEE ---
     ("coffee", [
         "starbucks", "costa coffee", "tim hortons", "caf cafe", "cafe", "coffee",
         "dunkin", "caribou", "peet", "lavazza", "nespresso", "barista",
     ]),
-    # --- FOOD / DELIVERY ---
     ("food", [
         "talabat", "deliveroo", "carriage", "hunger station", "jahez",
         "mcdonald", "burger king", "kfc", "hardee", "popeye", "subway",
@@ -71,35 +68,36 @@ CATEGORY_RULES = [
         "pick", "eat", "food", "dining", "bistro", "brasserie",
         "maki", "wasabi", "wagamama", "nando", "five guys",
         "shake shack", "smashburger", "johnny rocket",
+        "jollibee", "chowking", "mang inasal", "goldilocks", "yellow cab",
+        "max's", "greenwich", "tropical hut",
     ]),
-    # --- GROCERIES ---
     ("groceries", [
         "lulu", "sultan center", "carrefour", "coop", "cooperative",
         "geant", "hypermarket", "supermarket", "market", "grocery",
         "spinneys", "waitrose", "danube", "farm fresh", "organic",
         "al meera", "family food", "sultan", "cold storage",
+        "puregold", "sm supermarket", "robinsons supermarket", "waltermart",
+        "savemore", "marketmarket",
     ]),
-    # --- PHARMACY ---
     ("pharmacy", [
         "pharmacy", "pharmacie", "zafraan", "al dawaa", "boots",
         "life pharmacy", "ibn sina", "nahdi", "dawaa", "drugstore",
-        "watson", "guardian", "medical store",
+        "watson", "guardian", "medical store", "rose pharmacy",
+        "generika", "southstar drug",
     ]),
-    # --- TRANSPORT ---
     ("transport", [
         "uber", "careem", "bolt", "taxi", "cab", "lyft",
         "metro", "bus", "train", "transit", "transport",
         "parking", "salik", "petrol", "fuel", "gas station",
         "shell", "bp", "total", "adnoc", "q8", "kuwait national",
+        "grab", "angkas", "move it", "jeepney", "tricycle",
     ]),
-    # --- UTILITIES ---
     ("utilities", [
         "wamd", "zain", "ooredoo", "viva", "stc", "du ", "etisalat",
         "electricity", "water", "mew ", "kahramaa", "utility",
         "internet", "broadband", "telecom", "mobile", "phone bill",
-        "municipality", "baladiya",
+        "municipality", "baladiya", "globe", "smart", "pldt", "meralco",
     ]),
-    # --- SHOPPING ---
     ("shopping", [
         "amazon", "noon", "namshi", "ounass", "sivvi",
         "h&m", "zara", "mango", "gap", "uniqlo", "primark",
@@ -110,37 +108,36 @@ CATEGORY_RULES = [
         "ikea", "home centre", "pottery barn", "west elm",
         "virgin megastore", "jarir", "lulu electronics",
         "apple store", "samsung", "huawei",
+        "sm department", "robinsons department", "rustans", "landmark",
     ]),
-    # --- ENTERTAINMENT ---
     ("entertainment", [
         "netflix", "spotify", "apple music", "youtube", "disney",
         "hulu", "paramount", "hbo", "osn", "shahid", "anghami",
         "cinema", "cinescape", "vox cinema", "imax",
         "playstation", "xbox", "steam", "nintendo", "google play",
-        "app store", "itunes",
+        "app store", "itunes", "sm cinema", "ayala cinemas", "sm tickets",
     ]),
-    # --- HEALTH ---
     ("health", [
         "hospital", "clinic", "doctor", "dr ", "medical",
         "dental", "dentist", "optician", "optical", "laboratory",
         "lab ", "radiology", "physiotherapy", "gym", "fitness",
         "anytime fitness", "gold's gym", "curves", "kuwait hospital",
+        "makati medical", "st lukes", "asian hospital", "medical city",
     ]),
-    # --- TRAVEL ---
     ("travel", [
         "hotel", "marriott", "hilton", "hyatt", "sheraton", "radisson",
         "holiday inn", "ibis", "novotel", "rotana", "jumeirah",
         "airbnb", "booking.com", "expedia", "agoda",
         "airline", "kuwait airways", "emirates", "flydubai", "air arabia",
         "flynas", "jazeera", "airport", "duty free",
+        "cebu pacific", "philippine airlines", "pal ", "air asia",
     ]),
-    # --- EDUCATION ---
     ("education", [
         "school", "university", "college", "tuition", "course",
         "udemy", "coursera", "skillshare", "pluralsight",
         "book", "bookstore", "jarir bookstore", "virgin books",
+        "national bookstore", "fully booked",
     ]),
-    # --- SALARY / INCOME ---
     ("salary", [
         "salary", "payroll", "wage",
     ]),
@@ -153,10 +150,7 @@ for _cat, _keywords in CATEGORY_RULES:
 
 
 def categorize(merchant: str, sms: str) -> str:
-    targets = [
-        (merchant or "").lower(),
-        (sms or "").lower(),
-    ]
+    targets = [(merchant or "").lower(), (sms or "").lower()]
     for target in targets:
         if not target:
             continue
@@ -182,24 +176,64 @@ def clean_merchant(raw: str) -> str:
 # ======================================================
 # AMOUNT / CURRENCY EXTRACTION
 # ======================================================
-CURRENCIES = ("KWD", "USD", "EUR", "AED")
+CURRENCIES = ("KWD", "USD", "EUR", "AED", "PHP")
+
+
+def parse_nbk_amount(amount_str: str, currency: str) -> float:
+    """
+    NBK Kuwait uses dot as thousands separator for all currencies in SMS.
+    KWD: 6,224.403 -> 6224.403 (3 real decimals)
+    PHP: 28.250 -> 28250 (dot is thousands separator, not decimal)
+
+    Rule: for non-KWD currencies, if there are exactly 3 digits after the
+    last dot and no comma before, treat as thousands separator.
+    """
+    s = amount_str.replace(",", "")
+    if currency == "KWD":
+        try:
+            return float(s)
+        except ValueError:
+            return 0.0
+    else:
+        dot_idx = s.rfind('.')
+        if dot_idx != -1:
+            decimals = s[dot_idx + 1:]
+            integer_part = s[:dot_idx]
+            if len(decimals) == 3 and '.' not in integer_part:
+                # Thousands separator: 28.250 -> 28250
+                try:
+                    return float(integer_part + decimals)
+                except ValueError:
+                    pass
+        try:
+            return float(s)
+        except ValueError:
+            return 0.0
+
 
 def extract_amount_currency(text: str):
     if not text:
         return None, None
     t = text.replace("\u00a0", " ")
-    m = re.search(r'\b([A-Z]{3})\s*([0-9][0-9,]*\.?[0-9]*)\b', t)
-    if m and m.group(1) in CURRENCIES:
+
+    # CURRENCY followed by amount: "PHP 28.250" or "KWD 6,224.403"
+    m = re.search(r'\b(KWD|USD|EUR|AED|PHP)\s*([0-9][0-9,]*\.?[0-9]*)\b', t, re.IGNORECASE)
+    if m:
+        currency = m.group(1).upper()
         try:
-            return float(m.group(2).replace(",", "")), m.group(1).upper()
+            return parse_nbk_amount(m.group(2), currency), currency
         except ValueError:
             pass
-    m = re.search(r'\b([0-9][0-9,]*\.?[0-9]*)\s*([A-Z]{3})\b', t)
-    if m and m.group(2) in CURRENCIES:
+
+    # Amount followed by CURRENCY
+    m = re.search(r'\b([0-9][0-9,]*\.?[0-9]*)\s*(KWD|USD|EUR|AED|PHP)\b', t, re.IGNORECASE)
+    if m:
+        currency = m.group(2).upper()
         try:
-            return float(m.group(1).replace(",", "")), m.group(2).upper()
+            return parse_nbk_amount(m.group(1), currency), currency
         except ValueError:
             pass
+
     return None, None
 
 
@@ -222,21 +256,54 @@ def detect_direction(sms: str) -> str:
 # ======================================================
 DATE_RE = r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
 
+
 def sha256(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 def parse_sms(sms: str) -> Dict[str, Any]:
     txt = sms.strip()
+
+    # --- NBK specific pattern: "debited with CURRENCY AMOUNT from MERCHANT on DATE" ---
+    m_nbk = re.search(
+        r'debited\s+with\s+(KWD|USD|EUR|AED|PHP)\s+([0-9][0-9,.]*)\s+from\s+(.+?)\s+on\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})',
+        txt, re.IGNORECASE
+    )
+    if m_nbk:
+        currency = m_nbk.group(1).upper()
+        amount = parse_nbk_amount(m_nbk.group(2), currency)
+        merchant_raw = m_nbk.group(3).strip().rstrip(',').strip()
+        date_raw = m_nbk.group(4)
+        merchant_clean = clean_merchant(merchant_raw)
+        category = categorize(merchant_clean or merchant_raw, txt)
+        direction = "expense"
+        try:
+            dt = datetime.strptime(date_raw, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            date_iso = dt.isoformat()
+        except Exception:
+            dt = datetime.now(timezone.utc)
+            date_iso = dt.isoformat()
+            date_raw = dt.strftime("%Y-%m-%d %H:%M:%S")
+        return {
+            "direction": direction,
+            "amount": amount,
+            "currency": currency,
+            "merchant_raw": merchant_raw,
+            "merchant_clean": merchant_clean,
+            "category": category,
+            "date_raw": date_raw,
+            "date_iso": date_iso,
+            "created_at": date_iso,
+            "sms_raw": txt,
+        }
+
+    # --- Generic extraction ---
     amount, currency = extract_amount_currency(txt)
     if not amount:
-        m = re.search(r'\bwith\s+([0-9][0-9,]*\.?[0-9]*)\s*(KWD|USD|EUR|AED)\b', txt, re.IGNORECASE)
+        m = re.search(r'\bwith\s+([0-9][0-9,]*\.?[0-9]*)\s*(KWD|USD|EUR|AED|PHP)\b', txt, re.IGNORECASE)
         if m:
-            try:
-                amount = float(m.group(1).replace(",", ""))
-                currency = m.group(2).upper()
-            except ValueError:
-                pass
+            currency = m.group(2).upper()
+            amount = parse_nbk_amount(m.group(1), currency)
     amount = amount or 0.0
     currency = currency or "KWD"
     direction = detect_direction(txt)
@@ -450,7 +517,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "db_path": DB_PATH, "version": "2026-05-17-icons"}
+    return {"ok": True, "db_path": DB_PATH, "version": "2026-05-20-php"}
 
 
 @app.post("/ingest")
@@ -707,10 +774,10 @@ def create_rule(rule: RuleCreate):
 async def add_rule(req: Request):
     api_key = req.query_params.get("api_key")
     check_key(api_key)
-    body     = await req.json()
-    user_id  = body.get("userid") or body.get("user_id")
-    merchant = (body.get("merchant") or body.get("pattern") or "").strip()
-    category = (body.get("category") or "").strip().lower()
+    body       = await req.json()
+    user_id    = body.get("userid") or body.get("user_id")
+    merchant   = (body.get("merchant") or body.get("pattern") or "").strip()
+    category   = (body.get("category") or "").strip().lower()
     match_type = (body.get("match_mode") or body.get("match_type") or "contains").strip().lower()
     if not user_id or not merchant or not category:
         return JSONResponse({"ok": False, "error": "userid, merchant, category required"}, status_code=400)
