@@ -1987,6 +1987,18 @@ body.privacy-on #svBars {
           <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;" id="ptUpdated">Conversión live · KWD a EUR</div>
         </div>
 
+        <!-- HISTORIAL -->
+        <div style="margin-top:28px;">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;">📅 Evolución del patrimonio</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
+            <div id="ptHistChart" style="width:100%;height:160px;position:relative;"></div>
+            <div id="ptHistLabels" style="display:flex;justify-content:space-between;margin-top:8px;"></div>
+          </div>
+          <div style="margin-top:12px;">
+            <table style="width:100%;border-collapse:collapse;" id="ptHistTable"></table>
+          </div>
+        </div>
+
       </div>
     </div>
     <!-- RULES -->
@@ -3840,6 +3852,160 @@ async function renderPatrimonio(){
   const grandTotal = nbkEUR + sanTotal + ibkrNAV;
   set('ptTotal', '€'+Math.round(grandTotal).toLocaleString('es-ES'));
   set('ptUpdated', '1 KWD ≈ €'+(1/(rates.KWD||3.28)).toFixed(2)+' · '+now.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}));
+
+  // Save snapshot to history
+  if(grandTotal > 0) savePatrimonioSnapshot(grandTotal);
+
+  // Render history chart
+  renderPatrimonioHistory();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// PATRIMONIO HISTORY
+// ══════════════════════════════════════════════════════════════
+const PAT_HIST_KEY = 'patrimonio_history_v1';
+
+function loadPatrimonioHistory(){
+  try{ return JSON.parse(localStorage.getItem(PAT_HIST_KEY)||'[]'); }catch(_){return [];}
+}
+
+function savePatrimonioSnapshot(total){
+  const hist = loadPatrimonioHistory();
+  const today = new Date().toISOString().slice(0,10);
+  // Only one snapshot per day, update if exists
+  const existing = hist.findIndex(h=>h.date===today);
+  if(existing>=0){ hist[existing].total = Math.round(total); }
+  else { hist.push({date:today, total:Math.round(total)}); }
+  // Keep last 24 months max
+  hist.sort((a,b)=>a.date.localeCompare(b.date));
+  while(hist.length > 730) hist.shift();
+  try{ localStorage.setItem(PAT_HIST_KEY, JSON.stringify(hist)); }catch(_){}
+}
+
+function renderPatrimonioHistory(){
+  const hist = loadPatrimonioHistory();
+  const chartEl = document.getElementById('ptHistChart');
+  const labelsEl = document.getElementById('ptHistLabels');
+  const tableEl = document.getElementById('ptHistTable');
+  if(!chartEl) return;
+
+  if(hist.length < 2){
+    chartEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--t3);font-size:13px;">Vuelve mañana para ver la evolución</div>';
+    if(labelsEl) labelsEl.innerHTML = '';
+    if(tableEl) tableEl.innerHTML = '';
+    return;
+  }
+
+  // Group by month - take last value of each month
+  const byMonth = {};
+  for(const h of hist){
+    const ym = h.date.slice(0,7);
+    byMonth[ym] = h.total;
+  }
+  const months = Object.keys(byMonth).sort();
+  const vals = months.map(m=>byMonth[m]);
+
+  // SVG line chart
+  const W = chartEl.clientWidth || 600;
+  const H = 160;
+  const pad = {t:20, r:10, b:10, l:50};
+  const minV = Math.min(...vals) * 0.95;
+  const maxV = Math.max(...vals) * 1.05;
+  const xStep = (W - pad.l - pad.r) / Math.max(vals.length-1, 1);
+
+  const px = (i) => pad.l + i * xStep;
+  const py = (v) => pad.t + (1 - (v-minV)/(maxV-minV)) * (H - pad.t - pad.b);
+
+  // Build path
+  const points = vals.map((v,i)=>`${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+  const firstX = px(0).toFixed(1), lastX = px(vals.length-1).toFixed(1);
+
+  // Y axis labels
+  const yMid = (minV+maxV)/2;
+  const yLabels = [maxV, yMid, minV].map(v=>{
+    const y = py(v);
+    return `<text x="${pad.l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--t3)" font-family="var(--mono)">€${Math.round(v/1000)}k</text>`;
+  }).join('');
+
+  // Dots for each point
+  const dots = vals.map((v,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="4" fill="var(--blue)" stroke="var(--surface)" stroke-width="2"/>`).join('');
+
+  // Change indicators
+  const first = vals[0], last = vals[vals.length-1];
+  const change = last - first;
+  const changePct = first > 0 ? ((change/first)*100).toFixed(1) : '—';
+  const changeColor = change >= 0 ? 'var(--green)' : 'var(--red)';
+
+  chartEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <div style="font-size:11px;color:var(--t3);">Desde ${months[0].replace('-','/')}</div>
+        <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:${changeColor};">${change>=0?'+':''}€${Math.abs(Math.round(change)).toLocaleString('es-ES')} (${change>=0?'+':''}${changePct}%)</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:var(--t3);">${months.length} meses registrados</div>
+      </div>
+    </div>
+    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="overflow:visible;">
+      <defs>
+        <linearGradient id="ptGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--blue)" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="var(--blue)" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <!-- Grid lines -->
+      <line x1="${pad.l}" y1="${py(yMid)}" x2="${W-pad.r}" y2="${py(yMid)}" stroke="var(--border)" stroke-dasharray="3,3"/>
+      <line x1="${pad.l}" y1="${pad.t}" x2="${W-pad.r}" y2="${pad.t}" stroke="var(--border)" stroke-dasharray="3,3"/>
+      <!-- Area fill -->
+      <polygon points="${px(0)},${H-pad.b} ${points} ${lastX},${H-pad.b}" fill="url(#ptGrad)"/>
+      <!-- Line -->
+      <polyline points="${points}" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Dots -->
+      ${dots}
+      <!-- Y labels -->
+      ${yLabels}
+    </svg>`;
+
+  // X labels (month names)
+  if(labelsEl){
+    const MOS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    labelsEl.innerHTML = months.map((m,i)=>{
+      const parts = m.split('-');
+      const lbl = MOS[+parts[1]-1]+"'"+parts[0].slice(2);
+      // Show fewer labels if many months
+      if(months.length > 8 && i % 2 !== 0 && i !== months.length-1) return '<div style="flex:1;"></div>';
+      return `<div style="flex:1;text-align:center;font-size:10px;color:var(--t3);font-weight:500;">${lbl}</div>`;
+    }).join('');
+  }
+
+  // History table - last 6 months
+  if(tableEl){
+    const recent = [...months].reverse().slice(0,6);
+    const MOS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    tableEl.innerHTML = `
+      <thead><tr>
+        <th style="padding:8px 0;font-size:11px;font-weight:600;color:var(--t3);text-align:left;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;">Mes</th>
+        <th style="padding:8px 0;font-size:11px;font-weight:600;color:var(--t3);text-align:right;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;">Patrimonio</th>
+        <th style="padding:8px 0;font-size:11px;font-weight:600;color:var(--t3);text-align:right;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;">Variación</th>
+      </tr></thead>
+      <tbody>
+        ${recent.map((m,i)=>{
+          const v = byMonth[m];
+          const prev = byMonth[recent[i+1]];
+          const diff = prev ? v - prev : null;
+          const diffPct = prev ? ((diff/prev)*100).toFixed(1) : null;
+          const parts = m.split('-');
+          const label = MOS[+parts[1]-1]+' '+parts[0];
+          const clr = diff===null?'var(--t3)':diff>=0?'var(--green)':'var(--red)';
+          return `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;font-size:13px;color:var(--t2);">${label}</td>
+            <td style="padding:10px 0;font-size:13px;font-family:var(--mono);font-weight:600;text-align:right;">€${v.toLocaleString('es-ES')}</td>
+            <td style="padding:10px 0;font-size:12px;font-family:var(--mono);text-align:right;color:${clr};">${diff!==null?(diff>=0?'+':'')+diff.toLocaleString('es-ES')+'€ ('+diffPct+'%)':'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>`;
+  }
 }
 
 
