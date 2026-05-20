@@ -1498,6 +1498,13 @@ body.privacy-on .inv-table tbody tr td span {
   color: inherit !important;
   visibility: visible !important;
 }
+/* Hero balance card — fully block when privacy on */
+body.privacy-on .ov-hero.accent {
+  filter: blur(12px) !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
+
 /* Transaction table — blur rows after 3rd */
 body.privacy-on #tbody tr:nth-child(n+5):not(.rg-sep) {
   filter: blur(4px);
@@ -3308,6 +3315,13 @@ body.privacy-on #svGoalRemVal {
   text-shadow: 0 0 8px rgba(148,163,184,0.8) !important;
   user-select: none !important;
 }
+/* Hero balance card — fully block when privacy on */
+body.privacy-on .ov-hero.accent {
+  filter: blur(12px) !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
+
 /* Transaction table — blur rows after 3rd */
 body.privacy-on #tbody tr:nth-child(n+5):not(.rg-sep) {
   filter: blur(4px);
