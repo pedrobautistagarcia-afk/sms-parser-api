@@ -3872,14 +3872,14 @@ function loadPatrimonioHistory(){
 
 function savePatrimonioSnapshot(total){
   const hist = loadPatrimonioHistory();
-  const today = new Date().toISOString().slice(0,10);
-  // Only one snapshot per day, update if exists
-  const existing = hist.findIndex(h=>h.date===today);
+  // Key by month (YYYY-MM) — one snapshot per month, always updated
+  const now = new Date();
+  const monthKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const existing = hist.findIndex(h=>h.date===monthKey);
   if(existing>=0){ hist[existing].total = Math.round(total); }
-  else { hist.push({date:today, total:Math.round(total)}); }
-  // Keep last 24 months max
+  else { hist.push({date:monthKey, total:Math.round(total)}); }
   hist.sort((a,b)=>a.date.localeCompare(b.date));
-  while(hist.length > 730) hist.shift();
+  while(hist.length > 36) hist.shift(); // keep 3 years max
   try{ localStorage.setItem(PAT_HIST_KEY, JSON.stringify(hist)); }catch(_){}
 }
 
