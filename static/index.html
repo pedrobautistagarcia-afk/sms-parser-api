@@ -1543,6 +1543,57 @@ body.privacy-on #svBars {
 .inv-sort-ic { font-size: 9px; opacity: .5; margin-left: 3px; }
 .inv-sort.asc .inv-sort-ic, .inv-sort.desc .inv-sort-ic { opacity: 1; color: var(--blue); }
 
+
+/* ═══════════════════════════
+   PATRIMONIO
+═══════════════════════════ */
+.pat-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-m);
+  margin-bottom: 16px;
+}
+.pat-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  gap: 12px;
+}
+.pat-block-rows {
+  padding: 4px 0;
+}
+.pat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 24px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.pat-row:last-child { border-bottom: none; }
+.pat-row-label { color: var(--t2); }
+.pat-row-val { font-family: var(--mono); font-weight: 600; color: var(--t1); }
+.pat-row-val.pos { color: var(--green); }
+.pat-row-val.neg { color: var(--red); }
+[data-theme="dark"] .pat-block { background: var(--surface); }
+
+
+/* PATRIMONIO TABLE */
+.pt-row { border-bottom: 1px solid var(--border); }
+.pt-row:last-child { border-bottom: none; }
+.pt-k { padding: 10px 14px 10px 0; font-size: 13px; color: var(--t2); width: 55%; }
+.pt-v { padding: 10px 0; font-size: 13px; font-family: var(--mono); font-weight: 600; color: var(--t1); text-align: right; }
+.pt-v.pos { color: var(--green); }
+.pt-v.neg { color: var(--red); }
+.pt-v.pt-sub { color: var(--t3); font-size: 12px; font-weight: 400; }
+.pt-highlight td { background: rgba(16,185,129,.06); }
+.pt-subtotal { border-top: 2px solid var(--border2); }
+.pt-subtotal td { padding: 11px 0 11px; font-size: 14px; font-weight: 700; color: var(--t1); font-family: var(--mono); }
+.pt-subtotal td:first-child { color: var(--t2); font-family: var(--font); padding-right: 14px; }
+
 </style>
 </head>
 <body>
@@ -1863,81 +1914,68 @@ body.privacy-on #svBars {
 
     <!-- PATRIMONIO -->
     <div class="view" id="view-patrimonio">
-      <div class="bal-hero" style="margin-bottom:20px;">
-        <div class="bh-label">Patrimonio total estimado</div>
-        <div class="bh-val" id="ptTotal">—</div>
-        <div class="bh-sub">Cuentas + Inversiones IBKR + Acciones SAN · en EUR</div>
-      </div>
+      <div style="max-width:640px;">
 
-      <div class="inv-section-title">🏦 Cuentas bancarias</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-            <div style="width:40px;height:40px;border-radius:12px;background:var(--blue-l);display:flex;align-items:center;justify-content:center;font-size:20px;">🏦</div>
-            <div><div style="font-weight:700;font-size:14px;">National Bank of Kuwait</div><div style="font-size:11px;color:var(--t3);">Cuenta corriente · KWD</div></div>
-          </div>
-          <div style="font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;" id="ptNBK">—</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:4px;" id="ptNBKeur">≈ — EUR</div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:16px;">
-            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Ingresos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--green);" id="ptNBKinc">—</div></div>
-            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Gastos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--red);" id="ptNBKexp">—</div></div>
-          </div>
+        <!-- NBK -->
+        <div style="margin-bottom:28px;">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">🏦 National Bank of Kuwait</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>
+              <tr class="pt-row"><td class="pt-k">Saldo cuenta</td><td class="pt-v" id="ptNBKbal2">—</td></tr>
+              <tr class="pt-row"><td class="pt-k">≈ en EUR</td><td class="pt-v pt-sub" id="ptNBKeur">—</td></tr>
+              <tr class="pt-row"><td class="pt-k">Ingresos este mes</td><td class="pt-v pos" id="ptNBKinc">—</td></tr>
+              <tr class="pt-row"><td class="pt-k">Gastos este mes</td><td class="pt-v neg" id="ptNBKexp">—</td></tr>
+            </tbody>
+            <tfoot>
+              <tr class="pt-subtotal"><td>Total NBK</td><td id="ptTotalNBK">—</td></tr>
+            </tfoot>
+          </table>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);position:relative;">
-          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ec0000,#ff6b6b);border-radius:var(--radius) var(--radius) 0 0;"></div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-            <div style="width:40px;height:40px;border-radius:12px;background:rgba(236,0,0,.1);display:flex;align-items:center;justify-content:center;font-size:20px;">🔴</div>
-            <div><div style="font-weight:700;font-size:14px;">Banco Santander</div><div style="font-size:11px;color:var(--t3);" id="ptSANdate">Cuenta corriente · EUR</div></div>
-          </div>
-          <div style="font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;color:var(--green);" id="ptSAN">—</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:4px;">Saldo disponible</div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:16px;">
-            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Ingresos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--green);" id="ptSANinc">—</div></div>
-            <div><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;">Gastos mes</div><div style="font-size:13px;font-family:var(--mono);font-weight:600;color:var(--red);" id="ptSANexp">—</div></div>
-          </div>
-        </div>
-      </div>
 
-      <div class="inv-section-title">📈 Inversiones</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
-        <div style="background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);color:#fff;">
-          <div style="font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">IBKR · Portfolio</div>
-          <div style="font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;" id="ptIBKR">€60,629</div>
-          <div style="font-size:11px;opacity:.65;margin-top:4px;">NAV · May 2026</div>
-          <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);display:flex;justify-content:space-between;">
-            <div><div style="font-size:10px;opacity:.65;">Rentab. acum.</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);">+16.60%</div></div>
-            <div><div style="font-size:10px;opacity:.65;">Este mes</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);">+2.64%</div></div>
-          </div>
+        <!-- Santander -->
+        <div style="margin-bottom:28px;">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">🔴 Banco Santander <span id="ptSANsubtitle" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:11px;"></span></div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>
+              <tr class="pt-row"><td class="pt-k">Cuenta corriente</td><td class="pt-v" id="ptSANcuenta">—</td></tr>
+              <tr class="pt-row"><td class="pt-k">C. Reinversión Dividendo</td><td class="pt-v">127,94 €</td></tr>
+              <tr class="pt-row pt-highlight"><td class="pt-k" style="font-weight:600;">Inversiones totales</td><td class="pt-v pos" style="font-size:15px;">12.304,88 €</td></tr>
+              <tr class="pt-row"><td class="pt-k" style="padding-left:16px;color:var(--t3);">↳ Rentabilidad</td><td class="pt-v pos">+8.261,61 € <span style="font-size:11px;opacity:.7;">(+150,05%)</span></td></tr>
+              <tr class="pt-row"><td class="pt-k" style="padding-left:16px;color:var(--t3);">↳ Acciones SAN</td><td class="pt-v">10,204 €/acc <span style="color:var(--green);font-size:11px;">+46,76%</span></td></tr>
+              <tr class="pt-row"><td class="pt-k">Ingresos este mes</td><td class="pt-v pos" id="ptSANinc">—</td></tr>
+              <tr class="pt-row"><td class="pt-k">Gastos este mes</td><td class="pt-v neg" id="ptSANexp">—</td></tr>
+            </tbody>
+            <tfoot>
+              <tr class="pt-subtotal"><td>Total Santander</td><td id="ptTotalSAN">—</td></tr>
+            </tfoot>
+          </table>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
-          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">IBKR · Efectivo</div>
-          <div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="ptIBKRcash">€16,562</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:4px;">EUR + USD disponible</div>
-          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
-            <div style="font-size:11px;color:var(--t3);">EUR <span style="font-family:var(--mono);color:var(--t1);">€7,878</span></div>
-            <div style="font-size:11px;color:var(--t3);margin-top:3px;">USD <span style="font-family:var(--mono);color:var(--t1);">$10,094</span></div>
-          </div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;">SAN · Acciones</div>
-            <span style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-l);padding:2px 7px;border-radius:999px;">+46.76%</span>
-          </div>
-          <div style="font-size:22px;font-weight:700;font-family:var(--mono);">10,204 €</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:4px;">Precio por acción · BME</div>
-          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
-            <div style="font-size:11px;color:var(--t3);">Máx 52s <span style="font-family:var(--mono);color:var(--t1);">11,26 €</span></div>
-            <div style="font-size:11px;color:var(--t3);margin-top:3px;">Mín 52s <span style="font-family:var(--mono);color:var(--t1);">6,754 €</span></div>
-          </div>
-        </div>
-      </div>
 
-      <div class="inv-section-title">📊 Desglose total</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-m);margin-bottom:16px;">
-        <div id="ptBreakdown"></div>
-      </div>
-      <div style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-m);font-size:12px;color:var(--t3);text-align:center;" id="ptUpdated">
-        Actualizado · 20 Mayo 2026
+        <!-- IBKR -->
+        <div style="margin-bottom:28px;">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">📈 Interactive Brokers</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>
+              <tr class="pt-row"><td class="pt-k">ETFs (EUR)</td><td class="pt-v">€35.426</td></tr>
+              <tr class="pt-row"><td class="pt-k">Acciones (USD/EUR)</td><td class="pt-v">€8.641</td></tr>
+              <tr class="pt-row"><td class="pt-k">Efectivo EUR</td><td class="pt-v">€7.878</td></tr>
+              <tr class="pt-row"><td class="pt-k">Efectivo USD</td><td class="pt-v">$10.094 <span style="color:var(--t3);font-size:11px;">≈ €8.604</span></td></tr>
+              <tr class="pt-row"><td class="pt-k">Rentabilidad acumulada</td><td class="pt-v pos">+16,60%</td></tr>
+              <tr class="pt-row"><td class="pt-k">Este mes</td><td class="pt-v pos">+2,64%</td></tr>
+            </tbody>
+            <tfoot>
+              <tr class="pt-subtotal"><td>Total IBKR (NAV)</td><td>€60.629</td></tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- TOTAL -->
+        <div style="background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:var(--radius);padding:22px 24px;box-shadow:0 8px 24px var(--blue-g);">
+          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Patrimonio total estimado</div>
+          <div style="font-size:40px;font-weight:800;font-family:var(--mono);color:#fff;letter-spacing:-1.5px;" id="ptTotal">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;" id="ptUpdated">Conversión live · KWD a EUR</div>
+        </div>
+
       </div>
     </div>
     <!-- RULES -->
@@ -3493,6 +3531,57 @@ body.privacy-on #svBars {
 .inv-sort-ic { font-size: 9px; opacity: .5; margin-left: 3px; }
 .inv-sort.asc .inv-sort-ic, .inv-sort.desc .inv-sort-ic { opacity: 1; color: var(--blue); }
 
+
+/* ═══════════════════════════
+   PATRIMONIO
+═══════════════════════════ */
+.pat-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-m);
+  margin-bottom: 16px;
+}
+.pat-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  gap: 12px;
+}
+.pat-block-rows {
+  padding: 4px 0;
+}
+.pat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 24px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.pat-row:last-child { border-bottom: none; }
+.pat-row-label { color: var(--t2); }
+.pat-row-val { font-family: var(--mono); font-weight: 600; color: var(--t1); }
+.pat-row-val.pos { color: var(--green); }
+.pat-row-val.neg { color: var(--red); }
+[data-theme="dark"] .pat-block { background: var(--surface); }
+
+
+/* PATRIMONIO TABLE */
+.pt-row { border-bottom: 1px solid var(--border); }
+.pt-row:last-child { border-bottom: none; }
+.pt-k { padding: 10px 14px 10px 0; font-size: 13px; color: var(--t2); width: 55%; }
+.pt-v { padding: 10px 0; font-size: 13px; font-family: var(--mono); font-weight: 600; color: var(--t1); text-align: right; }
+.pt-v.pos { color: var(--green); }
+.pt-v.neg { color: var(--red); }
+.pt-v.pt-sub { color: var(--t3); font-size: 12px; font-weight: 400; }
+.pt-highlight td { background: rgba(16,185,129,.06); }
+.pt-subtotal { border-top: 2px solid var(--border2); }
+.pt-subtotal td { padding: 11px 0 11px; font-size: 14px; font-weight: 700; color: var(--t1); font-family: var(--mono); }
+.pt-subtotal td:first-child { color: var(--t2); font-family: var(--font); padding-right: 14px; }
+
 </style>
 </head>
 <body>
@@ -3680,10 +3769,11 @@ function parseSantanderPDF(text){
 // PATRIMONIO
 // ══════════════════════════════════════════════════════════════
 async function renderPatrimonio(){
-  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25, PHP:58};
   if(!FX.rates){ try{ await getFX(); }catch(_){} }
+  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25, PHP:58};
+  const set = (id,v) => { const el=$(id); if(el) el.textContent=v; };
 
-  // NBK balance from SMS
+  // NBK
   const sorted = [...S.all].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
   let nbkBal = null;
   for(const r of sorted){
@@ -3691,86 +3781,38 @@ async function renderPatrimonio(){
     const m = sms.match(/(?:avl\.?\s*balance\s*(?:is)?|balance[:\s]+)\s*KWD\s*([\d,]+\.?\d*)/i);
     if(m){ nbkBal = parseFloat(m[1].replace(/,/g,'')); break; }
   }
-  const nbkEUR = nbkBal !== null ? nbkBal / (rates.KWD||3.28) : 0;
-
-  // Month stats NBK
+  const nbkEUR = nbkBal !== null ? nbkBal/(rates.KWD||3.28) : 0;
   const now = new Date(), ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const monthRows = S.all.filter(r=>(r.created_at||'').startsWith(ym));
-  const nbkMonthInc = monthRows.filter(r=>idir(r)==='in'&&r.currency==='KWD').reduce((s,r)=>s+Number(r.amount||0),0);
-  const nbkMonthExp = monthRows.filter(r=>idir(r)==='out'&&r.currency==='KWD').reduce((s,r)=>s+Number(r.amount||0),0);
+  const mRows = S.all.filter(r=>(r.created_at||'').startsWith(ym));
+  const nbkInc = mRows.filter(r=>idir(r)==='in'&&r.currency==='KWD').reduce((s,r)=>s+Number(r.amount||0),0);
+  const nbkExp = mRows.filter(r=>idir(r)==='out'&&r.currency==='KWD').reduce((s,r)=>s+Number(r.amount||0),0);
+
+  set('ptNBKbal2', nbkBal!==null ? nbkBal.toFixed(3)+' KWD' : '—');
+  set('ptNBKeur', '≈ €'+Math.round(nbkEUR).toLocaleString('es-ES')+' EUR');
+  set('ptNBKinc', '+'+nbkInc.toFixed(3)+' KWD');
+  set('ptNBKexp', '-'+nbkExp.toFixed(3)+' KWD');
+  set('ptTotalNBK', '€'+Math.round(nbkEUR).toLocaleString('es-ES'));
 
   // Santander
-  const sanData = loadSantanderData();
-  const sanBal = sanData ? sanData.balance : null;
-  const sanEUR = sanBal || 0;
+  const san = loadSantanderData();
+  const sanCuenta = san ? san.balance : null;
+  const sanReinv = 127.94;
+  const sanInv = 12304.88;
+  const sanTotal = (sanCuenta||0) + sanReinv + sanInv;
 
-  // IBKR from static data
-  const ibkrNAV = parseFloat(($('invNAV')||{textContent:'60629'}).textContent.replace(/[€,]/g,'')) || 60629;
-  const ibkrCash = 16562;
+  set('ptSANcuenta', sanCuenta!==null ? sanCuenta.toLocaleString('es-ES',{minimumFractionDigits:2})+' €' : '—');
+  set('ptSANsubtitle', san ? '· '+san.date : '· sin datos');
+  set('ptSANinc', san ? '+'+san.monthInc.toFixed(2)+' €' : '—');
+  set('ptSANexp', san ? '-'+san.monthExp.toFixed(2)+' €' : '—');
+  set('ptTotalSAN', '€'+Math.round(sanTotal).toLocaleString('es-ES'));
 
-  // Totals
-  const totalBanks = nbkEUR + sanEUR;
-  const totalInv = ibkrNAV; // NAV already includes cash
-  const grandTotal = totalBanks + totalInv;
+  // IBKR
+  const ibkrNAV = 60629;
 
-  // Render hero
-  const ptTotal = $('ptTotal');
-  if(ptTotal) ptTotal.textContent = '€'+grandTotal.toLocaleString('es-ES',{minimumFractionDigits:0,maximumFractionDigits:0});
-
-  // NBK card
-  const ptNBK = $('ptNBK');
-  if(ptNBK) ptNBK.textContent = nbkBal !== null ? nbkBal.toFixed(3)+' KWD' : '—';
-  const ptNBKeur = $('ptNBKeur');
-  if(ptNBKeur) ptNBKeur.textContent = '≈ €'+nbkEUR.toFixed(0)+' EUR';
-  const ptNBKinc = $('ptNBKinc');
-  if(ptNBKinc) ptNBKinc.textContent = '+'+nbkMonthInc.toFixed(3)+' KWD';
-  const ptNBKexp = $('ptNBKexp');
-  if(ptNBKexp) ptNBKexp.textContent = '-'+nbkMonthExp.toFixed(3)+' KWD';
-
-  // Santander card
-  const ptSAN = $('ptSAN');
-  if(ptSAN) ptSAN.textContent = sanBal !== null ? sanBal.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €' : '—';
-  const ptSANdate = $('ptSANdate');
-  if(ptSANdate) ptSANdate.textContent = sanData ? 'Actualizado '+sanData.date : 'Sin datos · Sube PDF en Settings';
-  const ptSANinc = $('ptSANinc');
-  if(ptSANinc) ptSANinc.textContent = sanData ? '+'+sanData.monthInc.toFixed(2)+' €' : '—';
-  const ptSANexp = $('ptSANexp');
-  if(ptSANexp) ptSANexp.textContent = sanData ? '-'+sanData.monthExp.toFixed(2)+' €' : '—';
-
-  // IBKR card
-  const ptIBKR = $('ptIBKR');
-  if(ptIBKR) ptIBKR.textContent = '€'+ibkrNAV.toLocaleString('en');
-
-  // Breakdown bars
-  const breakdown = $('ptBreakdown');
-  if(breakdown){
-    const items = [
-      {label:'NBK Kuwait', val:nbkEUR, color:'var(--blue)', icon:'🏦'},
-      {label:'Santander', val:sanEUR, color:'#ec0000', icon:'🔴'},
-      {label:'IBKR Portfolio', val:ibkrNAV, color:'var(--teal)', icon:'📈'},
-    ];
-    const maxVal = Math.max(...items.map(i=>i.val), 1);
-    breakdown.innerHTML = items.map(item=>{
-      const pct = Math.round(item.val/grandTotal*100);
-      const barW = Math.round(item.val/maxVal*100);
-      return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <div style="font-size:20px;width:28px;text-align:center;">${item.icon}</div>
-        <div style="flex:1;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-            <span style="font-size:13px;font-weight:600;">${item.label}</span>
-            <span style="font-size:13px;font-family:var(--mono);font-weight:700;">€${Math.round(item.val).toLocaleString('es-ES')} <span style="color:var(--t3);font-weight:400;">(${pct}%)</span></span>
-          </div>
-          <div style="height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border);">
-            <div style="height:100%;width:${barW}%;background:${item.color};border-radius:999px;transition:width .6s ease;"></div>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // Updated
-  const ptUpd = $('ptUpdated');
-  if(ptUpd) ptUpd.textContent = 'Actualizado · '+now.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  // Grand total
+  const grandTotal = nbkEUR + sanTotal + ibkrNAV;
+  set('ptTotal', '€'+Math.round(grandTotal).toLocaleString('es-ES'));
+  set('ptUpdated', '1 KWD ≈ €'+(1/(rates.KWD||3.28)).toFixed(2)+' · '+now.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}));
 }
 
 
