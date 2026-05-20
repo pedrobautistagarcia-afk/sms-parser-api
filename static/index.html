@@ -1670,6 +1670,7 @@ body.privacy-on #svBars {
     <div class="nav" data-view="investments"><span class="nav-ic">📈</span><span>Investments</span></div>
     <div class="nav" data-view="patrimonio"><span class="nav-ic">💎</span><span>Patrimonio</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
+    <div class="nav" data-view="recurring"><span class="nav-ic">🔄</span><span>Recurrentes</span></div>
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
   </div>
@@ -1778,7 +1779,7 @@ body.privacy-on #svBars {
         <div class="qbtns"><button class="qbtn" id="btnToday">Today</button><button class="qbtn" id="btnWeek">Week</button><button class="qbtn" id="btnMonth">Month</button><button class="qbtn" id="btnYear">Year</button><button class="qbtn" id="btnClear">Clear</button></div>
         <div class="sp"></div>
         <button class="btn btn-red" id="btnDelete" disabled>Delete selected</button>
-        <button class="btn" id="btnExport">⬇️ CSV</button>
+        <button class="btn btn-primary" id="btnManualTx" style="gap:5px;">＋ Añadir</button><button class="btn" id="btnExport">⬇️ CSV</button>
       </div>
       <div class="err-box" id="errBox"></div>
       <div class="toast" id="toast"><span id="toastMsg">Deleted.</span><button class="btn" id="btnUndo" style="padding:5px 10px;font-size:12px;">Undo</button></div>
@@ -2030,6 +2031,33 @@ body.privacy-on #svBars {
       </div>
     </div>
 
+    <!-- RECURRING -->
+    <div class="view" id="view-recurring">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <h2 style="font-size:17px;font-weight:700;">Gastos recurrentes</h2>
+          <div style="font-size:12px;color:var(--t3);margin-top:3px;" id="recurSubtitle">Detectados automáticamente</div>
+        </div>
+      </div>
+      <!-- Summary -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;" id="recurStats">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px;">Total mensual</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="recurTotal">—</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px;">Suscripciones</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="recurCount">—</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px;">Al año</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--mono);" id="recurYear">—</div>
+        </div>
+      </div>
+      <!-- List -->
+      <div id="recurList"></div>
+    </div>
+
     <!-- SETTINGS -->
     <div class="view" id="view-settings">
       <div style="max-width:560px;">
@@ -2154,6 +2182,45 @@ body.privacy-on #svBars {
       <button class="btn" id="confirmCancel">Cancelar</button>
       <button class="btn btn-red" id="confirmOk">Eliminar</button>
     </div>
+  </div>
+</div>
+
+<!-- MANUAL TX MODAL -->
+<div class="ovl" id="manualTxOvl">
+  <div class="mbox rule" style="width:min(480px,calc(100vw - 32px));padding:24px;">
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:18px;">➕ Añadir transacción</h3>
+    <label class="flbl">Merchant / Descripción</label>
+    <input type="text" class="fin" id="mtMerchant" placeholder="ej: Grab, Efectivo, Restaurante…"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label class="flbl">Importe</label>
+        <input type="number" class="fin" id="mtAmount" placeholder="0.00" step="0.01" min="0"/>
+      </div>
+      <div>
+        <label class="flbl">Moneda</label>
+        <select class="fin" id="mtCurrency">
+          <option value="KWD">KWD</option>
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+          <option value="AED">AED</option>
+          <option value="PHP" selected>PHP</option>
+        </select>
+      </div>
+    </div>
+    <label class="flbl">Categoría</label>
+    <select class="fin" id="mtCategory"></select>
+    <label class="flbl">Tipo</label>
+    <select class="fin" id="mtDirection">
+      <option value="expense">Gasto</option>
+      <option value="income">Ingreso</option>
+    </select>
+    <label class="flbl">Fecha</label>
+    <input type="date" class="fin" id="mtDate"/>
+    <div class="mac">
+      <button class="btn" id="mtCancel">Cancelar</button>
+      <button class="btn btn-primary" id="mtSave">Guardar</button>
+    </div>
+    <div id="mtStat" style="font-size:12px;color:var(--t3);margin-top:8px;min-height:16px;"></div>
   </div>
 </div>
 
@@ -2339,7 +2406,7 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
-function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="patrimonio")renderPatrimonio();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
+function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="patrimonio")renderPatrimonio();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="recurring")renderRecurring();if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{
@@ -2387,7 +2454,13 @@ function bind(){
     renderBudget();
     haptic("success");showToast2("🎯","Presupuesto guardado",tc(cat)+" · "+amt.toFixed(2)+" KWD","var(--green)",2500);
   });
-  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");$("budgetOvl").classList.remove("open");$("confirmModal")?.classList.remove("open");closeMonthDetail();closeCatPopup();}});
+  // Manual TX
+  document.getElementById('btnManualTx')?.addEventListener('click', openManualTx);
+  document.getElementById('mtCancel')?.addEventListener('click',()=>document.getElementById('manualTxOvl').classList.remove('open'));
+  document.getElementById('manualTxOvl')?.addEventListener('click',e=>{if(e.target===document.getElementById('manualTxOvl'))document.getElementById('manualTxOvl').classList.remove('open');});
+  document.getElementById('mtSave')?.addEventListener('click', saveManualTx);
+
+  window.addEventListener("keydown",e=>{if(e.key==="Escape"){$("txOvl").classList.remove("open");$("ruleOvl").classList.remove("open");$("budgetOvl").classList.remove("open");$("confirmModal")?.classList.remove("open");document.getElementById("manualTxOvl")?.classList.remove("open");closeMonthDetail();closeCatPopup();}});
 }
 // AUTO MOBILE — no button
 (function(){let on=window.innerWidth<769;function apply(){document.body.classList.toggle("fm",on);}apply();window.addEventListener("resize",()=>{const should=window.innerWidth<769;if(should!==on){on=should;apply();}});})();
@@ -4000,6 +4073,121 @@ function renderPatrimonioHistory(){
   }
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// MANUAL TRANSACTION
+// ══════════════════════════════════════════════════════════════
+function openManualTx(){
+  const DEFAULT_CATS=["coffee","food","groceries","pharmacy","transport","utilities","shopping","entertainment","health","travel","education","other"];
+  const allCats=[...new Set([...DEFAULT_CATS,...S.categories])].sort();
+  const catSel=document.getElementById('mtCategory');
+  if(catSel) catSel.innerHTML=allCats.map(c=>`<option value="${c}">${CAT_ICONS[c]||'❓'} ${tc(c)}</option>`).join('');
+  const dateInp=document.getElementById('mtDate');
+  if(dateInp) dateInp.value=new Date().toISOString().slice(0,10);
+  const stat=document.getElementById('mtStat');
+  if(stat) stat.textContent='';
+  document.getElementById('manualTxOvl').classList.add('open');
+  setTimeout(()=>document.getElementById('mtMerchant')?.focus(),200);
+}
+
+async function saveManualTx(){
+  const merchant=(document.getElementById('mtMerchant')?.value||'').trim();
+  const amount=parseFloat(document.getElementById('mtAmount')?.value||'0');
+  const currency=document.getElementById('mtCurrency')?.value||'KWD';
+  const category=document.getElementById('mtCategory')?.value||'other';
+  const direction=document.getElementById('mtDirection')?.value||'expense';
+  const date=document.getElementById('mtDate')?.value||new Date().toISOString().slice(0,10);
+  const stat=document.getElementById('mtStat');
+
+  if(!merchant){if(stat)stat.textContent='Introduce una descripción';return;}
+  if(!amount||amount<=0){if(stat)stat.textContent='Introduce un importe válido';return;}
+
+  if(stat) stat.textContent='Guardando…';
+  // Build a fake SMS so the backend can store it
+  const fakeSMS=`Manual entry: ${direction==='expense'?'debited':'credited'} with ${currency} ${amount.toFixed(3)} from ${merchant} on ${date} 12:00:00`;
+  try{
+    const res=await POST('/ingest',{userid:UID, sms:fakeSMS});
+    if(res.inserted||res.id){
+      // Override category since SMS parser might guess wrong
+      if(res.id) await POST('/update_field',{userid:UID,id:res.id,field:'category',value:category});
+      if(res.id) await POST('/update_field',{userid:UID,id:res.id,field:'merchant_clean',value:merchant});
+      document.getElementById('manualTxOvl').classList.remove('open');
+      haptic('success');
+      showToast2('✅','Transacción añadida',merchant+' · '+amount+' '+currency,'var(--green)',3000);
+      await load();
+    } else {
+      if(stat) stat.textContent='Error: '+(res.reason||'no insertado');
+    }
+  }catch(e){if(stat) stat.textContent='Error: '+e.message;}
+}
+
+// ══════════════════════════════════════════════════════════════
+// RECURRING DETECTION
+// ══════════════════════════════════════════════════════════════
+function renderRecurring(){
+  if(!S.all.length){
+    document.getElementById('recurList').innerHTML='<div style="text-align:center;padding:48px;color:var(--t3);">Sin datos</div>';
+    return;
+  }
+
+  // Group transactions by cleaned merchant
+  const merchantMap=new Map();
+  for(const r of S.all){
+    if(idir(r)!=='out') continue;
+    const m=cm(r.merchant_clean||r.merchant_raw||'').trim();
+    if(!m||m==='—') continue;
+    if(!merchantMap.has(m)) merchantMap.set(m,[]);
+    merchantMap.get(m).push(r);
+  }
+
+  // Find recurring: appears in at least 2 different months
+  const recurring=[];
+  for(const [merchant,txs] of merchantMap){
+    const months=new Set(txs.map(r=>(r.created_at||'').slice(0,7)).filter(Boolean));
+    if(months.size<2) continue;
+    const amounts=txs.map(r=>Number(r.amount||0));
+    const avgAmt=amounts.reduce((s,v)=>s+v,0)/amounts.length;
+    const minAmt=Math.min(...amounts), maxAmt=Math.max(...amounts);
+    const isConsistent=(maxAmt-minAmt)/avgAmt < 0.15; // within 15% variation
+    const lastDate=txs.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')))[0]?.created_at?.slice(0,10);
+    const cat=(txs[0]?.category||'other').toLowerCase();
+    recurring.push({merchant, txs, months:months.size, avgAmt, isConsistent, lastDate, cat, currency:(txs[0]?.currency||'KWD').toUpperCase()});
+  }
+
+  // Sort by avg amount desc
+  recurring.sort((a,b)=>b.avgAmt-a.avgAmt);
+
+  // Stats
+  const totalMonthly=recurring.reduce((s,r)=>s+r.avgAmt,0);
+  document.getElementById('recurTotal').textContent=totalMonthly.toFixed(2)+' KWD';
+  document.getElementById('recurCount').textContent=recurring.length;
+  document.getElementById('recurYear').textContent=(totalMonthly*12).toFixed(0)+' KWD';
+  document.getElementById('recurSubtitle').textContent=`${recurring.length} merchants detectados en 2+ meses`;
+
+  // Render list
+  const list=document.getElementById('recurList');
+  if(!recurring.length){
+    list.innerHTML='<div style="text-align:center;padding:48px;color:var(--t3);">No se detectaron recurrentes aún. Necesitas más de un mes de datos.</div>';
+    return;
+  }
+
+  list.innerHTML=recurring.map(r=>{
+    const icon=CAT_ICONS[r.cat]||'❓';
+    const color=CAT_COLORS[r.cat]||'#94a3b8';
+    const badge=r.isConsistent?'<span style="font-size:10px;background:var(--green-l);color:var(--green);padding:2px 7px;border-radius:999px;font-weight:600;">fijo</span>':'<span style="font-size:10px;background:var(--amber-l);color:var(--amber);padding:2px 7px;border-radius:999px;font-weight:600;">variable</span>';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);margin-bottom:8px;box-shadow:var(--shadow-m);">
+      <div style="width:38px;height:38px;border-radius:10px;background:${color}18;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.merchant}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px;">${tc(r.cat)} · ${r.months} meses · último ${r.lastDate||'—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:14px;font-weight:700;font-family:var(--mono);">~${r.avgAmt.toFixed(2)} ${r.currency}</div>
+        <div style="margin-top:3px;">${badge}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 bind();load();initSantanderData();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
 </script>
