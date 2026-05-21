@@ -2311,7 +2311,7 @@ const S={all:[],view:[],sortKey:"created_at",sortDir:"desc",categories:new Set()
 const TX_WINDOW={months:1};
 let _searchQ="";
 const FX={ts:0,rates:null};
-async function getFX(){if(FX.rates&&Date.now()-FX.ts<600000)return FX.rates;for(const u of["https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json","https://api.frankfurter.app/latest?base=EUR&symbols=USD,KWD,AED"]){try{const r=await fetch(u,{cache:"no-store"});if(!r.ok)continue;const j=await r.json();let rates=null;if(j.eur)rates={USD:j.eur.usd,KWD:j.eur.kwd,AED:j.eur.aed};else if(j.rates)rates=j.rates;if(rates?.USD&&rates?.KWD){FX.rates=rates;FX.ts=Date.now();return rates;}}catch(_){}}return null;}
+async function getFX(){if(FX.rates&&Date.now()-FX.ts<600000)return FX.rates;for(const u of["https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json","https://api.frankfurter.app/latest?base=EUR&symbols=USD,KWD,AED"]){try{const r=await fetch(u,{cache:"no-store"});if(!r.ok)continue;const j=await r.json();let rates=null;if(j.eur)rates={USD:j.eur.usd,KWD:j.eur.kwd,AED:j.eur.aed,PHP:j.eur.php||58};else if(j.rates)rates={...j.rates,PHP:j.rates.PHP||58};if(rates?.USD&&rates?.KWD){FX.rates=rates;FX.ts=Date.now();return rates;}}catch(_){}}return null;}
 function cbal(rows){const b={KWD:0,USD:0,EUR:0,AED:0,PHP:0};for(const r of rows){const c=(r.currency||"").toUpperCase();if(b[c]!==undefined)b[c]+=(idir(r)==="in"?1:-1)*Number(r.amount||0);}return b;}
 async function renderBalance(){
   renderSantanderBalance();
@@ -3180,7 +3180,7 @@ function buildPanel(id){
   const now = new Date();
   const ym  = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   const monthName = MO[now.getMonth()]+" "+now.getFullYear();
-  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25};
+  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25, PHP:58};
 
   if(id === 'ovBarsPanel'){
     // Last 5 months analysis
@@ -3466,7 +3466,7 @@ function merchantInitials(name){
 // ── High amount threshold (100 EUR ≈ 30.5 KWD, 93 USD, 370 AED) ─
 const HIGH_AMOUNT_EUR = 100;
 function isHighAmount(r){
-  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25};
+  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25, PHP:58};
   const amt = Number(r.amount||0);
   const cur = (r.currency||'KWD').toUpperCase();
   let eurVal = 0;
@@ -4275,7 +4275,8 @@ async function renderConverter(){
     const quick = quickMap[from]||[1,5,10,50,100];
     const qEl = document.getElementById('cvQuick');
     if(!qEl) return;
-    qEl.innerHTML = quick.map(v=>`<button onclick="document.getElementById('cvAmount').value=${v};updateConversion();"
+    window._cvUpdate = updateConversion;
+    qEl.innerHTML = quick.map(v=>`<button onclick="document.getElementById('cvAmount').value=${v};window._cvUpdate();"
       style="padding:6px 14px;background:var(--blue-l);border:1px solid rgba(59,130,246,.2);border-radius:var(--radius-s);color:var(--blue);font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;"
       onmouseover="this.style.background='var(--blue)';this.style.color='#fff';"
       onmouseout="this.style.background='var(--blue-l)';this.style.color='var(--blue)';">${v.toLocaleString()}</button>`
@@ -4319,7 +4320,7 @@ async function renderConverter(){
     const base = 'EUR';
     ratesEl.innerHTML = CV_CURRENCIES.map(c=>{
       if(c.code==='EUR') return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="color:var(--t2);">${c.flag} ${c.code} / EUR</span><span style="font-family:var(--mono);font-weight:600;">1,0000</span></div>`;
-      const rate = rates[c.code]||1;
+      const rate = rates[c.code]||(c.code==='PHP'?58:1);
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
         <span style="color:var(--t2);">${c.flag} ${c.code} / EUR</span>
         <span style="font-family:var(--mono);font-weight:600;">${rate.toFixed(4)}</span>
