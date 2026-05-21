@@ -1472,6 +1472,7 @@ body.privacy-on #ptSANexp,
 body.privacy-on #ptTotalSAN,
 body.privacy-on #ptIBKR,
 body.privacy-on #ptIBKRcash,
+body.privacy-on #cvResults,
 body.privacy-on .pt-v,
 body.privacy-on .pt-subtotal td:last-child,
 body.privacy-on #ovBalKWD,
@@ -1670,6 +1671,7 @@ body.privacy-on #svBars {
     <div class="nav" data-view="investments"><span class="nav-ic">📈</span><span>Investments</span></div>
     <div class="nav" data-view="patrimonio"><span class="nav-ic">💎</span><span>Patrimonio</span></div>
     <div class="nav" data-view="budget"><span class="nav-ic">🎯</span><span>Budget</span></div>
+    <div class="nav" data-view="converter"><span class="nav-ic">💱</span><span>Divisas</span></div>
     <div class="nav" data-view="recurring"><span class="nav-ic">🔄</span><span>Recurrentes</span></div>
     <div class="sb-sec">Config</div>
     <div class="nav" data-view="settings"><span class="nav-ic">⚙️</span><span>Settings</span></div>
@@ -2058,6 +2060,41 @@ body.privacy-on #svBars {
       <div id="recurList"></div>
     </div>
 
+    <!-- CONVERTER -->
+    <div class="view" id="view-converter">
+      <div style="max-width:560px;">
+
+        <!-- Input card -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-m);margin-bottom:16px;">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;">Cantidad a convertir</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input type="number" id="cvAmount" value="1" min="0" step="any"
+              style="flex:1;font-size:28px;font-weight:700;font-family:var(--mono);background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-m);padding:12px 16px;color:var(--t1);outline:none;"/>
+            <select id="cvFrom" style="font-size:16px;font-weight:700;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-m);color:var(--t1);outline:none;cursor:pointer;">
+              <option value="KWD">🇰🇼 KWD</option>
+              <option value="EUR">🇪🇺 EUR</option>
+              <option value="USD">🇺🇸 USD</option>
+              <option value="PHP">🇵🇭 PHP</option>
+              <option value="AED">🇦🇪 AED</option>
+            </select>
+          </div>
+          <!-- Quick amounts -->
+          <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;" id="cvQuick"></div>
+        </div>
+
+        <!-- Results -->
+        <div id="cvResults" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>
+
+        <!-- FX rates strip -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-m);">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Tipos de cambio live</div>
+          <div id="cvRates" style="display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="font-size:11px;color:var(--t3);margin-top:12px;" id="cvRatesDate">—</div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- SETTINGS -->
     <div class="view" id="view-settings">
       <div style="max-width:560px;">
@@ -2406,7 +2443,7 @@ async function load(fromCache=false){try{se("");if(!fromCache){const cached=load
 const VT={overview:"Overview",transactions:"Transactions",analytics:"Analytics",investments:"Investments",balance:"Balance",rules:"Rules",budget:"Budget",settings:"Settings"};
 const VS={overview:"Vista general",transactions:"All your transactions",analytics:"Spending patterns and trends",investments:"IBKR · May 2026 · NAV €60,629",balance:"Current balance by currency",rules:"Auto-categorization rules",budget:"Presupuesto mensual por categoría",settings:"Configuración de la app"};
 function syncBottomNav(name){document.querySelectorAll(".bn-item").forEach(item=>item.classList.toggle("active",item.dataset.view===name));}
-function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="patrimonio")renderPatrimonio();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="recurring")renderRecurring();if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
+function switchView(name){const current=document.querySelector(".view.active");if(current&&current.id!=="view-"+name){current.style.opacity="0";current.style.transform="translateY(4px)";setTimeout(()=>{current.classList.remove("active");current.style.opacity="";current.style.transform="";activate();},150);}else{activate();}function activate(){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===name));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));$("tbTitle").textContent=VT[name]||name;$("tbSub").textContent=VS[name]||"";if(name==="overview")renderOverview();if(name==="investments")buildInvDonut();if(name==="patrimonio")renderPatrimonio();if(name==="analytics")renderAnalytics();if(name==="rules")loadRules();if(name==="budget")renderBudget();if(name==="recurring")renderRecurring();if(name==="converter"){renderConverter();}if(name==="settings"){loadRules().then(()=>renderSettings());}if(name==="transactions"){updateRangeLabel();applyFiltersWithWindow();}haptic("light");syncBottomNav(name);}}
 function bind(){
   document.querySelectorAll(".nav[data-view]").forEach(n=>n.addEventListener("click",()=>switchView(n.dataset.view)));
   $("themeBtn").addEventListener("click",()=>{
@@ -3560,6 +3597,7 @@ body.privacy-on #ptSANexp,
 body.privacy-on #ptTotalSAN,
 body.privacy-on #ptIBKR,
 body.privacy-on #ptIBKRcash,
+body.privacy-on #cvResults,
 body.privacy-on .pt-v,
 body.privacy-on .pt-subtotal td:last-child,
 body.privacy-on #ovBalKWD,
@@ -4187,6 +4225,122 @@ function renderRecurring(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONVERSOR DE DIVISAS
+// ══════════════════════════════════════════════════════════════
+const CV_CURRENCIES = [
+  {code:'KWD', name:'Dinar kuwaití', flag:'🇰🇼', color:'#0891b2'},
+  {code:'EUR', name:'Euro',          flag:'🇪🇺', color:'#7c3aed'},
+  {code:'USD', name:'Dólar USD',     flag:'🇺🇸', color:'#2563eb'},
+  {code:'PHP', name:'Peso filipino', flag:'🇵🇭', color:'#f59e0b'},
+  {code:'AED', name:'Dírham EAU',    flag:'🇦🇪', color:'#059669'},
+];
+
+// Convert any currency to EUR using FX rates (EUR base)
+function toEURConv(amount, from, rates){
+  if(from==='EUR') return amount;
+  return amount / (rates[from]||1);
+}
+function fromEURConv(amount, to, rates){
+  if(to==='EUR') return amount;
+  return amount * (rates[to]||1);
+}
+
+let _cvLastFrom = localStorage.getItem('cv_last_from')||'KWD';
+
+async function renderConverter(){
+  // Ensure FX rates loaded
+  if(!FX.rates){ try{ await getFX(); }catch(_){} }
+  const rates = FX.rates || {KWD:3.28, USD:0.93, AED:0.25, PHP:58};
+
+  const fromSel = document.getElementById('cvFrom');
+  const amtInp  = document.getElementById('cvAmount');
+  if(!fromSel||!amtInp) return;
+
+  // Restore last selected currency
+  fromSel.value = _cvLastFrom;
+
+  // Quick amount buttons based on currency
+  function renderQuick(){
+    const from = fromSel.value;
+    const quickMap = {
+      KWD:[1,5,10,50,100],
+      EUR:[5,10,20,50,100],
+      USD:[5,10,20,50,100],
+      PHP:[100,500,1000,5000,10000],
+      AED:[10,20,50,100,500],
+    };
+    const quick = quickMap[from]||[1,5,10,50,100];
+    const qEl = document.getElementById('cvQuick');
+    if(!qEl) return;
+    qEl.innerHTML = quick.map(v=>`<button onclick="document.getElementById('cvAmount').value=${v};updateConversion();"
+      style="padding:6px 14px;background:var(--blue-l);border:1px solid rgba(59,130,246,.2);border-radius:var(--radius-s);color:var(--blue);font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;"
+      onmouseover="this.style.background='var(--blue)';this.style.color='#fff';"
+      onmouseout="this.style.background='var(--blue-l)';this.style.color='var(--blue)';">${v.toLocaleString()}</button>`
+    ).join('');
+  }
+
+  function updateConversion(){
+    const from = fromSel.value;
+    const raw  = parseFloat(amtInp.value)||0;
+    const resultsEl = document.getElementById('cvResults');
+    if(!resultsEl) return;
+
+    const amountEUR = toEURConv(raw, from, rates);
+
+    resultsEl.innerHTML = CV_CURRENCIES
+      .filter(c=>c.code!==from)
+      .map(c=>{
+        const converted = fromEURConv(amountEUR, c.code, rates);
+        const rate = fromEURConv(1/toEURConv(1,from,rates), c.code, rates);
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;box-shadow:var(--shadow-m);display:flex;align-items:center;justify-content:space-between;transition:all .15s;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)';"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-m)';">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="font-size:28px;">${c.flag}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--t1);">${c.name}</div>
+              <div style="font-size:11px;color:var(--t3);margin-top:2px;">1 ${from} = ${rate.toFixed(rate>100?0:rate>10?2:4)} ${c.code}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:26px;font-weight:800;font-family:var(--mono);color:${c.color};letter-spacing:-.5px;">${converted.toLocaleString('es-ES',{minimumFractionDigits:converted>100?0:2,maximumFractionDigits:converted>100?0:2})}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px;font-family:var(--mono);">${c.code}</div>
+          </div>
+        </div>`;
+      }).join('');
+  }
+
+  // Rates table
+  const ratesEl = document.getElementById('cvRates');
+  if(ratesEl){
+    const base = 'EUR';
+    ratesEl.innerHTML = CV_CURRENCIES.map(c=>{
+      if(c.code==='EUR') return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="color:var(--t2);">${c.flag} ${c.code} / EUR</span><span style="font-family:var(--mono);font-weight:600;">1,0000</span></div>`;
+      const rate = rates[c.code]||1;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
+        <span style="color:var(--t2);">${c.flag} ${c.code} / EUR</span>
+        <span style="font-family:var(--mono);font-weight:600;">${rate.toFixed(4)}</span>
+      </div>`;
+    }).join('');
+  }
+  const ratesDate = document.getElementById('cvRatesDate');
+  if(ratesDate) ratesDate.textContent = 'Actualizado · '+new Date().toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+
+  // Event listeners
+  fromSel.onchange = ()=>{
+    _cvLastFrom = fromSel.value;
+    localStorage.setItem('cv_last_from', _cvLastFrom);
+    renderQuick();
+    updateConversion();
+  };
+  amtInp.oninput = updateConversion;
+  amtInp.onfocus = ()=>amtInp.select();
+
+  renderQuick();
+  updateConversion();
 }
 
 bind();load();initSantanderData();loadRules();initSearchAndWindow();getFX().catch(()=>{});setTimeout(checkMonthlyReminder,1000);setTimeout(buildInvDonut,500);
