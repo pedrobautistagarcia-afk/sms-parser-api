@@ -2194,7 +2194,7 @@ let buildDeck=[],buildIdx=0,buildSlot=[],buildScore=0;
 function goBuild(){
   if(!ALLPHRASES||ALLPHRASES.length===0){alert('Aún no hay frases para este ejercicio.');return;}
   hideAll();document.getElementById('build').style.display='block';
-  buildDeck=shuffle(ALLPHRASES.filter(f=>f.ar.split(/\\s+/).length>=3).slice());buildIdx=0;buildScore=0;
+  buildDeck=shuffle(ALLPHRASES.filter(f=>f.ar.split(/\s+/).length>=3).slice());buildIdx=0;buildScore=0;
   renderBuild();
 }
 function renderBuild(){
